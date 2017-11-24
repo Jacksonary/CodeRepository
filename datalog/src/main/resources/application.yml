@@ -1,0 +1,20 @@
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        enable_lazy_load_no_trans: false
+  datasource:
+    username: root
+    password: 921228jack
+    url: jdbc:mysql://localhost:3306/springaop
+    driver-class-name: com.mysql.jdbc.Driver
+  data:
+    mongodb:
+      host: 127.0.0.1
+      port: 27017
+      database: test
+      repositories:
+        enabled: true
+      
