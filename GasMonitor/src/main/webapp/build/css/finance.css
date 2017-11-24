@@ -1,0 +1,105 @@
+.title {
+    text-align: center;
+}
+.subTitle {
+    font-size: 16px;
+}
+
+#finance {
+    position: relative;
+    margin: 40px 0px;
+    border: 1px solid #99CCFF;
+    -moz-user-select: none;
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+#labels {
+    position: absolute;
+    width: 800px;
+    z-index: 10;
+}
+#financeTitle {
+    position: absolute;
+    top: -20px;
+}
+#time {
+    position: absolute;
+    left: 4px;
+    top: 4px;
+    font-size: 10px; 
+    z-index: 10;
+}
+#time a {
+    background: #ffffff;
+    cursor: pointer;
+    border-right: 2px solid transparent;
+    color: #4499FF;
+    text-decoration: underline;
+}
+#dateRange {
+    position: absolute;
+    right: 4px;
+    top: -14px;
+    font-size: 10px;
+}
+.handle {
+    position: absolute;
+    z-index: 10;
+    cursor: pointer;
+    background: #eeeeee; 
+    border: 1px solid #bbbbbb; 
+    border-radius: 3px;
+    -webkit-border-radius: 3px; 
+    -moz-border-radius: 3px;
+}
+.zoomHandle {
+    width: 5px; 
+    height: 20px; 
+}
+.scrollHandle {
+    width: 100px;
+    height: 12px;
+}
+.flag {
+    border: 1px solid #4499FF;
+    background: white;
+    padding: 1px 2px 1px 2px;
+}
+.flagpole {
+    border-left: 1px solid #4499FF;
+}
+.flotr-grid-label {
+    font-size: 11px;
+    background: #ffffff;
+    margin: 2px 0px 0px 4px;
+}
+.flotr-mouse-value {
+    font-size: 10px;
+}
+#summaryGraph .flotr-grid-label {
+    margin-top: -16px;
+    background: transparent;
+    text-align: left;
+}
+.documentation p {
+    font-size: 14px;
+    padding-left: 20px;
+    padding-right: 8px;
+}
+.documentation ol {
+    font-size: 14px;
+}
+.documentation h3 {
+    padding-top: 12px;
+}
+.documentation h4 {
+    padding-left: 20px;
+    font-size: 14px;
+}
+.documentation p code {
+    font-size: 12px;
+}
+.documentation .snippet {
+    margin-left: 20px;
+}

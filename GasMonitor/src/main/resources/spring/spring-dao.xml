@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>    
+<beans xmlns="http://www.springframework.org/schema/beans"    
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"   
+    xmlns:p="http://www.springframework.org/schema/p"  
+    xmlns:aop="http://www.springframework.org/schema/aop"   
+    xmlns:context="http://www.springframework.org/schema/context"  
+    xmlns:jee="http://www.springframework.org/schema/jee"  
+    xmlns:tx="http://www.springframework.org/schema/tx"  
+    xsi:schemaLocation="    
+        http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-4.0.xsd  
+        http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-4.0.xsd  
+        http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.0.xsd  
+        http://www.springframework.org/schema/jee http://www.springframework.org/schema/jee/spring-jee-4.0.xsd  
+        http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-4.0.xsd">    
+         
+	<!-- 配置数据源 -->
+	<context:property-placeholder location="classpath:jdbc.properties"/>
+	<bean id="dataSource" class="com.mchange.v2.c3p0.ComboPooledDataSource">
+		<property name="driverClass" value="${jdbc.driverClass}"/>
+		<property name="jdbcUrl" value="${jdbc.url}"/>
+		<property name="user" value="${jdbc.userName}"/>
+		<property name="password" value="${jdbc.password}"/>
+		
+		<property name="maxPoolSize" value="30"></property>
+		<property name="minPoolSize" value="10"></property>
+		<!-- 关闭事务的自动提交，对于事务自己来操作提交还是回滚 -->
+		<property name="autoCommitOnClose" value="false"></property>
+		<!--当连接池用完时客户端调用getConnection()后等待获取新连接的时间，超时后将抛出 
+  			SQLException,如设为0则无限期等待。单位毫秒。Default: 0 --> 
+		<property name="checkoutTimeout" value="1000"></property>
+		
+		<!--定义在从数据库获取新连接失败后重复尝试的次数。Default: 30 --> 
+		<property name="acquireRetryAttempts" value="2"></property>
+	</bean>
+
+	<!-- 配置mybatis的sqlSessionFactory -->
+	<bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+		<property name="dataSource" ref="dataSource" />
+		
+		<!-- 自动扫描mappers.xml文件 -->
+		<property name="mapperLocations" value="classpath:mapper/*.xml"></property>
+		<!-- mybatis配置文件 -->
+		<property name="configLocation" value="classpath:mybatis-config.xml"></property>
+		<!-- 配置别名 -->
+		<property name="typeAliasesPackage" value="com.hhu.entity"></property>
+	</bean>
+
+	<!-- DAO接口所在包名，Spring会自动查找其下的类 -->
+	<bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+		<property name="basePackage" value="com.hhu.dao" />
+		<property name="sqlSessionFactoryBeanName" value="sqlSessionFactory"></property>
+	</bean>
+	
+	
+	<!-- 配置RedisDao的ip和端口号-->
+	<bean id="redisDao" class="com.hhu.dao.cache.RedisDao">
+		<constructor-arg index="0" value="localhost"></constructor-arg>
+		<constructor-arg index="1" value="6379"></constructor-arg>
+	</bean>
+	 
+	<!--配置SpringUtil的工具类  -->
+	<bean id="springBeanUtil" class="com.hhu.util.SpringBeanUtil">
+	</bean>
+
+</beans>

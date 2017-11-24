@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hhu.dao.FaultLogDao">
+	
+	<resultMap type="FaultLog" id="FaultLogResult">
+		<result property="faultId" column="FaultId"/>
+		<result property="time" column="Time"/>
+		<result property="faultTypes" column="FaultTypes"/>
+		<result property="faultCause" column="FaultCause"/>
+	</resultMap>
+	
+	<select id="getAllLogs" resultMap="FaultLogResult">
+		<!-- 利用SQLServer的SQL语句进行分页，但是这里我们用了PageHelper来进行分页的操作，所以这里可以省去分页，直接查询就好
+			 特殊字符需要添加<![CDATA[  ]]>  -->
+		select * from T_FaultLog where Time<![CDATA[>=]]>#{0} and Time<![CDATA[<=]]>#{1}
+	</select>
+	
+	<select id="getAllLogsNoTime" resultMap="FaultLogResult">
+		select * from T_FaultLog
+	</select>
+	
+	<insert id="recordLog">
+		<!--注意多参数的传入方法  -->
+		INSERT INTO T_FaultLog(Time,FaultTypes,FaultCause) VALUES(#{0},#{1},#{2}) 
+	</insert> 
+	
+	<!-- 这个是多站点的写入情况，包含了站点对应的id -->
+	<insert id="recordLog2">
+		<!--注意多参数的传入方法  -->
+		INSERT INTO T_FaultLog(Time,FaultTypes,FaultCause,StationId) VALUES(#{0},#{1},#{2},#{3}) 
+	</insert> 
+	
+	<select id="getLogNumber" resultType="int">
+		<!-- 利用SQLServer的SQL语句进行分页，但是这里我们用了PageHelper来进行分页的操作，所以这里可以省去分页，直接查询就好-->
+		select count(*) as total from T_FaultLog 
+	</select>
+	
+	<select id="getLogNumberWithSearch" resultType="int">
+		<!-- 利用SQLServer的SQL语句进行分页，但是这里我们用了PageHelper来进行分页的操作，所以这里可以省去分页，直接查询就好-->
+		select count(Time) as total from T_FaultLog where Time<![CDATA[>=]]>#{0} and Time<![CDATA[<=]]>#{1}
+	</select>
+	
+</mapper>

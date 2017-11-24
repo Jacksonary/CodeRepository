@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:p="http://www.springframework.org/schema/p"
+	xmlns:aop="http://www.springframework.org/schema/aop"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:jee="http://www.springframework.org/schema/jee"
+	xmlns:tx="http://www.springframework.org/schema/tx"
+	xmlns:mvc="http://www.springframework.org/schema/mvc"
+	xmlns:websocket="http://www.springframework.org/schema/websocket"
+	xsi:schemaLocation="http://www.springframework.org/schema/websocket http://www.springframework.org/schema/websocket/spring-websocket-4.3.xsd
+		http://www.springframework.org/schema/jee http://www.springframework.org/schema/jee/spring-jee-4.0.xsd
+		http://www.springframework.org/schema/beans/spring-beans.xsd http://www.springframework.org/schema/websocket/spring-websocket.xsd
+		http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc-4.3.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-4.0.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.0.xsd
+		http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-4.0.xsd
+		http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-4.0.xsd">
+
+	<!-- 配置SpringMVC -->
+	<!-- 开启SpringMVC注解模式 -->
+	<!-- 简化配置： （1）自动注册DefaultAnnotationHandlerMapping,AnnotationMethodHandlerAdapter 
+		（2）提供了一系列的功能：数据绑定,数字和日期的format@NumberFormat,@DataTimeFormat,xml,json默认读写支持 -->
+	<mvc:annotation-driven></mvc:annotation-driven>
+
+	<!--ServletMapping映射路径：“/” -->
+	<!-- 静态资源默认servlet配置 1：加入对静态资源的处理：js,gif,png 2:允许使用“/”做整体映射 -->
+	<mvc:default-servlet-handler />
+
+	<!-- 试图解析器。配置jsp显示的ViewResolver -->
+	<bean
+		class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+		<property 
+			name="viewClass"
+			value="org.springframework.web.servlet.view.JstlView">
+		</property>
+
+		<!-- 配置前缀 -->
+		<property name="prefix" value="/WEB-INF/production/"></property>
+
+		<!-- 配置前缀 -->
+		<property name="suffix" value=".jsp"></property>
+	</bean>
+
+
+	<!-- 扫描web相关的bean -->
+	<context:component-scan base-package="com.hhu.web"></context:component-scan>
+
+	<!-- 添加拦截器的配置 
+	<mvc:interceptors>
+		<mvc:interceptor>
+			<mvc:mapping path="/**"></mvc:mapping>
+			<mvc:exclude-mapping path="/login" />
+			<bean class="com.hhu.interceptor.LoginInterceptor"></bean>
+		</mvc:interceptor>
+	</mvc:interceptors>
+	-->
+
+</beans>
