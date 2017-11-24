@@ -7,7 +7,7 @@ spring:
         enable_lazy_load_no_trans: false
   datasource:
     username: root
-    password: 921228jack
+    password: root
     url: jdbc:mysql://localhost:3306/springaop
     driver-class-name: com.mysql.jdbc.Driver
   data:
