@@ -59,29 +59,34 @@ public class DatalogAspect {
 	 */
 	@Around("save() || delete()")
 	public Object addOperateLog(ProceedingJoinPoint pjp) throws Throwable{
+		//ProceedingJoinPoint获取这个类的处理日志，只能用于环绕通知，而前、后置通知则可以使用JoinPoint 
 		Object returnObj = null;
 		
-		//获取操作方法名
+		//获取操作方法名，这里是指Dao的方法名，不是上述的方法名
 		String method = pjp.getSignature().getName();
 		System.out.println("***************用户当前再进行" + method + "操作***************");
 		
 		//初始化操作类型
 		ActionType actionType = null;
-		//初始化id，用户区分更新还是新增的行为
+		//初始化id，这个id指的是执行更新或者删除操作时候传入的Product的id，用户区分更新还是新增的行为
 		Long id = null;
 		Action action = new Action();
 		
+		//这里的Object指的是
 		Object oldObj = null;
 		
 		try {
 			
+			/**
+			 * 1.前置通知
+			 */
 			//判断方法是增、删、改中的哪一类
 			if("save".equals(method)) {//如果方法有“save”则可能是save或者update
-				//获取操作对象
+				//获取方法的第一个参数对象
 				Object obj = pjp.getArgs()[0];
-				System.out.println("***************操作对象为：" + obj + "***************");
+				System.out.println("***************参数对象为：" + obj + "***************");
 				
-				//获取对象的id属性
+				//获取参数中形参名字为"id"属性对象
 				Object idObj = PropertyUtils.getProperty(obj,"id");
 				
 				System.out.println("获取的idObj为： " + idObj);
@@ -128,14 +133,20 @@ public class DatalogAspect {
 			
 			
 			
-			/*执行proceed（）方法获取返回值，这里即方法的执行，这里要做的
+			/*
+			 * 2.方法的执行
+			 * 执行proceed（）就是执行方法然后获取返回值，这里即方法的执行，这里要做的
 			 * 就是在该方法前后加上非功能性代码
 			 */
 			returnObj = pjp.proceed(pjp.getArgs());
 			
 			
 			
-			//After之后的逻辑,即保存操记录
+			/*
+			 * 3. 后置通知
+			 * After之后的逻辑,即保存操记录
+			 * 
+			 */
 			action.setActionType(actionType);
 			if(actionType.INSERT == actionType) {
 				//获取新增后的id,通过反射获取returnObj中的id

@@ -22,14 +22,14 @@ public class DatalogApplicationTests {
 	@Test
 	public void testInsert() {
 		Product p = new Product();
-		p.setName("dell computer");
+		p.setName("lenove computer");
 		p.setOnlineTime(new Date());
-		p.setBuyPrice(new BigDecimal("29.5"));
+		p.setBuyPrice(new BigDecimal("45.5"));
 		p.setCategory("computer");
-		p.setDetail("This DELL notebook");
+		p.setDetail("This LENOVO notebook");
 		p.setUpdateTime(new Date());
-		p.setProvider("Dell");
-		p.setSellPrice(new BigDecimal("35.2"));
+		p.setProvider("lenove");
+		p.setSellPrice(new BigDecimal("50.2"));
 		if(p!=null) {
 			productDao.save(p);
 		}

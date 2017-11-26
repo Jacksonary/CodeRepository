@@ -1,5 +1,8 @@
 package com.hhu.domain;
 
+/*
+ * 用户存放具体属性的新旧属性
+ */
 public class ChangeItem {
 	
 	private String field;
