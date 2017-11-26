@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<script type="text/javascript" src="http://code.jquery.com/jquery-latest.js"></script>
+<!--  
+<script type="text/javascript" src="resources/jquery-3.2.1.min.js"></script>
+-->
+<style>  
+#video {  
+    border: 1px solid #ccc;  
+    display: block;  
+    margin: 0 0 20px 0;
+    float:left;
+}
+
+#canvas {
+    margin-top: 20px;  
+    border: 1px solid #ccc;  
+    display: block;
+}
+
+</style> 
+
+<title>摄像头调用</title>
+</head>
+<body>
+<div id="contentHolder">
+	<div id = "mainvideo">
+    <video id="video" width="320" height="320" autoplay></video>
+    </div>
+    <canvas style="display:block" id="canvas" width="320" height="320"></canvas>
+    <button id="picture">拍照</button>
+    <button id="sc">上传</button>
+</div>
+<script>
+	
+	//这里是做了兼容性的处理，navigator.getUserMedia是标准的API，navigator.webkitGetUserMedia是WebKit核心的API，
+	//FireFox中已经用navigator.mediaDevices.getUserMedia代替了navigator.mozGetUserMedia
+    navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mediaDevices.getUserMedia || navigator.mozGetUserMedia;
+    if (navigator.getUserMedia) {
+        navigator.getUserMedia({ audio: false, video: { width: 320, height: 320 } },
+                function(stream) {
+                    var video = document.getElementById("video");
+                    video.src = window.URL.createObjectURL(stream);
+                    video.onloadedmetadata = function(e) {
+                        console.log("onloadedmetadata获取了");
+                        video.play();
+                    };
+                },
+                function(err) {
+                    console.log("出错了:" + err.name);
+                }
+        );
+    } else {
+        console.log("不支持getUserMedia");
+    }
+    
+    //创建一个canvas元，并获取它的2DContext,
+    var context = document.getElementById("canvas").getContext("2d");
+
+    //给拍照按钮添加按钮事件   $("#picture")  document.getElementById("picture")
+    document.getElementById("picture").addEventListener("click", function () {
+        context.drawImage(video, 0, 0, 320, 320);
+        document.getElementById("mainvideo").style.display = "none";
+    });
+ 
+    //给上传添加按钮事件
+    document.getElementById("sc").addEventListener("click", function () {
+        //这里得到的就是Base64的编码方式，
+        var imgData=document.getElementById("canvas").toDataURL("image/png");
+        //请求图片根据接口要求，去除前22位的文件头，即去除data:image/jpeg;base64,
+        var data=imgData.substr(22);
+
+
+        $.post("http://localhost:8080/GasMonitor/dete",
+                {
+             	 "image":data
+             	 },
+         	function(data){
+             alert("人脸数："+data.result_num);
+             },
+             "json");
+
+        
+        /* $.post("https://aip.baidubce.com/rest/2.0/face/v1/detect",
+        {"Content-Type":"application/x-www-form-urlencoded",
+     	 "access_token":"24.cc9943707ab381e684bbee99a21f8ff5.2592000.1500895855.282335-9798514",
+     	 "image":data
+     	 },
+ 	function(data){
+     alert("人脸数："+data.result_num);
+     },
+     "jsonp");   */
+        
+       
+    });
+
+
+</script>
+</body>
+</html>

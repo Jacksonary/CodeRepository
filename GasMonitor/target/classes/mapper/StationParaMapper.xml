@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hhu.dao.StationParaDao">
+	
+	<resultMap type="StationPara" id="StationParaResult"> 
+		<result property="fId" column="F_ID"/>
+		<result property="fSid" column="F_SID"/>
+		<result property="fInput1" column="F_INPUT1"/>
+		<result property="fInput2" column="F_INPUT2"/>
+		<result property="fOutput1" column="F_OUTPUT1"/>
+		<result property="fOutput2" column="F_OUTPUT2"/>
+		<result property="fTemperature" column="F_TEMPERATURE"/>
+		<result property="fFlow" column="F_FLOW"/>
+		<result property="fFilter" column="F_FILTER"/>
+		<result property="fTime" column="F_TIME"/>
+	</resultMap>
+
+	<!-- 根据外键查询监控参数，并且按时间的顺序从早到晚进行排序
+	select * from T_StationPara where F_SID = #{sid} ORDER BY F_TIME 
+	下面的语句是将当前时间的前5分钟的数据进行排序作为判断的标准
+	 -->
+	<!-- 注意这里查询结果类型应写为resultMap类型（即上述定义的类型），而resultType是返回java实体类的类型，两者混淆MyBatis将会报错：找不到对应的类 -->
+	<select id="getStationParaBySid" parameterType="int" resultMap="StationParaResult">
+		SELECT * FROM T_StationPara WHERE F_SID = #{sid} AND (F_TIME>(SELECT DATEADD(MINUTE, -4, GETDATE()))) ORDER BY F_TIME
+	</select> 
+	
+</mapper>

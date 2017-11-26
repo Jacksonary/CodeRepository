@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hhu.dao.StationDao">
+	
+	<resultMap type="Station" id="StationResult">
+		<result property="fId" column="F_ID"/>
+		<result property="gI" column="Gi"/>
+		<result property="fCode" column="F_Code"/>
+		<result property="fCaption" column="F_Caption"/>
+		<result property="fOrgId" column="F_OrgID"/>
+		<result property="fMasUserId" column="F_MasUserID"/>
+		<result property="fTygStyle" column="F_TYGStyle"/>
+		<result property="fTygStruct" column="F_TYGStruct"/>
+		<result property="fTygCode" column="F_TYGCode"/>
+		<result property="fProductCode" column="F_ProductCode"/>
+		<result property="fProductSupply" column="F_ProductSupply"/>
+		<result property="fMacCode" column="F_MacCode"/>
+		<result property="fMacVersion" column="F_MacVersion"/>
+		<result property="fMacCompany" column="F_MacCompany"/>
+		<result property="fMacStyle" column="F_MacStyle"/>
+		<result property="fMacPowerType" column="F_MacPowerType"/>
+		<result property="fMacStartState" column="F_MacStartState"/>
+		<result property="fMacInstallState" column="F_MacInstallState"/>
+		<result property="fMacInstallDate" column="F_MacInstallDate"/>
+		<result property="fMacDesc" column="F_MacDesc"/>
+		<result property="fSimTel" column="F_SimTel"/>
+		<result property="fSimStream" column="F_SimStream"/>
+		<result property="fSimMoney" column="F_SimMoney"/>
+		<result property="fMemo" column="F_Memo"/>
+		<result property="fX" column="F_X"/>
+		<result property="fY" column="F_Y"/>
+		<result property="fArea" column="F_Area"/>
+		<result property="fAddress" column="F_Address"/>
+		<result property="fWu0" column="F_Wu0"/>
+		<result property="fWu1" column="F_Wu1"/>
+		<result property="fWu2" column="F_Wu2"/>
+		<result property="fWu3" column="F_Wu3"/>
+		<result property="fWu4" column="F_Wu4"/>
+		<result property="fWd0" column="F_Wd0"/>
+		<result property="fWd1" column="F_Wd1"/>
+		<result property="fWd2" column="F_Wd2"/>
+		<result property="fWd3" column="F_Wd3"/>
+		<result property="fWd4" column="F_Wd4"/>
+		<result property="fV0" column="F_V0"/>
+		<result property="fV1" column="F_V1"/>
+		<result property="fV2" column="F_V2"/>
+		<result property="fV3" column="F_V3"/>
+		<result property="fV4" column="F_V4"/>
+		<result property="fS0" column="F_S0"/>
+		<result property="fS1" column="F_S1"/>
+		<result property="fS2" column="F_S2"/>
+		<result property="fS3" column="F_S3"/>
+		<result property="fS4" column="F_S4"/>
+		<result property="fVtm" column="F_VTM"/>
+		<result property="fYzUserId" column="F_YzUserID"/>
+		<result property="fF0" column="F_F0"/>
+		<result property="fF1" column="F_F1"/>
+		<result property="fC" column="F_C"/>
+		<result property="fP" column="F_P"/>
+		<result property="fF2" column="F_F2"/>
+		<result property="fX2" column="F_X2"/>
+		<result property="fY2" column="F_Y2"/>
+	</resultMap>
+
+	<select id="getStationById" resultType="Station">
+		select * from T_Station where F_ID=#{fId} 
+	</select>
+	
+	<select id="getAllStation" resultMap="StationResult">
+		select top ${param1} * from T_Station where F_ID not in(select top ${param2} F_ID from T_Station)
+	</select>
+	
+	<select id="getAllStation2" resultMap="StationResult">
+		<!-- 利用SQLServer的SQL语句进行分页，但是这里我们用了PageHelper来进行分页的操作，所以这里可以省去分页，直接查询就好-->
+		select * from T_Station
+	</select>
+	
+	<select id="getStationNumber" resultType="int">
+		select count(*) as total from T_Station
+	</select>
+	
+	<select id="getfOrgId" resultType="Integer">
+		select F_OrgId from T_Station
+	</select> 
+	
+	<select id="getfCaption" resultType="String">
+		select F_Caption from T_Station
+	</select>
+	
+	<select id="getLastStation" resultType="Station">
+		select top 1 * from T_Station order by F_ID desc
+	</select>
+	
+	<insert id="writeDate" parameterType="float">
+		INSERT INTO T_Station(F_X) VALUES(#{d}) 
+	</insert> 
+	
+	<insert id="writeStation">
+		INSERT INTO T_Station(F_X,F_X2,F_Y,F_Y2,F_S0,F_S1,F_S2) VALUES(#{0},#{1},#{2},#{3},#{4},#{5},#{6}) 
+	</insert>
+	
+</mapper>

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hhu.dao.UserDao">
+	
+	<resultMap type="User" id="UserResult"> 
+		<result property="fId" column="F_ID"/>
+		<result property="gI" column="Gi"/>
+		<result property="fCode" column="F_Code"/>
+		<result property="fPwd" column="F_Pwd"/>
+		<result property="fCaption" column="F_Caption"/>
+		<result property="fEnable" column="F_Enable"/>
+		<result property="fMemo" column="F_Memo"/>
+		<result property="fTel" column="F_Tel"/>
+		<result property="fAddress" column="F_Address"/>
+		<result property="fOrgId" column="F_OrgID"/>
+		<result property="fSfz" column="F_SFZ"/>
+		<result property="fWx" column="F_Wx"/>
+		<result property="fMail" column="F_Mail"/>
+	</resultMap>
+
+	<select id="getUser" resultType="User">
+		select * from T_User where F_Code=#{param1} and F_Pwd=#{param2}
+	</select> 
+	
+</mapper>

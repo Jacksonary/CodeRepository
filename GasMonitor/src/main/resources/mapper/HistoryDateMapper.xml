@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hhu.dao.HistoryDateDao">
+	
+	<resultMap type="HistoryDates" id="HistoryDatesResult">
+		<result property="fId" column="F_ID"/>
+		<result property="fTm" column="F_Tm"/>
+		<result property="fStCode" column="F_StCode"/>
+		<result property="fV0" column="F_V0"/>
+		<result property="fS0" column="F_S0"/>
+		<result property="fV1" column="F_V1"/> 
+		<result property="fS1" column="F_S1"/>
+		<result property="fV2" column="F_V2"/> 
+		<result property="fS2" column="F_S2"/>
+		<result property="fV3" column="F_V3"/>
+		<result property="fS3" column="F_S3"/>
+		<result property="fV4" column="F_V4"/>
+		<result property="fS4" column="F_S4"/>
+		<result property="fF0" column="F_F0"/>
+		<result property="fF1" column="F_F1"/>
+		<result property="fC" column="F_C"/>
+		<result property="fP" column="F_P"/>
+		<result property="fF2" column="F_F2"/>
+		<result property="fS12" column="F_S12"/>
+	</resultMap>
+
+	<select id="getDate" resultType="HistoryDates">
+		select * from T_His WHERE F_ID=#{fId}
+	</select> 
+	
+	<select id="getAllDates" resultMap="HistoryDatesResult">
+		select * from T_His
+	</select>
+	
+</mapper>
