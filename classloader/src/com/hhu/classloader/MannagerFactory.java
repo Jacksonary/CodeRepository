@@ -42,8 +42,8 @@ public class MannagerFactory {
 			 * 如果使用loadClass那么跑测试程序时必须使用Debug模式
 			 * 如果使用findClass那么跑测试程序是可以直接Run As java Application
 			 */
-//			loadClass = myClassloader.loadClass(className);
-			loadClass = myClassloader.findClass(MY_MANAGER);
+			loadClass = myClassloader.loadClass(className);
+//			loadClass = myClassloader.findClass(MY_MANAGER);
 		} catch (Exception e) {
 			// TODO: handle exception
 			e.printStackTrace();
