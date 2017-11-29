@@ -41,7 +41,7 @@ public class DiffUtil {
 	}
 	
 	/**
-	 * 获取新增擦欧总的change Item
+	 * 获取新增对象中的各个属性对象change Item
 	 * 
 	 * @param obj
 	 * @return
@@ -52,6 +52,9 @@ public class DiffUtil {
 		Map<String,String> fieldCnNameMap = getFieldNameMap(obj.getClass());
 		List<ChangeItem> items = new ArrayList<>();
 		
+		/*
+		 * 遍历对象中的值
+		 */
 		for (Map.Entry<String, String> entry : valueMap.entrySet()) {
 			String fieldName = entry.getKey();
 			String value = entry.getValue();

@@ -1,5 +1,10 @@
 package com.hhu.domain;
 
+/**
+ * 操作类型的定义，主要定义了三种：insert、update、delete
+ * @author Weiguo Liu
+ *
+ */
 public enum ActionType {
 	
 	INSERT("添加", 1),
@@ -22,7 +27,6 @@ public enum ActionType {
 		return index;
 	}
 	
-
 	public static String getName(int index) {
 		for(ActionType actionType: ActionType.values()) {
 			if(actionType.getIndex() == index) {
