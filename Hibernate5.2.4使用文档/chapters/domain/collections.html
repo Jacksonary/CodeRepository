@@ -1,0 +1,1912 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<!--[if IE]><meta http-equiv="X-UA-Compatible" content="IE=edge"><![endif]-->
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="generator" content="Asciidoctor 1.5.2">
+<title>Collections</title>
+<link rel="stylesheet" href="./css/hibernate.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.2.0/css/font-awesome.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prettify/r298/prettify.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prettify/r298/prettify.min.js"></script>
+<script>document.addEventListener('DOMContentLoaded', prettyPrint)</script>
+</head>
+<body class="article">
+<div id="header">
+</div>
+<div id="content">
+<div class="sect2">
+<h3 id="collections">Collections</h3>
+<div class="paragraph">
+<p>Naturally Hibernate also allows to persist collections.
+These persistent collections can contain almost any other Hibernate type, including: basic types, custom types, components and references to other entities.
+In this context, the distinction between value and reference semantics is very important.
+An object in a collection might be handled with <em>value</em> semantics (its life cycle being fully depends on the collection owner),
+or it might be a reference to another entity with its own life cycle.
+In the latter case, only the <em>link</em> between the two objects is considered to be a state held by the collection.</p>
+</div>
+<div class="paragraph">
+<p>The owner of the collection is always an entity, even if the collection is defined by an embeddable type.
+Collections form one/many-to-many associations between types so there can be:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>value type collections</p>
+</li>
+<li>
+<p>embeddable type collections</p>
+</li>
+<li>
+<p>entity collections</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Hibernate uses its own collection implementations which are enriched with lazy-loading, caching or state change detection semantics.
+For this reason, persistent collections must be declared as an interface type.
+The actual interface might be <code>java.util.Collection</code>, <code>java.util.List</code>, <code>java.util.Set</code>, <code>java.util.Map</code>, <code>java.util.SortedSet</code>, <code>java.util.SortedMap</code> or even other object types (meaning you will have to write an implementation of <code>org.hibernate.usertype.UserCollectionType</code>).</p>
+</div>
+<div class="paragraph">
+<p>As the following example demonstrates, it&#8217;s important to use the interface type and not the collection implementation, as declared in the entity mapping.</p>
+</div>
+<div id="collections-collection-proxy-example" class="exampleblock">
+<div class="title">Example 1. Hibernate uses its own collection implementations</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">@Entity(name = "Person")
+public static class Person {
+
+    @Id
+    private Long id;
+
+    @ElementCollection
+    private List&lt;String&gt; phones = new ArrayList&lt;&gt;();
+
+    public List&lt;String&gt; getPhones() {
+        return phones;
+    }
+}
+
+Person person = entityManager.find( Person.class, 1L );
+//Throws java.lang.ClassCastException: org.hibernate.collection.internal.PersistentBag cannot be cast to java.util.ArrayList
+ArrayList&lt;String&gt; phones = (ArrayList&lt;String&gt;) person.getPhones();</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>It is important that collections be defined using the appropriate Java Collections Framework interface rather than a specific implementation.
+From a theoretical perspective, this just follows good design principles.
+From a practical perspective, Hibernate (like other persistence providers) will use their own collection implementations which conform to the Java Collections Framework interfaces.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>The persistent collections injected by Hibernate behave like <code>ArrayList</code>, <code>HashSet</code>, <code>TreeSet</code>, <code>HashMap</code> or <code>TreeMap</code>, depending on the interface type.</p>
+</div>
+<div class="sect3">
+<h4 id="collections-synopsis">Collections as a value type</h4>
+<div class="paragraph">
+<p>Value and embeddable type collections have a similar behavior as simple value types because they are automatically persisted when referenced by a persistent object and automatically deleted when unreferenced.
+If a collection is passed from one persistent object to another, its elements might be moved from one table to another.</p>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Two entities cannot share a reference to the same collection instance.
+Collection-valued properties do not support null value semantics because Hibernate does not distinguish between a null collection reference and an empty collection.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect3">
+<h4 id="collections-value">Collections of value types</h4>
+<div class="paragraph">
+<p>Collections of value type include basic and embeddable types.
+Collections cannot be nested, and, when used in collections, embeddable types are not allowed to define other collections.</p>
+</div>
+<div class="paragraph">
+<p>For collections of value types, JPA 2.0 defines the <code>@ElementCollection</code> annotation.
+The lifecycle of the value-type collection is entirely controlled by its owning entity.</p>
+</div>
+<div class="paragraph">
+<p>Considering the previous example mapping, when clearing the phone collection, Hibernate deletes all the associated phones.
+When adding a new element to the value type collection, Hibernate issues a new insert statement.</p>
+</div>
+<div id="collections-value-type-collection-lifecycle-example" class="exampleblock">
+<div class="title">Example 2. Value type collection lifecycle</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">person.getPhones().clear();
+person.getPhones().add( "123-456-7890" );
+person.getPhones().add( "456-000-1234" );</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-sql" data-lang="sql">DELETE FROM Person_phones WHERE   Person_id = 1
+
+INSERT INTO Person_phones ( Person_id, phones )
+VALUES ( 1, '123-456-7890' )
+
+INSERT INTO Person_phones  (Person_id, phones)
+VALUES  ( 1, '456-000-1234' )</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>If removing all elements or adding new ones is rather straightforward, removing a certain entry actually requires reconstructing the whole collection from scratch.</p>
+</div>
+<div id="collections-value-type-collection-remove-example" class="exampleblock">
+<div class="title">Example 3. Removing collection elements</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">person.getPhones().remove( 0 );</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-sql" data-lang="sql">DELETE FROM Person_phones WHERE Person_id = 1
+
+INSERT INTO Person_phones ( Person_id, phones )
+VALUES ( 1, '456-000-1234' )</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Depending on the number of elements, this behavior might not be efficient, if many elements need to be deleted and reinserted back into the database table.
+A workaround is to use an <code>@OrderColumn</code>, which, although not as efficient as when using the actual link table primary key, might improve the efficiency of the remove operations.</p>
+</div>
+<div id="collections-value-type-collection-order-column-remove-example" class="exampleblock">
+<div class="title">Example 4. Removing collection elements using the order column</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">@ElementCollection
+@OrderColumn(name = "order_id")
+private List&lt;String&gt; phones = new ArrayList&lt;&gt;();
+
+person.getPhones().remove( 0 );</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-sql" data-lang="sql">DELETE FROM Person_phones
+WHERE  Person_id = 1
+       AND order_id = 1
+
+UPDATE Person_phones
+SET    phones = '456-000-1234'
+WHERE  Person_id = 1
+       AND order_id = 0</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>The <code>@OrderColumn</code> column works best when removing from the tail of the collection, as it only requires a single delete statement.
+Removing from the head or the middle of the collection requires deleting the extra elements and updating the remaining ones to preserve element order.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Embeddable type collections behave the same way as value type collections.
+Adding embeddables to the collection triggers the associated insert statements and removing elements from the collection will generate delete statements.</p>
+</div>
+<div id="collections-embeddable-type-collection-lifecycle-example" class="exampleblock">
+<div class="title">Example 5. Embeddable type collections</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">@Entity(name = "Person")
+public static class Person {
+
+    @Id
+    private Long id;
+
+    @ElementCollection
+    private List&lt;Phone&gt; phones = new ArrayList&lt;&gt;();
+
+    public List&lt;Phone&gt; getPhones() {
+        return phones;
+    }
+}
+
+@Embeddable
+public static class Phone {
+
+    private String type;
+
+    @Column(name = "`number`")
+    private String number;
+
+    public Phone() {
+    }
+
+    public Phone(String type, String number) {
+        this.type = type;
+        this.number = number;
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    public String getNumber() {
+        return number;
+    }
+}
+
+person.getPhones().add( new Phone( "landline", "028-234-9876" ) );
+person.getPhones().add( new Phone( "mobile", "072-122-9876" ) );</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-sql" data-lang="sql">INSERT INTO Person_phones ( Person_id, number, type )
+VALUES ( 1, '028-234-9876', 'landline' )
+
+INSERT INTO Person_phones ( Person_id, number, type )
+VALUES ( 1, '072-122-9876', 'mobile' )</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="collections-entity">Collections of entities</h4>
+<div class="paragraph">
+<p>If value type collections can only form a one-to-many association between an owner entity and multiple basic or embeddable types,
+entity collections can represent both <a href="chapters/domain/associations.html#associations-one-to-many">@OneToMany</a> and <a href="chapters/domain/associations.html#associations-many-to-many">@ManyToMany</a> associations.</p>
+</div>
+<div class="paragraph">
+<p>From a relational database perspective, associations are defined by the foreign key side (the child-side).
+With value type collections, only the entity can control the association (the parent-side), but for a collection of entities, both sides of the association are managed by the persistence context.</p>
+</div>
+<div class="paragraph">
+<p>For this reason, entity collections can be devised into two main categories: unidirectional and bidirectional associations.
+Unidirectional associations are very similar to value type collections since only the parent side controls this relationship.
+Bidirectional associations are more tricky since, even if sides need to be in-sync at all times, only one side is responsible for managing the association.
+A bidirectional association has an <em>owning</em> side and an <em>inverse (mappedBy)</em> side.</p>
+</div>
+<div class="paragraph">
+<p>Another way of categorizing entity collections is by the underlying collection type, and so we can have:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>bags</p>
+</li>
+<li>
+<p>indexed lists</p>
+</li>
+<li>
+<p>sets</p>
+</li>
+<li>
+<p>sorted sets</p>
+</li>
+<li>
+<p>maps</p>
+</li>
+<li>
+<p>sorted maps</p>
+</li>
+<li>
+<p>arrays</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>In the following sections, we will go through all these collection types and discuss both unidirectional and bidirectional associations.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="collections-bag">Bags</h4>
+<div class="paragraph">
+<p>Bags are unordered lists and we can have unidirectional bags or bidirectional ones.</p>
+</div>
+<div class="sect4">
+<h5 id="collections-unidirectional-bag">Unidirectional bags</h5>
+<div class="paragraph">
+<p>The unidirectional bag is mapped using a single <code>@OneToMany</code> annotation on the parent side of the association.
+Behind the scenes, Hibernate requires an association table to manage the parent-child relationship, as we can see in the following example:</p>
+</div>
+<div id="collections-unidirectional-bag-example" class="exampleblock">
+<div class="title">Example 6. Unidirectional bag</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">@Entity(name = "Person")
+public static class Person {
+
+    @Id
+    private Long id;
+    @OneToMany(cascade = CascadeType.ALL)
+    private List&lt;Phone&gt; phones = new ArrayList&lt;&gt;();
+
+    public Person() {
+    }
+
+    public Person(Long id) {
+        this.id = id;
+    }
+
+    public List&lt;Phone&gt; getPhones() {
+        return phones;
+    }
+}
+
+@Entity(name = "Phone")
+public static class Phone {
+
+    @Id
+    private Long id;
+
+    private String type;
+
+    @Column(name = "`number`")
+    private String number;
+
+    public Phone() {
+    }
+
+    public Phone(Long id, String type, String number) {
+        this.id = id;
+        this.type = type;
+        this.number = number;
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    public String getNumber() {
+        return number;
+    }
+}</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-sql" data-lang="sql">CREATE TABLE Person (
+    id BIGINT NOT NULL ,
+    PRIMARY KEY ( id )
+)
+
+CREATE TABLE Person_Phone (
+    Person_id BIGINT NOT NULL ,
+    phones_id BIGINT NOT NULL
+)
+
+CREATE TABLE Phone (
+    id BIGINT NOT NULL ,
+    number VARCHAR(255) ,
+    type VARCHAR(255) ,
+    PRIMARY KEY ( id )
+)
+
+ALTER TABLE Person_Phone
+ADD CONSTRAINT UK_9uhc5itwc9h5gcng944pcaslf
+UNIQUE (phones_id)
+
+ALTER TABLE Person_Phone
+ADD CONSTRAINT FKr38us2n8g5p9rj0b494sd3391
+FOREIGN KEY (phones_id) REFERENCES Phone
+
+ALTER TABLE Person_Phone
+ADD CONSTRAINT FK2ex4e4p7w1cj310kg2woisjl2
+FOREIGN KEY (Person_id) REFERENCES Person</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Because both the parent and the child sides are entities, the persistence context manages each entity separately.
+Cascades can propagate an entity state transition from a parent entity to its children.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>By marking the parent side with the <code>CascadeType.ALL</code> attribute, the unidirectional association lifecycle becomes very similar to that of a value type collection.</p>
+</div>
+<div id="collections-unidirectional-bag-lifecycle-example" class="exampleblock">
+<div class="title">Example 7. Unidirectional bag lifecycle</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">Person person = new Person( 1L );
+person.getPhones().add( new Phone( 1L, "landline", "028-234-9876" ) );
+person.getPhones().add( new Phone( 2L, "mobile", "072-122-9876" ) );
+entityManager.persist( person );</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-sql" data-lang="sql">INSERT INTO Person ( id )
+VALUES ( 1 )
+
+INSERT INTO Phone ( number, type, id )
+VALUES ( '028-234-9876', 'landline', 1 )
+
+INSERT INTO Phone ( number, type, id )
+VALUES ( '072-122-9876', 'mobile', 2 )
+
+INSERT INTO Person_Phone ( Person_id, phones_id )
+VALUES ( 1, 1 )
+
+INSERT INTO Person_Phone ( Person_id, phones_id )
+VALUES ( 1, 2 )</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>In the example above, once the parent entity is persisted, the child entities are going to be persisted as well.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Just like value type collections, unidirectional bags are not as efficient when it comes to modifying the collection structure (removing or reshuffling elements).
+Because the parent-side cannot uniquely identify each individual child, Hibernate might delete all child table rows associated with the parent entity and re-add them according to the current collection state.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect4">
+<h5 id="collections-bidirectional-bag">Bidirectional bags</h5>
+<div class="paragraph">
+<p>The bidirectional bag is the most common type of entity collection.
+The <code>@ManyToOne</code> side is the owning side of the bidirectional bag association, while the <code>@OneToMany</code> is the <em>inverse</em> side, being marked with the <code>mappedBy</code> attribute.</p>
+</div>
+<div id="collections-bidirectional-bag-example" class="exampleblock">
+<div class="title">Example 8. Bidirectional bag</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">@Entity(name = "Person")
+public static class Person {
+
+    @Id
+    private Long id;
+    @OneToMany(mappedBy = "person", cascade = CascadeType.ALL)
+    private List&lt;Phone&gt; phones = new ArrayList&lt;&gt;();
+
+    public Person() {
+    }
+
+    public Person(Long id) {
+        this.id = id;
+    }
+
+    public List&lt;Phone&gt; getPhones() {
+        return phones;
+    }
+
+    public void addPhone(Phone phone) {
+        phones.add( phone );
+        phone.setPerson( this );
+    }
+
+    public void removePhone(Phone phone) {
+        phones.remove( phone );
+        phone.setPerson( null );
+    }
+}
+
+@Entity(name = "Phone")
+public static class Phone {
+
+    @Id
+    private Long id;
+
+    private String type;
+
+    @Column(name = "`number`", unique = true)
+    @NaturalId
+    private String number;
+
+    @ManyToOne
+    private Person person;
+
+    public Phone() {
+    }
+
+    public Phone(Long id, String type, String number) {
+        this.id = id;
+        this.type = type;
+        this.number = number;
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    public String getNumber() {
+        return number;
+    }
+
+    public Person getPerson() {
+        return person;
+    }
+
+    public void setPerson(Person person) {
+        this.person = person;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if ( this == o ) {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() ) {
+            return false;
+        }
+        Phone phone = (Phone) o;
+        return Objects.equals( number, phone.number );
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash( number );
+    }
+}</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-sql" data-lang="sql">CREATE TABLE Person (
+    id BIGINT NOT NULL, PRIMARY KEY (id)
+)
+
+CREATE TABLE Phone (
+    id BIGINT NOT NULL,
+    number VARCHAR(255),
+    type VARCHAR(255),
+    person_id BIGINT,
+    PRIMARY KEY (id)
+)
+
+ALTER TABLE Phone
+ADD CONSTRAINT UK_l329ab0g4c1t78onljnxmbnp6
+UNIQUE (number)
+
+ALTER TABLE Phone
+ADD CONSTRAINT FKmw13yfsjypiiq0i1osdkaeqpg
+FOREIGN KEy (person_id) REFERENCES Person</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div id="collections-bidirectional-bag-lifecycle-example" class="exampleblock">
+<div class="title">Example 9. Bidirectional bag lifecycle</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">person.addPhone( new Phone( 1L, "landline", "028-234-9876" ) );
+person.addPhone( new Phone( 2L, "mobile", "072-122-9876" ) );
+entityManager.flush();
+person.removePhone( person.getPhones().get( 0 ) );</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-sql" data-lang="sql">INSERT INTO Phone (number, person_id, type, id)
+VALUES ( '028-234-9876', 1, 'landline', 1 )
+
+INSERT INTO Phone (number, person_id, type, id)
+VALUES ( '072-122-9876', 1, 'mobile', 2 )
+
+UPDATE Phone
+SET person_id = NULL, type = 'landline' where id = 1</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div id="collections-bidirectional-bag-orphan-removal-example" class="exampleblock">
+<div class="title">Example 10. Bidirectional bag with orphan removal</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">@OneToMany(mappedBy = "person", cascade = CascadeType.ALL, orphanRemoval = true)
+private List&lt;Phone&gt; phones = new ArrayList&lt;&gt;();</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-sql" data-lang="sql">DELETE FROM Phone WHERE id = 1</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>When rerunning the previous example, the child will get removed because the parent-side propagates the removal upon disassociating the child entity reference.</p>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="collections-list">Ordered Lists</h4>
+<div class="paragraph">
+<p>Although they use the <code>List</code> interface on the Java side, bags don&#8217;t retain element order.
+To preserve the collection element order, there are two possibilities:</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><code>@OrderBy</code></dt>
+<dd>
+<p>the collection is ordered upon retrieval using a child entity property</p>
+</dd>
+<dt class="hdlist1"><code>@OrderColumn</code></dt>
+<dd>
+<p>the collection uses a dedicated order column in the collection link table</p>
+</dd>
+</dl>
+</div>
+<div class="sect4">
+<h5 id="collections-unidirectional-ordered-list">Unidirectional ordered lists</h5>
+<div class="paragraph">
+<p>When using the <code>@OrderBy</code> annotation, the mapping looks as follows:</p>
+</div>
+<div id="collections-unidirectional-ordered-list-order-by-example" class="exampleblock">
+<div class="title">Example 11. Unidirectional <code>@OrderBy</code> list</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">@Entity(name = "Person")
+public static class Person {
+
+    @Id
+    private Long id;
+    @OneToMany(cascade = CascadeType.ALL)
+    @OrderBy("number")
+    private List&lt;Phone&gt; phones = new ArrayList&lt;&gt;();
+
+    public Person() {
+    }
+
+    public Person(Long id) {
+        this.id = id;
+    }
+
+    public List&lt;Phone&gt; getPhones() {
+        return phones;
+    }
+}
+
+@Entity(name = "Phone")
+public static class Phone {
+
+    @Id
+    private Long id;
+
+    private String type;
+
+    @Column(name = "`number`")
+    private String number;
+
+    public Phone() {
+    }
+
+    public Phone(Long id, String type, String number) {
+        this.id = id;
+        this.type = type;
+        this.number = number;
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    public String getNumber() {
+        return number;
+    }
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>The database mapping is the same as with the <a href="#collections-unidirectional-bag">Unidirectional bags</a> example, so it won&#8217;t be repeated.
+Upon fetching the collection, Hibernate generates the following select statement:</p>
+</div>
+<div id="collections-unidirectional-ordered-list-order-by-select-example" class="exampleblock">
+<div class="title">Example 12. Unidirectional <code>@OrderBy</code> list select statement</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-sql" data-lang="sql">SELECT
+   phones0_.Person_id AS Person_i1_1_0_,
+   phones0_.phones_id AS phones_i2_1_0_,
+   unidirecti1_.id AS id1_2_1_,
+   unidirecti1_."number" AS number2_2_1_,
+   unidirecti1_.type AS type3_2_1_
+FROM
+   Person_Phone phones0_
+INNER JOIN
+   Phone unidirecti1_ ON phones0_.phones_id=unidirecti1_.id
+WHERE
+   phones0_.Person_id = 1
+ORDER BY
+   unidirecti1_."number"</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>The child table column is used to order the list elements.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>The <code>@OrderBy</code> annotation can take multiple entity properties, and each property can take an ordering direction too (e.g. <code>@OrderBy("name ASC, type DESC")</code>).</p>
+</div>
+<div class="paragraph">
+<p>If no property is specified (e.g. <code>@OrderBy</code>), the primary key of the child entity table is used for ordering.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Another ordering option is to use the <code>@OrderColumn</code> annotation:</p>
+</div>
+<div id="collections-unidirectional-ordered-list-order-column-example" class="exampleblock">
+<div class="title">Example 13. Unidirectional <code>@OrderColumn</code> list</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">@OneToMany(cascade = CascadeType.ALL)
+@OrderColumn(name = "order_id")
+private List&lt;Phone&gt; phones = new ArrayList&lt;&gt;();</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-sql" data-lang="sql">CREATE TABLE Person_Phone (
+    Person_id BIGINT NOT NULL ,
+    phones_id BIGINT NOT NULL ,
+    order_id INTEGER NOT NULL ,
+    PRIMARY KEY ( Person_id, order_id )
+)</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>This time, the link table takes the <code>order_id</code> column and uses it to materialize the collection element order.
+When fetching the list, the following select query is executed:</p>
+</div>
+<div id="collections-unidirectional-ordered-list-order-column-select-example" class="exampleblock">
+<div class="title">Example 14. Unidirectional <code>@OrderColumn</code> list select statement</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-sql" data-lang="sql">select
+   phones0_.Person_id as Person_i1_1_0_,
+   phones0_.phones_id as phones_i2_1_0_,
+   phones0_.order_id as order_id3_0_,
+   unidirecti1_.id as id1_2_1_,
+   unidirecti1_.number as number2_2_1_,
+   unidirecti1_.type as type3_2_1_
+from
+   Person_Phone phones0_
+inner join
+   Phone unidirecti1_
+      on phones0_.phones_id=unidirecti1_.id
+where
+   phones0_.Person_id = 1</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>With the <code>order_id</code> column in place, Hibernate can order the list in-memory after it&#8217;s being fetched from the database.</p>
+</div>
+</div>
+<div class="sect4">
+<h5 id="collections-bidirectional-ordered-list">Bidirectional ordered lists</h5>
+<div class="paragraph">
+<p>The mapping is similar with the <a href="#collections-bidirectional-bag">Bidirectional bags</a> example, just that the parent side is going to be annotated with either <code>@OrderBy</code> or <code>@OrderColumn</code>.</p>
+</div>
+<div id="collections-bidirectional-ordered-list-order-by-example" class="exampleblock">
+<div class="title">Example 15. Bidirectional <code>@OrderBy</code> list</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">@OneToMany(mappedBy = "person", cascade = CascadeType.ALL)
+@OrderBy("number")
+private List&lt;Phone&gt; phones = new ArrayList&lt;&gt;();</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Just like with the unidirectional <code>@OrderBy</code> list, the <code>number</code> column is used to order the statement on the SQL level.</p>
+</div>
+<div class="paragraph">
+<p>When using the <code>@OrderColumn</code> annotation, the <code>order_id</code> column is going to be embedded in the child table:</p>
+</div>
+<div id="collections-bidirectional-ordered-list-order-column-example" class="exampleblock">
+<div class="title">Example 16. Bidirectional <code>@OrderColumn</code> list</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">@OneToMany(mappedBy = "person", cascade = CascadeType.ALL)
+@OrderColumn(name = "order_id")
+private List&lt;Phone&gt; phones = new ArrayList&lt;&gt;();</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-sql" data-lang="sql">CREATE TABLE Phone (
+    id BIGINT NOT NULL ,
+    number VARCHAR(255) ,
+    type VARCHAR(255) ,
+    person_id BIGINT ,
+    order_id INTEGER ,
+    PRIMARY KEY ( id )
+)</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>When fetching the collection, Hibernate will use the fetched ordered columns to sort the elements according to the <code>@OrderColumn</code> mapping.</p>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="collections-set">Sets</h4>
+<div class="paragraph">
+<p>Sets are collections that don&#8217;t allow duplicate entries and Hibernate supports both the unordered <code>Set</code> and the natural-ordering <code>SortedSet</code>.</p>
+</div>
+<div class="sect4">
+<h5 id="collections-unidirectional-set">Unidirectional sets</h5>
+<div class="paragraph">
+<p>The unidirectional set uses a link table to hold the parent-child associations and the entity mapping looks as follows:</p>
+</div>
+<div id="collections-unidirectional-set-example" class="exampleblock">
+<div class="title">Example 17. Unidirectional set</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">@Entity(name = "Person")
+public static class Person {
+
+    @Id
+    private Long id;
+    @OneToMany(cascade = CascadeType.ALL)
+    private Set&lt;Phone&gt; phones = new HashSet&lt;&gt;();
+
+    public Person() {
+    }
+
+    public Person(Long id) {
+        this.id = id;
+    }
+
+    public Set&lt;Phone&gt; getPhones() {
+        return phones;
+    }
+}
+
+@Entity(name = "Phone")
+public static class Phone {
+
+    @Id
+    private Long id;
+
+    private String type;
+
+    @NaturalId
+    @Column(name = "`number`")
+    private String number;
+
+    public Phone() {
+    }
+
+    public Phone(Long id, String type, String number) {
+        this.id = id;
+        this.type = type;
+        this.number = number;
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    public String getNumber() {
+        return number;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if ( this == o ) {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() ) {
+            return false;
+        }
+        Phone phone = (Phone) o;
+        return Objects.equals( number, phone.number );
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash( number );
+    }
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>The unidirectional set lifecycle is similar to that of the <a href="#collections-unidirectional-bag">Unidirectional bags</a>, so it can be omitted.
+The only difference is that <code>Set</code> doesn&#8217;t allow duplicates, but this constraint is enforced by the Java object contract rather then the database mapping.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>When using sets, it&#8217;s very important to supply proper equals/hashCode implementations for child entities.
+In the absence of a custom equals/hashCode implementation logic, Hibernate will use the default Java reference-based object equality which might render unexpected results when mixing detached and managed object instances.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect4">
+<h5 id="collections-bidirectional-set">Bidirectional sets</h5>
+<div class="paragraph">
+<p>Just like bidirectional bags, the bidirectional set doesn&#8217;t use a link table, and the child table has a foreign key referencing the parent table primary key.
+The lifecycle is just like with bidirectional bags except for the duplicates which are filtered out.</p>
+</div>
+<div id="collections-bidirectional-set-example" class="exampleblock">
+<div class="title">Example 18. Bidirectional set</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">@Entity(name = "Person")
+public static class Person {
+
+    @Id
+    private Long id;
+
+    @OneToMany(mappedBy = "person", cascade = CascadeType.ALL)
+    private Set&lt;Phone&gt; phones = new HashSet&lt;&gt;();
+
+    public Person() {
+    }
+
+    public Person(Long id) {
+        this.id = id;
+    }
+
+    public Set&lt;Phone&gt; getPhones() {
+        return phones;
+    }
+
+    public void addPhone(Phone phone) {
+        phones.add( phone );
+        phone.setPerson( this );
+    }
+
+    public void removePhone(Phone phone) {
+        phones.remove( phone );
+        phone.setPerson( null );
+    }
+}
+
+@Entity(name = "Phone")
+public static class Phone {
+
+    @Id
+    private Long id;
+
+    private String type;
+
+    @Column(name = "`number`", unique = true)
+    @NaturalId
+    private String number;
+
+    @ManyToOne
+    private Person person;
+
+    public Phone() {
+    }
+
+    public Phone(Long id, String type, String number) {
+        this.id = id;
+        this.type = type;
+        this.number = number;
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    public String getNumber() {
+        return number;
+    }
+
+    public Person getPerson() {
+        return person;
+    }
+
+    public void setPerson(Person person) {
+        this.person = person;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if ( this == o ) {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() ) {
+            return false;
+        }
+        Phone phone = (Phone) o;
+        return Objects.equals( number, phone.number );
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash( number );
+    }
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="collections-sorted-set">Sorted sets</h4>
+<div class="paragraph">
+<p>For sorted sets, the entity mapping must use the <code>SortedSet</code> interface instead.
+According to the <code>SortedSet</code> contract, all elements must implement the comparable interface and therefore provide the sorting logic.</p>
+</div>
+<div class="sect4">
+<h5 id="collections-unidirectional-sorted-set">Unidirectional sorted sets</h5>
+<div class="paragraph">
+<p>A <code>SortedSet</code> that relies on the natural sorting order given by the child element <code>Comparable</code> implementation logic must be annotated with the <code>@SortNatural</code> Hibernate annotation.</p>
+</div>
+<div id="collections-unidirectional-sorted-set-natural-comparator-example" class="exampleblock">
+<div class="title">Example 19. Unidirectional natural sorted set</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">@Entity(name = "Person")
+public static class Person {
+
+    @Id
+    private Long id;
+    @OneToMany(cascade = CascadeType.ALL)
+    @SortNatural
+    private SortedSet&lt;Phone&gt; phones = new TreeSet&lt;&gt;();
+
+    public Person() {
+    }
+
+    public Person(Long id) {
+        this.id = id;
+    }
+
+    public Set&lt;Phone&gt; getPhones() {
+        return phones;
+    }
+}
+
+@Entity(name = "Phone")
+public static class Phone implements Comparable&lt;Phone&gt; {
+
+    @Id
+    private Long id;
+
+    private String type;
+
+    @NaturalId
+    @Column(name = "`number`")
+    private String number;
+
+    public Phone() {
+    }
+
+    public Phone(Long id, String type, String number) {
+        this.id = id;
+        this.type = type;
+        this.number = number;
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    public String getNumber() {
+        return number;
+    }
+
+    @Override
+    public int compareTo(Phone o) {
+        return number.compareTo( o.getNumber() );
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if ( this == o ) {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() ) {
+            return false;
+        }
+        Phone phone = (Phone) o;
+        return Objects.equals( number, phone.number );
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash( number );
+    }
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>The lifecycle and the database mapping are identical to the <a href="#collections-unidirectional-bag">Unidirectional bags</a>, so they are intentionally omitted.</p>
+</div>
+<div class="paragraph">
+<p>To provide a custom sorting logic, Hibernate also provides a <code>@SortComparator</code> annotation:</p>
+</div>
+<div id="collections-unidirectional-sorted-set-custom-comparator-example" class="exampleblock">
+<div class="title">Example 20. Unidirectional custom comparator sorted set</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">@Entity(name = "Person")
+public static class Person {
+
+    @Id
+    private Long id;
+
+    @OneToMany(cascade = CascadeType.ALL)
+    @SortComparator(ReverseComparator.class)
+    private SortedSet&lt;Phone&gt; phones = new TreeSet&lt;&gt;();
+
+    public Person() {
+    }
+
+    public Person(Long id) {
+        this.id = id;
+    }
+
+    public Set&lt;Phone&gt; getPhones() {
+        return phones;
+    }
+}
+
+public static class ReverseComparator implements Comparator&lt;Phone&gt; {
+    @Override
+    public int compare(Phone o1, Phone o2) {
+        return o2.compareTo( o1 );
+    }
+}
+
+@Entity(name = "Phone")
+public static class Phone implements Comparable&lt;Phone&gt; {
+
+    @Id
+    private Long id;
+
+    private String type;
+
+    @NaturalId
+    @Column(name = "`number`")
+    private String number;
+
+    public Phone() {
+    }
+
+    public Phone(Long id, String type, String number) {
+        this.id = id;
+        this.type = type;
+        this.number = number;
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    public String getNumber() {
+        return number;
+    }
+
+    @Override
+    public int compareTo(Phone o) {
+        return number.compareTo( o.getNumber() );
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if ( this == o ) {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() ) {
+            return false;
+        }
+        Phone phone = (Phone) o;
+        return Objects.equals( number, phone.number );
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash( number );
+    }
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect4">
+<h5 id="collections-bidirectional-sorted-set">Bidirectional sorted sets</h5>
+<div class="paragraph">
+<p>The <code>@SortNatural</code> and <code>@SortComparator</code> work the same for bidirectional sorted sets too:</p>
+</div>
+<div id="collections-bidirectional-sorted-set-example" class="exampleblock">
+<div class="title">Example 21. Bidirectional natural sorted set</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">@OneToMany(mappedBy = "person", cascade = CascadeType.ALL)
+@SortNatural
+private SortedSet&lt;Phone&gt; phones = new TreeSet&lt;&gt;();
+
+
+@OneToMany(cascade = CascadeType.ALL)
+@SortComparator(ReverseComparator.class)</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="collections-map">Maps</h4>
+<div class="paragraph">
+<p>A <code>java.util.Map</code> is ternary association because it required a parent entity a map key and a value.
+An entity can either be a map key or a map value, depending on the mapping.
+Hibernate allows using the following map keys:</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><code>MapKeyColumn</code></dt>
+<dd>
+<p>for value type maps, the map key is a column in the link table that defines the grouping logic</p>
+</dd>
+<dt class="hdlist1"><code>MapKey</code></dt>
+<dd>
+<p>the map key is either the primary key or another property of the entity stored as a map entry value</p>
+</dd>
+<dt class="hdlist1"><code>MapKeyEnumerated</code></dt>
+<dd>
+<p>the map key is an <code>Enum</code> of the target child entity</p>
+</dd>
+<dt class="hdlist1"><code>MapKeyTemporal</code></dt>
+<dd>
+<p>the map key is a <code>Date</code> or a <code>Calendar</code> of the target child entity</p>
+</dd>
+<dt class="hdlist1"><code>MapKeyJoinColumn</code></dt>
+<dd>
+<p>the map key is an entity mapped as an association in the child entity that&#8217;s stored as a map entry key</p>
+</dd>
+</dl>
+</div>
+<div class="sect4">
+<h5 id="collections-map-value-type">Value type maps</h5>
+<div class="paragraph">
+<p>A map of value type must use the <code>@ElementCollection</code> annotation, just like value type lists, bags or sets.</p>
+</div>
+<div id="collections-map-value-type-entity-key-example" class="exampleblock">
+<div class="title">Example 22. Value type map with an entity as a map key</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">public enum PhoneType {
+    LAND_LINE,
+    MOBILE
+}
+
+@Entity(name = "Person")
+public static class Person {
+
+    @Id
+    private Long id;
+    @Temporal(TemporalType.TIMESTAMP)
+    @ElementCollection
+    @CollectionTable(name = "phone_register")
+    @Column(name = "since")
+    @MapKeyJoinColumn(name = "phone_id", referencedColumnName = "id")
+    private Map&lt;Phone, Date&gt; phoneRegister = new HashMap&lt;&gt;();
+
+    public Person() {
+    }
+
+    public Person(Long id) {
+        this.id = id;
+    }
+
+    public Map&lt;Phone, Date&gt; getPhoneRegister() {
+        return phoneRegister;
+    }
+}
+
+@Embeddable
+public static class Phone {
+
+    private PhoneType type;
+
+    @Column(name = "`number`")
+    private String number;
+
+    public Phone() {
+    }
+
+    public Phone(PhoneType type, String number) {
+        this.type = type;
+        this.number = number;
+    }
+
+    public PhoneType getType() {
+        return type;
+    }
+
+    public String getNumber() {
+        return number;
+    }
+}</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-sql" data-lang="sql">CREATE TABLE Person (
+    id BIGINT NOT NULL ,
+    PRIMARY KEY ( id )
+)
+
+CREATE TABLE phone_register (
+    Person_id BIGINT NOT NULL ,
+    since TIMESTAMP ,
+    number VARCHAR(255) NOT NULL ,
+    type INTEGER NOT NULL ,
+    PRIMARY KEY ( Person_id, number, type )
+)
+
+ALTER TABLE phone_register
+ADD CONSTRAINT FKrmcsa34hr68of2rq8qf526mlk
+FOREIGN KEY (Person_id) REFERENCES Person</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Adding entries to the map generates the following SQL statements:</p>
+</div>
+<div id="collections-map-value-type-entity-key-add-example" class="exampleblock">
+<div class="title">Example 23. Adding value type map entries</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">person.getPhoneRegister().put(
+    new Phone( PhoneType.LAND_LINE, "028-234-9876" ), new Date()
+);
+person.getPhoneRegister().put(
+    new Phone( PhoneType.MOBILE, "072-122-9876" ), new Date()
+);</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-sql" data-lang="sql">INSERT INTO phone_register (Person_id, number, type, since)
+VALUES (1, '072-122-9876', 1, '2015-12-15 17:16:45.311')
+
+INSERT INTO phone_register (Person_id, number, type, since)
+VALUES (1, '028-234-9876', 0, '2015-12-15 17:16:45.311')</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect4">
+<h5 id="collections-map-unidirectional">Unidirectional maps</h5>
+<div class="paragraph">
+<p>A unidirectional map exposes a parent-child association from the parent-side only.
+The following example shows a unidirectional map which also uses a <code>@MapKeyTemporal</code> annotation.
+The map key is a timestamp and it&#8217;s taken from the child entity table.</p>
+</div>
+<div id="collections-map-unidirectional-example" class="exampleblock">
+<div class="title">Example 24. Unidirectional Map</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">public enum PhoneType {
+    LAND_LINE,
+    MOBILE
+}
+
+@Entity(name = "Person")
+public static class Person {
+
+    @Id
+    private Long id;
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinTable(
+            name = "phone_register",
+            joinColumns = @JoinColumn(name = "phone_id"),
+            inverseJoinColumns = @JoinColumn(name = "person_id"))
+    @MapKey(name = "since")
+    @MapKeyTemporal(TemporalType.TIMESTAMP)
+    private Map&lt;Date, Phone&gt; phoneRegister = new HashMap&lt;&gt;();
+
+    public Person() {
+    }
+
+    public Person(Long id) {
+        this.id = id;
+    }
+
+    public Map&lt;Date, Phone&gt; getPhoneRegister() {
+        return phoneRegister;
+    }
+
+    public void addPhone(Phone phone) {
+        phoneRegister.put( phone.getSince(), phone );
+    }
+}
+
+@Entity(name = "Phone")
+public static class Phone {
+
+    @Id
+    @GeneratedValue
+    private Long id;
+
+    private PhoneType type;
+
+    @Column(name = "`number`")
+    private String number;
+
+    private Date since;
+
+    public Phone() {
+    }
+
+    public Phone(PhoneType type, String number, Date since) {
+        this.type = type;
+        this.number = number;
+        this.since = since;
+    }
+
+    public PhoneType getType() {
+        return type;
+    }
+
+    public String getNumber() {
+        return number;
+    }
+
+    public Date getSince() {
+        return since;
+    }
+}</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-sql" data-lang="sql">CREATE TABLE Person (
+    id BIGINT NOT NULL ,
+    PRIMARY KEY ( id )
+)
+
+CREATE TABLE Phone (
+    id BIGINT NOT NULL ,
+    number VARCHAR(255) ,
+    since TIMESTAMP ,
+    type INTEGER ,
+    PRIMARY KEY ( id )
+)
+
+CREATE TABLE phone_register (
+    phone_id BIGINT NOT NULL ,
+    person_id BIGINT NOT NULL ,
+    PRIMARY KEY ( phone_id, person_id )
+)
+
+ALTER TABLE phone_register
+ADD CONSTRAINT FKc3jajlx41lw6clbygbw8wm65w
+FOREIGN KEY (person_id) REFERENCES Phone
+
+ALTER TABLE phone_register
+ADD CONSTRAINT FK6npoomh1rp660o1b55py9ndw4
+FOREIGN KEY (phone_id) REFERENCES Person</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect4">
+<h5 id="collections-map-bidirectional">Bidirectional maps</h5>
+<div class="paragraph">
+<p>Like most bidirectional associations, this relationship is owned by the child-side while the parent is the inverse side abd can propagate its own state transitions to the child entities.
+In the following example, you can see that <code>@MapKeyEnumerated</code> was used so that the <code>Phone</code> enumeration becomes the map key.</p>
+</div>
+<div id="collections-map-bidirectional-example" class="exampleblock">
+<div class="title">Example 25. Bidirectional Map</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">@Entity(name = "Person")
+public static class Person {
+
+    @Id
+    private Long id;
+    @OneToMany(mappedBy = "person", cascade = CascadeType.ALL, orphanRemoval = true)
+    @MapKey(name = "type")
+    @MapKeyEnumerated
+    private Map&lt;PhoneType, Phone&gt; phoneRegister = new HashMap&lt;&gt;();
+
+    public Person() {
+    }
+
+    public Person(Long id) {
+        this.id = id;
+    }
+
+    public Map&lt;PhoneType, Phone&gt; getPhoneRegister() {
+        return phoneRegister;
+    }
+
+    public void addPhone(Phone phone) {
+        phone.setPerson( this );
+        phoneRegister.put( phone.getType(), phone );
+    }
+}
+
+@Entity(name = "Phone")
+public static class Phone {
+
+    @Id
+    @GeneratedValue
+    private Long id;
+
+    private PhoneType type;
+
+    @Column(name = "`number`")
+    private String number;
+
+    private Date since;
+
+    @ManyToOne
+    private Person person;
+
+    public Phone() {
+    }
+
+    public Phone(PhoneType type, String number, Date since) {
+        this.type = type;
+        this.number = number;
+        this.since = since;
+    }
+
+    public PhoneType getType() {
+        return type;
+    }
+
+    public String getNumber() {
+        return number;
+    }
+
+    public Date getSince() {
+        return since;
+    }
+
+    public Person getPerson() {
+        return person;
+    }
+
+    public void setPerson(Person person) {
+        this.person = person;
+    }
+}</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-sql" data-lang="sql">CREATE TABLE Person (
+    id BIGINT NOT NULL ,
+    PRIMARY KEY ( id )
+)
+
+CREATE TABLE Phone (
+    id BIGINT NOT NULL ,
+    number VARCHAR(255) ,
+    since TIMESTAMP ,
+    type INTEGER ,
+    person_id BIGINT ,
+    PRIMARY KEY ( id )
+)
+
+ALTER TABLE Phone
+ADD CONSTRAINT FKmw13yfsjypiiq0i1osdkaeqpg
+FOREIGN KEY (person_id) REFERENCES Person</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="collections-array">Arrays</h4>
+<div class="paragraph">
+<p>When it comes to arrays, there is quite a difference between Java arrays and relational database array types (e.g. VARRAY, ARRAY).
+First, not all database systems implement the SQL-99 ARRAY type, and, for this reason, Hibernate doesn&#8217;t support native database array types.
+Second, Java arrays are relevant for basic types only since storing multiple embeddables or entities should always be done using the Java Collection API.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="collections-array-binary">Arrays as binary</h4>
+<div class="paragraph">
+<p>By default, Hibernate will choose a BINARY type, as supported by the current <code>Dialect</code>.</p>
+</div>
+<div id="collections-array-binary-example" class="exampleblock">
+<div class="title">Example 26. Binary arrays</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">@Entity(name = "Person")
+public static class Person {
+
+    @Id
+    private Long id;
+    private String[] phones;
+
+    public Person() {
+    }
+
+    public Person(Long id) {
+        this.id = id;
+    }
+
+    public String[] getPhones() {
+        return phones;
+    }
+
+    public void setPhones(String[] phones) {
+        this.phones = phones;
+    }
+}</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-sql" data-lang="sql">CREATE TABLE Person (
+    id BIGINT NOT NULL ,
+    phones VARBINARY(255) ,
+    PRIMARY KEY ( id )
+)</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="collections-as-basic">Collections as basic value type</h4>
+<div class="paragraph">
+<p>Notice how all the previous examples explicitly mark the collection attribute as either <code>ElementCollection</code>, <code>OneToMany</code> or <code>ManyToMany</code>.
+Collections not marked as such require a custom Hibernate <code>Type</code> and the collection elements must be stored in a single database column.</p>
+</div>
+<div class="paragraph">
+<p>This is sometimes beneficial. Consider a use-case such as a <code>VARCHAR</code> column that represents a delimited list/set of Strings.</p>
+</div>
+<div id="collections-comma-delimited-collection-example" class="exampleblock">
+<div class="title">Example 27. Comma delimited collection</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">@Entity(name = "Person")
+public static class Person {
+
+    @Id
+    private Long id;
+
+    @Type(type = "comma_delimited_strings")
+    private List&lt;String&gt; phones = new ArrayList&lt;&gt;();
+
+    public List&lt;String&gt; getPhones() {
+        return phones;
+    }
+}
+
+public class CommaDelimitedStringsJavaTypeDescriptor extends AbstractTypeDescriptor&lt;List&gt; {
+
+    public static final String DELIMITER = ",";
+
+    public CommaDelimitedStringsJavaTypeDescriptor() {
+        super(
+            List.class,
+            new MutableMutabilityPlan&lt;List&gt;() {
+                @Override
+                protected List deepCopyNotNull(List value) {
+                    return new ArrayList( value );
+                }
+            }
+        );
+    }
+
+    @Override
+    public String toString(List value) {
+        return ( (List&lt;String&gt;) value ).stream().collect( Collectors.joining( DELIMITER ) );
+    }
+
+    @Override
+    public List fromString(String string) {
+        List&lt;String&gt; values = new ArrayList&lt;&gt;();
+        Collections.addAll( values, string.split( DELIMITER ) );
+        return values;
+    }
+
+    @Override
+    public &lt;X&gt; X unwrap(List value, Class&lt;X&gt; type, WrapperOptions options) {
+        return (X) toString( value );
+    }
+
+    @Override
+    public &lt;X&gt; List wrap(X value, WrapperOptions options) {
+        return fromString( (String) value );
+    }
+}
+
+public class CommaDelimitedStringsType extends AbstractSingleColumnStandardBasicType&lt;List&gt; {
+
+    public CommaDelimitedStringsType() {
+        super(
+            VarcharTypeDescriptor.INSTANCE,
+            new CommaDelimitedStringsJavaTypeDescriptor()
+        );
+    }
+
+    @Override
+    public String getName() {
+        return "comma_delimited_strings";
+    }
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>The developer can use the comma-delimited collection like any other collection we&#8217;ve discussed so far and Hibernate will take care of the type transformation part.
+The collection itself behaves like any other basic value type, as its lifecycle is bound to its owner entity.</p>
+</div>
+<div id="collections-comma-delimited-collection-lifecycle-example" class="exampleblock">
+<div class="title">Example 28. Comma delimited collection lifecycle</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">person.phones.add( "027-123-4567" );
+person.phones.add( "028-234-9876" );
+session.flush();
+person.getPhones().remove( 0 );</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-sql" data-lang="sql">INSERT INTO Person ( phones, id )
+VALUES ( '027-123-4567,028-234-9876', 1 )
+
+UPDATE Person
+SET    phones = '028-234-9876'
+WHERE  id = 1</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>See the Hibernate Integrations Guide for more details on developing custom value type mappings.</p>
+</div>
+</div>
+</div>
+</div>
+<div id="footer">
+<div id="footer-text">
+Last updated 2016-10-05 09:27:39 +01:00
+</div>
+</div>
+</body>
+</html>

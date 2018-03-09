@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<!--[if IE]><meta http-equiv="X-UA-Compatible" content="IE=edge"><![endif]-->
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="generator" content="Asciidoctor 1.5.2">
+<title>JNDI</title>
+<link rel="stylesheet" href="./css/hibernate.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.2.0/css/font-awesome.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prettify/r298/prettify.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prettify/r298/prettify.min.js"></script>
+<script>document.addEventListener('DOMContentLoaded', prettyPrint)</script>
+</head>
+<body class="article">
+<div id="header">
+</div>
+<div id="content">
+<div class="sect1">
+<h2 id="jndi">JNDI</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Hibernate does optionally interact with JNDI on the application&#8217;s behalf.
+Generally, it does this when the application:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>has asked the SessionFactory be bound to JNDI</p>
+</li>
+<li>
+<p>has specified a DataSource to use by JNDI name</p>
+</li>
+<li>
+<p>is using JTA transactions and the <code>JtaPlatform</code> needs to do JNDI lookups for <code>TransactionManager</code>, <code>UserTransaction</code>, etc</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>All of these JNDI calls route through a single service whose role is <code>org.hibernate.engine.jndi.spi.JndiService</code>.
+The standard <code>JndiService</code> accepts a number of configuration settings</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><code>hibernate.jndi.class</code></dt>
+<dd>
+<p>names the javax.naming.InitialContext implementation class to use. See <a href="https://docs.oracle.com/javase/8/docs/api/javax/naming/Context.html#INITIAL_CONTEXT_FACTORY"><code>javax.naming.Context#INITIAL_CONTEXT_FACTORY</code></a></p>
+</dd>
+<dt class="hdlist1"><code>hibernate.jndi.url</code></dt>
+<dd>
+<p>names the JNDI InitialContext connection url. See <a href="https://docs.oracle.com/javase/8/docs/api/javax/naming/Context.html#PROVIDER_URL"><code>javax.naming.Context.PROVIDER_URL</code></a></p>
+</dd>
+</dl>
+</div>
+<div class="paragraph">
+<p>Any other settings prefixed with <code>hibernate.jndi.</code> will be collected and passed along to the JNDI provider.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>The standard <code>JndiService</code> assumes that all JNDI calls are relative to the same <code>InitialContext</code>.
+If your application uses multiple naming servers for whatever reason, you will need a custom <code>JndiService</code> implementation to handle those details.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+</div>
+<div id="footer">
+<div id="footer-text">
+Last updated 2016-10-05 09:27:39 +01:00
+</div>
+</div>
+</body>
+</html>

@@ -1,0 +1,1935 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<!--[if IE]><meta http-equiv="X-UA-Compatible" content="IE=edge"><![endif]-->
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="generator" content="Asciidoctor 1.5.2">
+<title>Native SQL Queries</title>
+<link rel="stylesheet" href="./css/hibernate.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.2.0/css/font-awesome.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prettify/r298/prettify.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prettify/r298/prettify.min.js"></script>
+<script>document.addEventListener('DOMContentLoaded', prettyPrint)</script>
+</head>
+<body class="article">
+<div id="header">
+</div>
+<div id="content">
+<div class="sect1">
+<h2 id="sql">Native SQL Queries</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>You may also express queries in the native SQL dialect of your database.
+This is useful if you want to utilize database specific features such as window functions, Common Table Expressions (CTE) or the <code>CONNECT BY</code> option in Oracle.
+It also provides a clean migration path from a direct SQL/JDBC based application to Hibernate/JPA.
+Hibernate also allows you to specify handwritten SQL (including stored procedures) for all create, update, delete, and retrieve operations.</p>
+</div>
+<div class="sect2">
+<h3 id="sql-jpa-query">Creating a native query using JPA</h3>
+<div class="paragraph">
+<p>Execution of native SQL queries is controlled via the <code>SQLQuery</code> interface, which is obtained by calling <code>Session.createSQLQuery()</code>.
+The following sections describe how to use this API for querying.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="sql-scalar-query">Scalar queries</h3>
+<div class="paragraph">
+<p>The most basic SQL query is to get a list of scalars (column) values.</p>
+</div>
+<div id="sql-jpa-all-columns-scalar-query-example" class="exampleblock">
+<div class="title">Example 1. JPA native query selecting all columns</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">List&lt;Object[]&gt; persons = entityManager.createNativeQuery(
+    "SELECT * FROM person" )
+.getResultList();</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div id="sql-jpa-custom-column-selection-scalar-query-example" class="exampleblock">
+<div class="title">Example 2. JPA native query with a custom column selection</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">List&lt;Object[]&gt; persons = entityManager.createNativeQuery(
+    "SELECT id, name FROM person" )
+.getResultList();
+
+for(Object[] person : persons) {
+    Number id = (Number) person[0];
+    String name = (String) person[1];
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div id="sql-hibernate-all-columns-scalar-query-example" class="exampleblock">
+<div class="title">Example 3. Hibernate native query selecting all columns</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">List&lt;Object[]&gt; persons = session.createSQLQuery(
+    "SELECT * FROM person" )
+.list();</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div id="sql-hibernate-custom-column-selection-scalar-query-example" class="exampleblock">
+<div class="title">Example 4. Hibernate native query with a custom column selection</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">List&lt;Object[]&gt; persons = session.createSQLQuery(
+    "SELECT id, name FROM person" )
+.list();
+
+for(Object[] person : persons) {
+    Number id = (Number) person[0];
+    String name = (String) person[1];
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>These will return a <code>List</code> of <code>Object</code> arrays ( <code>Object[]</code> ) with scalar values for each column in the <code>PERSON</code> table.
+Hibernate will use <code>java.sql.ResultSetMetadata</code> to deduce the actual order and types of the returned scalar values.</p>
+</div>
+<div class="paragraph">
+<p>To avoid the overhead of using <code>ResultSetMetadata</code>, or simply to be more explicit in what is returned, one can use <code>addScalar()</code>:</p>
+</div>
+<div id="sql-hibernate-scalar-query-explicit-result-set-example" class="exampleblock">
+<div class="title">Example 5. Hibernate native query with explicit result set selection</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">List&lt;Object[]&gt; persons = session.createSQLQuery(
+    "SELECT * FROM person" )
+.addScalar( "id", LongType.INSTANCE )
+.addScalar( "name", StringType.INSTANCE )
+.list();
+
+for(Object[] person : persons) {
+    Long id = (Long) person[0];
+    String name = (String) person[1];
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Although it still returns an <code>Object</code> arrays, this query will not use the <code>ResultSetMetadata</code> anymore since it explicitly gets the <code>id</code> and <code>name</code> columns as respectively a <code>BigInteger</code> and a <code>String</code> from the underlying <code>ResultSet</code>.
+This also means that only these two columns will be returned, even though the query is still using <code>*</code> and the <code>ResultSet</code> contains more than the three listed columns.</p>
+</div>
+<div class="paragraph">
+<p>It is possible to leave out the type information for all or some of the scalars.</p>
+</div>
+<div id="sql-hibernate-scalar-query-partial-explicit-result-set-example" class="exampleblock">
+<div class="title">Example 6. Hibernate native query with result set selection that&#8217;s a partially explicit</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">List&lt;Object[]&gt; persons = session.createSQLQuery(
+    "SELECT * FROM person" )
+.addScalar( "id", LongType.INSTANCE )
+.addScalar( "name" )
+.list();
+
+for(Object[] person : persons) {
+    Long id = (Long) person[0];
+    String name = (String) person[1];
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>This is essentially the same query as before, but now <code>ResultSetMetaData</code> is used to determine the type of <code>name</code>, where as the type of <code>id</code> is explicitly specified.</p>
+</div>
+<div class="paragraph">
+<p>How the <code>java.sql.Types</code> returned from <code>ResultSetMetaData</code> is mapped to Hibernate types is controlled by the <code>Dialect</code>.
+If a specific type is not mapped, or does not result in the expected type, it is possible to customize it via calls to <code>registerHibernateType</code> in the Dialect.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="sql-entity-query">Entity queries</h3>
+<div class="paragraph">
+<p>The above queries were all about returning scalar values, basically returning the <em>raw</em> values from the <code>ResultSet</code>.</p>
+</div>
+<div id="sql-jpa-entity-query-example" class="exampleblock">
+<div class="title">Example 7. JPA native query selecting entities</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">List&lt;Person&gt; persons = entityManager.createNativeQuery(
+    "SELECT * FROM person", Person.class )
+.getResultList();</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div id="sql-hibernate-entity-query-example" class="exampleblock">
+<div class="title">Example 8. Hibernate native query selecting entities</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">List&lt;Person&gt; persons = session.createSQLQuery(
+    "SELECT * FROM person" )
+.addEntity( Person.class )
+.list();</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Assuming that <code>Person</code> is mapped as a class with the columns <code>id</code>, <code>name</code>, <code>nickName</code>, <code>address</code>, <code>createdOn</code> and <code>version</code>,
+the following query will also return a <code>List</code> where each element is a <code>Person</code> entity.</p>
+</div>
+<div id="sql-jpa-entity-query-explicit-result-set-example" class="exampleblock">
+<div class="title">Example 9. JPA native query selecting entities with explicit result set</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">List&lt;Person&gt; persons = entityManager.createNativeQuery(
+    "SELECT id, name, nickName, address, createdOn, version " +
+    "FROM person", Person.class )
+.getResultList();</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div id="sql-hibernate-entity-query-explicit-result-set-example" class="exampleblock">
+<div class="title">Example 10. Hibernate native query selecting entities with explicit result set</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">List&lt;Person&gt; persons = session.createSQLQuery(
+    "SELECT id, name, nickName, address, createdOn, version " +
+    "FROM person" )
+.addEntity( Person.class )
+.list();</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="sql-entity-associations-query">Handling associations and collections</h3>
+<div class="paragraph">
+<p>If the entity is mapped with a <code>many-to-one</code> or a child-side <code>one-to-one</code> to another entity, it is required to also return this when performing the native query,
+otherwise a database specific <em>column not found</em> error will occur.</p>
+</div>
+<div id="sql-jpa-entity-associations-query-many-to-one-example" class="exampleblock">
+<div class="title">Example 11. JPA native query selecting entities with many-to-one association</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">List&lt;Phone&gt; phones = entityManager.createNativeQuery(
+    "SELECT id, phone_number, phone_type, person_id " +
+    "FROM phone", Phone.class )
+.getResultList();</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div id="sql-hibernate-entity-associations-query-many-to-one-example" class="exampleblock">
+<div class="title">Example 12. Hibernate native query selecting entities with many-to-one association</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">List&lt;Phone&gt; phones = session.createSQLQuery(
+    "SELECT id, phone_number, phone_type, person_id " +
+    "FROM phone" )
+.addEntity( Phone.class )
+.list();</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>This will allow the <code>Phone#person</code> to function properly.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>The additional columns will automatically be returned when using the <code>*</code> notation.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>It is possible to eagerly join the <code>Phone</code> and the <code>Person</code> entities to avoid the possible extra roundtrip for initializing the <code>many-to-one</code> association.</p>
+</div>
+<div id="sql-jpa-entity-associations-query-many-to-one-join-example" class="exampleblock">
+<div class="title">Example 13. JPA native query selecting entities with joined many-to-one association</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">List&lt;Phone&gt; phones = entityManager.createNativeQuery(
+    "SELECT * " +
+    "FROM phone ph " +
+    "JOIN person pr ON ph.person_id = pr.id", Phone.class )
+.getResultList();
+
+for(Phone phone : phones) {
+    Person person = phone.getPerson();
+}</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-SQL" data-lang="SQL">SELECT id ,
+       number ,
+       type ,
+       person_id
+FROM   phone</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div id="sql-hibernate-entity-associations-query-many-to-one-join-example" class="exampleblock">
+<div class="title">Example 14. Hibernate native query selecting entities with joined many-to-one association</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">List&lt;Object[]&gt; tuples = session.createSQLQuery(
+    "SELECT * " +
+    "FROM phone ph " +
+    "JOIN person pr ON ph.person_id = pr.id" )
+.addEntity("phone", Phone.class )
+.addJoin( "pr", "phone.person")
+.list();
+
+for(Object[] tuple : tuples) {
+    Phone phone = (Phone) tuple[0];
+    Person person = (Person) tuple[1];
+}</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-SQL" data-lang="SQL">SELECT id ,
+       number ,
+       type ,
+       person_id
+FROM   phone</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>As seen in the associated SQL query, Hibernate manages to construct the entity hierarchy without requiring any extra database roundtrip.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>By default, when using the <code>addJoin()</code> method, the result set will contain both entities that are joined.
+To construct the entity hierarchy, you need to use a <code>ROOT_ENTITY</code> or <code>DISTINCT_ROOT_ENTITY</code> <code>ResultTransformer</code>.</p>
+</div>
+<div id="sql-hibernate-entity-associations-query-many-to-one-join-result-transformer-example" class="exampleblock">
+<div class="title">Example 15. Hibernate native query selecting entities with joined many-to-one association and <code>ResultTransformer</code></div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">List&lt;Person&gt; persons = session.createSQLQuery(
+    "SELECT * " +
+    "FROM phone ph " +
+    "JOIN person pr ON ph.person_id = pr.id" )
+.addEntity("phone", Phone.class )
+.addJoin( "pr", "phone.person")
+.setResultTransformer( Criteria.ROOT_ENTITY )
+.list();
+
+for(Person person : persons) {
+    person.getPhones();
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Because of the <code>ROOT_ENTITY</code> <code>ResultTransformer</code>, this query will return the parent-side as root entities.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Notice that you added an alias name <em>pr</em> to be able to specify the target property path of the join.
+It is possible to do the same eager joining for collections (e.g. the <code>Phone#calls</code> <code>one-to-many</code> association).</p>
+</div>
+<div id="sql-jpa-entity-associations-query-one-to-many-join-example" class="exampleblock">
+<div class="title">Example 16. JPA native query selecting entities with joined one-to-many association</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">List&lt;Phone&gt; phones = entityManager.createNativeQuery(
+    "SELECT * " +
+    "FROM phone ph " +
+    "JOIN phone_call c ON c.phone_id = ph.id", Phone.class )
+.getResultList();
+
+for(Phone phone : phones) {
+    List&lt;Call&gt; calls = phone.getCalls();
+}</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-SQL" data-lang="SQL">SELECT *
+FROM phone ph
+JOIN call c ON c.phone_id = ph.id</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div id="sql-hibernate-entity-associations-query-one-to-many-join-example" class="exampleblock">
+<div class="title">Example 17. Hibernate native query selecting entities with joined one-to-many association</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">List&lt;Object[]&gt; tuples = session.createSQLQuery(
+    "SELECT * " +
+    "FROM phone ph " +
+    "JOIN phone_call c ON c.phone_id = ph.id" )
+.addEntity("phone", Phone.class )
+.addJoin( "c", "phone.calls")
+.list();
+
+for(Object[] tuple : tuples) {
+    Phone phone = (Phone) tuple[0];
+    Call call = (Call) tuple[1];
+}</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-SQL" data-lang="SQL">SELECT *
+FROM phone ph
+JOIN call c ON c.phone_id = ph.id</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>At this stage you are reaching the limits of what is possible with native queries, without starting to enhance the sql queries to make them usable in Hibernate.
+Problems can arise when returning multiple entities of the same type or when the default alias/column names are not enough.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="sql-multi-entity-query">Returning multiple entities</h3>
+<div class="paragraph">
+<p>Until now, the result set column names are assumed to be the same as the column names specified in the mapping document.
+This can be problematic for SQL queries that join multiple tables since the same column names can appear in more than one table.</p>
+</div>
+<div class="paragraph">
+<p>Column alias injection is needed in the following query which otherwise throws <code>NonUniqueDiscoveredSqlAliasException</code>.</p>
+</div>
+<div id="sql-jpa-multi-entity-query-example" class="exampleblock">
+<div class="title">Example 18. JPA native query selecting entities with the same column names</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">List&lt;Object&gt; entities = entityManager.createNativeQuery(
+    "SELECT * " +
+    "FROM person pr, partner pt " +
+    "WHERE pr.name = pt.name" )
+.getResultList();</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div id="sql-hibernate-multi-entity-query-example" class="exampleblock">
+<div class="title">Example 19. Hibernate native query selecting entities with the same column names</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">List&lt;Object&gt; entities = session.createSQLQuery(
+        "SELECT * " +
+                "FROM person pr, partner pt " +
+                "WHERE pr.name = pt.name" )
+        .list();</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>The query was intended to return all <code>Person</code> and <code>Partner</code> instances with the same name.
+The query fails because there is a conflict of names since the two entities are mapped to the same column names (e.g. <code>id</code>, <code>name</code>, <code>version</code>).
+Also, on some databases the returned column aliases will most likely be on the form <code>pr.id</code>, <code>pr.name</code>, etc.
+which are not equal to the columns specified in the mappings (<code>id</code> and <code>name</code>).</p>
+</div>
+<div class="paragraph">
+<p>The following form is not vulnerable to column name duplication:</p>
+</div>
+<div id="sql-hibernate-multi-entity-query-alias-example" class="exampleblock">
+<div class="title">Example 20. Hibernate native query selecting entities with the same column names and aliases</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">List&lt;Object&gt; entities = session.createSQLQuery(
+    "SELECT {pr.*}, {pt.*} " +
+    "FROM person pr, partner pt " +
+    "WHERE pr.name = pt.name" )
+.addEntity( "pr", Person.class)
+.addEntity( "pt", Partner.class)
+.list();</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>There&#8217;s no such equivalent in JPA because the <code>Query</code> interface doesn&#8217;t define an <code>addEntity</code> method equivalent.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>The <code>{pr.<strong>}</code> and <code>{pt.</strong>}</code> notation used above is shorthand for "all properties".
+Alternatively, you can list the columns explicitly, but even in this case Hibernate injects the SQL column aliases for each property.
+The placeholder for a column alias is just the property name qualified by the table alias.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="sql-alias-references">Alias and property references</h3>
+<div class="paragraph">
+<p>In most cases the above alias injection is needed.
+For queries relating to more complex mappings, like composite properties, inheritance discriminators, collections etc., you can use specific aliases that allow Hibernate to inject the proper aliases.</p>
+</div>
+<div class="paragraph">
+<p>The following table shows the different ways you can use the alias injection.
+Please note that the alias names in the result are simply examples, each alias will have a unique and probably different name when used.</p>
+</div>
+<table class="tableblock frame-all grid-all spread">
+<caption class="title">Table 1. Alias injection names</caption>
+<colgroup>
+<col style="width: 23%;">
+<col style="width: 22%;">
+<col style="width: 55%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Description</th>
+<th class="tableblock halign-left valign-top">Syntax</th>
+<th class="tableblock halign-left valign-top">Example</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">A simple property</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>{[aliasname].[propertyname]</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>A_NAME as {item.name}</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">A composite property</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>{[aliasname].[componentname].[propertyname]}</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>CURRENCY as {item.amount.currency}, VALUE as {item.amount.value}</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Discriminator of an entity</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>{[aliasname].class}</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>DISC as {item.class}</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">All properties of an entity</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>{[aliasname].*}</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>{item.*}</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">A collection key</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>{[aliasname].key}</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>ORGID as {coll.key}</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The id of an collection</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>{[aliasname].id}</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>EMPID as {coll.id}</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The element of an collection</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>{[aliasname].element}</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>XID as {coll.element}</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">property of the element in the collection</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>{[aliasname].element.[propertyname]}</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>NAME as {coll.element.name}</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">All properties of the element in the collection</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>{[aliasname].element.*}</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>{coll.element.*}</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">All properties of the collection</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>{[aliasname].*}</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>{coll.*}</code></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect2">
+<h3 id="sql-dto-query">Returning DTOs (Data Transfer Objects)</h3>
+<div class="paragraph">
+<p>It is possible to apply a <code>ResultTransformer</code> to native SQL queries, allowing it to return non-managed entities.</p>
+</div>
+<div id="sql-hibernate-dto-query-example" class="exampleblock">
+<div class="title">Example 21. Hibernate native query selecting DTOs</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">public class PersonSummaryDTO {
+
+    private Number id;
+
+    private String name;
+
+    public Number getId() {
+        return id;
+    }
+
+    public void setId(Number id) {
+        this.id = id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+}
+
+List&lt;PersonSummaryDTO&gt; dtos = session.createSQLQuery(
+    "SELECT p.id as \"id\", p.name as \"name\" " +
+    "FROM person p")
+.setResultTransformer( Transformers.aliasToBean( PersonSummaryDTO.class ) )
+.list();</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>There&#8217;s no such equivalent in JPA because the <code>Query</code> interface doesn&#8217;t define a <code>setResultTransformer</code> method equivalent.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>The above query will return a list of <code>PersonSummaryDTO</code> which has been instantiated and injected the values of <code>id</code> and <code>name</code> into its corresponding properties or fields.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="sql-inheritance-query">Handling inheritance</h3>
+<div class="paragraph">
+<p>Native SQL queries which query for entities that are mapped as part of an inheritance must include all properties for the base class and all its subclasses.</p>
+</div>
+<div id="sql-hibernate-inheritance-query-example" class="exampleblock">
+<div class="title">Example 22. Hibernate native query selecting subclasses</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">List&lt;CreditCardPayment&gt; payments = session.createSQLQuery(
+    "SELECT * " +
+    "FROM Payment p " +
+    "JOIN CreditCardPayment cp on cp.id = p.id" )
+.addEntity( CreditCardPayment.class )
+.list();</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>There&#8217;s no such equivalent in JPA because the <code>Query</code> interface doesn&#8217;t define an <code>addEntity</code> method equivalent.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="sql-query-parameters">Parameters</h3>
+<div class="paragraph">
+<p>Native SQL queries support positional as well as named parameters:</p>
+</div>
+<div id="sql-jpa-query-parameters-example" class="exampleblock">
+<div class="title">Example 23. JPA native query with parameters</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">List&lt;Person&gt; persons = entityManager.createNativeQuery(
+    "SELECT * " +
+    "FROM person " +
+    "WHERE name like :name", Person.class )
+.setParameter("name", "J%")
+.getResultList();</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div id="sql-hibernate-query-parameters-example" class="exampleblock">
+<div class="title">Example 24. Hibernate native query with parameters</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">List&lt;Person&gt; persons = session.createSQLQuery(
+    "SELECT * " +
+    "FROM person " +
+    "WHERE name like :name" )
+.addEntity( Person.class )
+.setParameter("name", "J%")
+.list();</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="sql-named-queries">Named SQL queries</h3>
+<div class="paragraph">
+<p>Named SQL queries can also be defined during mapping and called in exactly the same way as a named HQL query.
+In this case, you do <em>not</em> need to call <code>addEntity()</code> anymore.</p>
+</div>
+<div class="paragraph">
+<p>JPA defines the <code>javax.persistence.NamedNativeQuery</code> annotation for this purpose,
+and the Hibernate <code>org.hibernate.annotations.NamedNativeQuery</code> annotation extends it and adds the following attributes:</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><code>flushMode()</code></dt>
+<dd>
+<p>The flush mode for the query. By default, it uses the current Persistence Context flush mode.</p>
+</dd>
+<dt class="hdlist1"><code>cacheable()</code></dt>
+<dd>
+<p>Whether the query (results) is cacheable or not. By default, queries are not cached.</p>
+</dd>
+<dt class="hdlist1"><code>cacheRegion()</code></dt>
+<dd>
+<p>If the query results are cacheable, name the query cache region to use.</p>
+</dd>
+<dt class="hdlist1"><code>fetchSize()</code></dt>
+<dd>
+<p>The number of rows fetched by the JDBC Driver per database trip. The default value is given by the JDBC driver.</p>
+</dd>
+<dt class="hdlist1"><code>timeout()</code></dt>
+<dd>
+<p>The query timeout (in seconds). By default, there&#8217;s no timeout.</p>
+</dd>
+<dt class="hdlist1"><code>callable()</code></dt>
+<dd>
+<p>Does the SQL query represent a call to a procedure/function? Default is false.</p>
+</dd>
+<dt class="hdlist1"><code>comment()</code></dt>
+<dd>
+<p>A comment added to the SQL query for tuning the execution plan.</p>
+</dd>
+<dt class="hdlist1"><code>cacheMode()</code></dt>
+<dd>
+<p>The cache mode used for this query. This refers to entities/collections returned by the query.
+The default value is <code>CacheModeType.NORMAL</code>.</p>
+</dd>
+<dt class="hdlist1"><code>readOnly()</code></dt>
+<dd>
+<p>Whether the results should be read-only. By default, queries are not read-only so entities are stored in the Persistence Context.</p>
+</dd>
+</dl>
+</div>
+<div class="sect3">
+<h4 id="sql-scalar-named-queries">Named SQL queries selecting scalar values</h4>
+<div class="paragraph">
+<p>To fetch a single column of given table, the named query looks as follows:</p>
+</div>
+<div id="sql-scalar-NamedNativeQuery-example" class="exampleblock">
+<div class="title">Example 25. Single scalar value <code>NamedNativeQuery</code></div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">@NamedNativeQuery(
+    name = "find_person_name",
+    query =
+        "SELECT name " +
+        "FROM person "
+),</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div id="sql-jpa-scalar-named-query-example" class="exampleblock">
+<div class="title">Example 26. JPA named native query selecting a scalar value</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">List&lt;String&gt; names = entityManager.createNamedQuery(
+    "find_person_name" )
+.getResultList();</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div id="sql-hibernate-scalar-named-query-example" class="exampleblock">
+<div class="title">Example 27. Hibernate named native query selecting a scalar value</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">List&lt;String&gt; names = session.getNamedQuery(
+    "find_person_name" )
+.list();</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Selecting multiple scalar values is done like this:</p>
+</div>
+<div id="sql-multiple-scalar-values-NamedNativeQuery-example" class="exampleblock">
+<div class="title">Example 28. Multiple scalar values <code>NamedNativeQuery</code></div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">@NamedNativeQuery(
+    name = "find_person_name_and_nickName",
+    query =
+        "SELECT " +
+        "   name, " +
+        "   nickName " +
+        "FROM person "
+),</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Without specifying an explicit result type, Hibernate will assume an <code>Object</code> array:</p>
+</div>
+<div id="sql-jpa-multiple-scalar-values-named-query-example" class="exampleblock">
+<div class="title">Example 29. JPA named native query selecting multiple scalar values</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">List&lt;Object[]&gt; tuples = entityManager.createNamedQuery(
+    "find_person_name_and_nickName" )
+.getResultList();
+
+for(Object[] tuple : tuples) {
+    String name = (String) tuple[0];
+    String nickName = (String) tuple[1];
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div id="sql-hibernate-multiple-scalar-values-named-query-example" class="exampleblock">
+<div class="title">Example 30. Hibernate named native query selecting multiple scalar values</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">List&lt;Object[]&gt; tuples = session.getNamedQuery(
+    "find_person_name_and_nickName" )
+.list();
+
+for(Object[] tuple : tuples) {
+    String name = (String) tuple[0];
+    String nickName = (String) tuple[1];
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>It&#8217;s possible to use a DTO to store the resulting scalar values:</p>
+</div>
+<div id="sql-ConstructorResult-dto-example" class="exampleblock">
+<div class="title">Example 31. DTO to store multiple scalar values</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">public class PersonNames {
+
+    private final String name;
+
+    private final String nickName;
+
+    public PersonNames(String name, String nickName) {
+        this.name = name;
+        this.nickName = nickName;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public String getNickName() {
+        return nickName;
+    }
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div id="sql-multiple-scalar-values-dto-NamedNativeQuery-example" class="exampleblock">
+<div class="title">Example 32. Multiple scalar values <code>NamedNativeQuery</code> with <code>ConstructorResult</code></div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">@NamedNativeQuery(
+    name = "find_person_name_and_nickName_dto",
+    query =
+        "SELECT " +
+        "   name, " +
+        "   nickName " +
+        "FROM person ",
+    resultSetMapping = "name_and_nickName_dto"
+),
+@SqlResultSetMapping(
+    name = "name_and_nickName_dto",
+    classes = @ConstructorResult(
+        targetClass = PersonNames.class,
+        columns = {
+            @ColumnResult(name = "name"),
+            @ColumnResult(name = "nickName")
+        }
+    )
+)</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div id="sql-jpa-multiple-scalar-values-dto-named-query-example" class="exampleblock">
+<div class="title">Example 33. JPA named native query selecting multiple scalar values into a DTO</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">List&lt;PersonNames&gt; personNames = entityManager.createNamedQuery(
+    "find_person_name_and_nickName_dto" )
+.getResultList();</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div id="sql-hibernate-multiple-scalar-values-dto-named-query-example" class="exampleblock">
+<div class="title">Example 34. Hibernate named native query selecting multiple scalar values into a DTO</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">List&lt;PersonNames&gt; personNames = session.getNamedQuery(
+    "find_person_name_and_nickName_dto" )
+.list();</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="sql-entity-named-queries">Named SQL queries selecting entities</h4>
+<div class="paragraph">
+<p>Considering the following named query:</p>
+</div>
+<div id="sql-entity-NamedNativeQuery-example" class="exampleblock">
+<div class="title">Example 35. Single-entity <code>NamedNativeQuery</code></div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">@NamedNativeQuery(
+    name = "find_person_by_name",
+    query =
+        "SELECT " +
+        "   p.id AS \"id\", " +
+        "   p.name AS \"name\", " +
+        "   p.nickName AS \"nickName\", " +
+        "   p.address AS \"address\", " +
+        "   p.createdOn AS \"createdOn\", " +
+        "   p.version AS \"version\" " +
+        "FROM person p " +
+        "WHERE p.name LIKE :name",
+    resultClass = Person.class
+),</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>The result set mapping declares the entities retrieved by this native query.
+Each field of the entity is bound to an SQL alias (or column name).
+All fields of the entity including the ones of subclasses and the foreign key columns of related entities have to be present in the SQL query.
+Field definitions are optional provided that they map to the same column name as the one declared on the class property.</p>
+</div>
+<div class="paragraph">
+<p>Executing this named native query can be done as follows:</p>
+</div>
+<div id="sql-jpa-entity-named-query-example" class="exampleblock">
+<div class="title">Example 36. JPA named native entity query</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">List&lt;Person&gt; persons = entityManager.createNamedQuery(
+    "find_person_by_name" )
+.setParameter("name", "J%")
+.getResultList();</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div id="sql-hibernate-entity-named-query-example" class="exampleblock">
+<div class="title">Example 37. Hibernate named native entity query</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">List&lt;Person&gt; persons = session.getNamedQuery(
+    "find_person_by_name" )
+.setParameter("name", "J%")
+.list();</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>To join multiple entities, you need to use a <code>SqlResultSetMapping</code> for each entity the SQL query is going to fetch.</p>
+</div>
+<div id="sql-entity-associations-NamedNativeQuery-example" class="exampleblock">
+<div class="title">Example 38. Joined-entities <code>NamedNativeQuery</code></div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">@NamedNativeQuery(
+    name = "find_person_with_phones_by_name",
+    query =
+        "SELECT " +
+        "   pr.id AS \"pr.id\", " +
+        "   pr.name AS \"pr.name\", " +
+        "   pr.nickName AS \"pr.nickName\", " +
+        "   pr.address AS \"pr.address\", " +
+        "   pr.createdOn AS \"pr.createdOn\", " +
+        "   pr.version AS \"pr.version\", " +
+        "   ph.id AS \"ph.id\", " +
+        "   ph.person_id AS \"ph.person_id\", " +
+        "   ph.phone_number AS \"ph.phone_number\", " +
+        "   ph.type AS \"ph.type\" " +
+        "FROM person pr " +
+        "JOIN phone ph ON pr.id = ph.person_id " +
+        "WHERE pr.name LIKE :name",
+    resultSetMapping = "person_with_phones"
+)
+ @SqlResultSetMapping(
+     name = "person_with_phones",
+     entities = {
+         @EntityResult(
+             entityClass = Person.class,
+             fields = {
+                 @FieldResult( name = "id", column = "pr.id" ),
+                 @FieldResult( name = "name", column = "pr.name" ),
+                 @FieldResult( name = "nickName", column = "pr.nickName" ),
+                 @FieldResult( name = "address", column = "pr.address" ),
+                 @FieldResult( name = "createdOn", column = "pr.createdOn" ),
+                 @FieldResult( name = "version", column = "pr.version" ),
+             }
+         ),
+         @EntityResult(
+             entityClass = Phone.class,
+             fields = {
+                 @FieldResult( name = "id", column = "ph.id" ),
+                 @FieldResult( name = "person", column = "ph.person_id" ),
+                 @FieldResult( name = "number", column = "ph.number" ),
+                 @FieldResult( name = "type", column = "ph.type" ),
+             }
+         )
+     }
+ ),</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div id="sql-jpa-entity-associations_named-query-example" class="exampleblock">
+<div class="title">Example 39. JPA named native entity query with joined associations</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">List&lt;Object[]&gt; tuples = entityManager.createNamedQuery(
+    "find_person_with_phones_by_name" )
+.setParameter("name", "J%")
+.getResultList();
+
+for(Object[] tuple : tuples) {
+    Person person = (Person) tuple[0];
+    Phone phone = (Phone) tuple[1];
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div id="sql-hibernate-entity-associations_named-query-example" class="exampleblock">
+<div class="title">Example 40. Hibernate named native entity query with joined associations</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">List&lt;Object[]&gt; tuples = session.getNamedQuery(
+    "find_person_with_phones_by_name" )
+.setParameter("name", "J%")
+.list();
+
+for(Object[] tuple : tuples) {
+    Person person = (Person) tuple[0];
+    Phone phone = (Phone) tuple[1];
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Finally, if the association to a related entity involve a composite primary key, a <code>@FieldResult</code> element should be used for each foreign key column.
+The <code>@FieldResult</code> name is composed of the property name for the relationship, followed by a dot ("."), followed by the name or the field or property of the primary key.
+For this example, the following entities are going to be used:</p>
+</div>
+<div id="sql-composite-key-entity-associations_named-query-example" class="exampleblock">
+<div class="title">Example 41. Entity associations with composite keys and named native queries</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">@Embeddable
+public class Dimensions {
+
+    private int length;
+
+    private int width;
+
+    public int getLength() {
+        return length;
+    }
+
+    public void setLength(int length) {
+        this.length = length;
+    }
+
+    public int getWidth() {
+        return width;
+    }
+
+    public void setWidth(int width) {
+        this.width = width;
+    }
+}
+
+@Embeddable
+public class Identity implements Serializable {
+
+    private String firstname;
+
+    private String lastname;
+
+    public String getFirstname() {
+        return firstname;
+    }
+
+    public void setFirstname(String firstname) {
+        this.firstname = firstname;
+    }
+
+    public String getLastname() {
+        return lastname;
+    }
+
+    public void setLastname(String lastname) {
+        this.lastname = lastname;
+    }
+
+    public boolean equals(Object o) {
+        if ( this == o ) return true;
+        if ( o == null || getClass() != o.getClass() ) return false;
+
+        final Identity identity = (Identity) o;
+
+        if ( !firstname.equals( identity.firstname ) ) return false;
+        if ( !lastname.equals( identity.lastname ) ) return false;
+
+        return true;
+    }
+
+    public int hashCode() {
+        int result;
+        result = firstname.hashCode();
+        result = 29 * result + lastname.hashCode();
+        return result;
+    }
+}
+
+@Entity
+public class Captain {
+
+    @EmbeddedId
+    private Identity id;
+
+    public Identity getId() {
+        return id;
+    }
+
+    public void setId(Identity id) {
+        this.id = id;
+    }
+}
+
+@Entity
+@NamedNativeQueries({
+    @NamedNativeQuery(name = "find_all_spaceships",
+        query =
+            "SELECT " +
+            "   name as \"name\", " +
+            "   model, " +
+            "   speed, " +
+            "   lname as lastn, " +
+            "   fname as firstn, " +
+            "   length, " +
+            "   width, " +
+            "   length * width as surface, " +
+            "   length * width * 10 as volume " +
+            "FROM SpaceShip",
+        resultSetMapping = "spaceship"
+    )
+})
+@SqlResultSetMapping(
+    name = "spaceship",
+    entities = @EntityResult(
+        entityClass = SpaceShip.class,
+        fields = {
+            @FieldResult(name = "name", column = "name"),
+            @FieldResult(name = "model", column = "model"),
+            @FieldResult(name = "speed", column = "speed"),
+            @FieldResult(name = "captain.lastname", column = "lastn"),
+            @FieldResult(name = "captain.firstname", column = "firstn"),
+            @FieldResult(name = "dimensions.length", column = "length"),
+            @FieldResult(name = "dimensions.width", column = "width"),
+        }
+    ),
+    columns = {
+        @ColumnResult(name = "surface"),
+        @ColumnResult(name = "volume")
+    }
+)
+public class SpaceShip {
+
+    @Id
+    private String name;
+
+    private String model;
+
+    private double speed;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumns({
+        @JoinColumn(name = "fname", referencedColumnName = "firstname"),
+        @JoinColumn(name = "lname", referencedColumnName = "lastname")
+    })
+    private Captain captain;
+
+    private Dimensions dimensions;
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getModel() {
+        return model;
+    }
+
+    public void setModel(String model) {
+        this.model = model;
+    }
+
+    public double getSpeed() {
+        return speed;
+    }
+
+    public void setSpeed(double speed) {
+        this.speed = speed;
+    }
+
+    public Captain getCaptain() {
+        return captain;
+    }
+
+    public void setCaptain(Captain captain) {
+        this.captain = captain;
+    }
+
+    public Dimensions getDimensions() {
+        return dimensions;
+    }
+
+    public void setDimensions(Dimensions dimensions) {
+        this.dimensions = dimensions;
+    }
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div id="sql-jpa-composite-key-entity-associations_named-query-example" class="exampleblock">
+<div class="title">Example 42. JPA named native entity query with joined associations and composite keys</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">List&lt;Object[]&gt; tuples = entityManager.createNamedQuery(
+    "find_all_spaceships" )
+.getResultList();
+
+for(Object[] tuple : tuples) {
+    SpaceShip spaceShip = (SpaceShip) tuple[0];
+    Number surface = (Number) tuple[1];
+    Number volume = (Number) tuple[2];
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div id="sql-hibernate-composite-key-entity-associations_named-query-example" class="exampleblock">
+<div class="title">Example 43. Hibernate named native entity query with joined associations and composite keys</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">List&lt;Object[]&gt; tuples = session.getNamedQuery(
+    "find_all_spaceships" )
+.list();
+
+for(Object[] tuple : tuples) {
+    SpaceShip spaceShip = (SpaceShip) tuple[0];
+    Number surface = (Number) tuple[1];
+    Number volume = (Number) tuple[2];
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="sql-sp">Using stored procedures for querying</h3>
+<div class="paragraph">
+<p>Hibernate provides support for queries via stored procedures and functions.
+A stored procedure arguments are declared using the <code>IN</code> parameter type, and the result can be either marked with an <code>OUT</code>
+parameter type, a <code>REF_CURSOR</code> or it could just return the result like a function.</p>
+</div>
+<div id="sql-sp-out-mysql-example" class="exampleblock">
+<div class="title">Example 44. MySQL stored procedure with <code>OUT</code> parameter type</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">statement.executeUpdate(
+    "CREATE PROCEDURE sp_count_phones (" +
+    "   IN personId INT, " +
+    "   OUT phoneCount INT " +
+    ") " +
+    "BEGIN " +
+    "    SELECT COUNT(*) INTO phoneCount " +
+    "    FROM phone  " +
+    "    WHERE phone.person_id = personId; " +
+    "END"
+);</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>To use this stored procedure, you can execute the following JPA 2.1 query:</p>
+</div>
+<div id="sql-jpa-call-sp-out-mysql-example" class="exampleblock">
+<div class="title">Example 45. Calling a MySQL stored procedure with <code>OUT</code> parameter type using JPA</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">StoredProcedureQuery query = entityManager.createStoredProcedureQuery( "sp_count_phones");
+query.registerStoredProcedureParameter( "personId", Long.class, ParameterMode.IN);
+query.registerStoredProcedureParameter( "phoneCount", Long.class, ParameterMode.OUT);
+
+query.setParameter("personId", 1L);
+
+query.execute();
+Long phoneCount = (Long) query.getOutputParameterValue("phoneCount");</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div id="sql-hibernate-call-sp-out-mysql-example" class="exampleblock">
+<div class="title">Example 46. Calling a MySQL stored procedure with <code>OUT</code> parameter type using Hibernate</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">Session session = entityManager.unwrap( Session.class );
+
+ProcedureCall call = session.createStoredProcedureCall( "sp_count_phones" );
+call.registerParameter( "personId", Long.class, ParameterMode.IN ).bindValue( 1L );
+call.registerParameter( "phoneCount", Long.class, ParameterMode.OUT );
+
+Long phoneCount = (Long) call.getOutputs().getOutputParameterValue( "phoneCount" );
+assertEquals( Long.valueOf( 2 ), phoneCount );</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>If the stored procedure outputs the result directly without an <code>OUT</code> parameter type:</p>
+</div>
+<div id="sql-sp-mysql-return-no-out-example" class="exampleblock">
+<div class="title">Example 47. MySQL stored procedure without an <code>OUT</code> parameter type</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">statement.executeUpdate(
+    "CREATE PROCEDURE sp_phones(IN personId INT) " +
+    "BEGIN " +
+    "    SELECT *  " +
+    "    FROM phone   " +
+    "    WHERE person_id = personId;  " +
+    "END"
+);</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>You can retrieve the results of the aforementioned MySQL stored procedure as follows:</p>
+</div>
+<div id="sql-jpa-call-sp-no-out-mysql-example" class="exampleblock">
+<div class="title">Example 48. Calling a MySQL stored procedure and fetching the result set without an <code>OUT</code> parameter type using JPA</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">StoredProcedureQuery query = entityManager.createStoredProcedureQuery( "sp_phones");
+query.registerStoredProcedureParameter( 1, Long.class, ParameterMode.IN);
+
+query.setParameter(1, 1L);
+
+List&lt;Object[]&gt; personComments = query.getResultList();</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div id="sql-hibernate-call-sp-no-out-mysql-example" class="exampleblock">
+<div class="title">Example 49. Calling a MySQL stored procedure and fetching the result set without an <code>OUT</code> parameter type using Hibernate</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">Session session = entityManager.unwrap( Session.class );
+
+ProcedureCall call = session.createStoredProcedureCall( "sp_phones" );
+call.registerParameter( 1, Long.class, ParameterMode.IN ).bindValue( 1L );
+
+Output output = call.getOutputs().getCurrent();
+
+List&lt;Object[]&gt; personComments = ( (ResultSetOutput) output ).getResultList();</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>For a <code>REF_CURSOR</code> result sets, we&#8217;ll consider the following Oracle stored procedure:</p>
+</div>
+<div id="sql-sp-ref-cursor-oracle-example" class="exampleblock">
+<div class="title">Example 50. Oracle <code>REF_CURSOR</code> stored procedure</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">statement.executeUpdate(
+    "CREATE OR REPLACE PROCEDURE sp_person_phones ( " +
+    "   personId IN NUMBER, " +
+    "   personPhones OUT SYS_REFCURSOR ) " +
+    "AS  " +
+    "BEGIN " +
+    "    OPEN personPhones FOR " +
+    "    SELECT *" +
+    "    FROM phone " +
+    "    WHERE person_id = personId; " +
+    "END;"
+);</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p><code>REF_CURSOR</code> result sets are only supported by Oracle and PostgreSQL because other database systems JDBC drivers don&#8217;t support this feature.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>This function can be called using the standard Java Persistence API:</p>
+</div>
+<div id="sql-jpa-call-sp-ref-cursor-oracle-example" class="exampleblock">
+<div class="title">Example 51. Calling an Oracle <code>REF_CURSOR</code> stored procedure using JPA</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">StoredProcedureQuery query = entityManager.createStoredProcedureQuery( "sp_person_phones" );
+query.registerStoredProcedureParameter( 1, Long.class, ParameterMode.IN );
+query.registerStoredProcedureParameter( 2, Class.class, ParameterMode.REF_CURSOR );
+query.setParameter( 1, 1L );
+
+query.execute();
+List&lt;Object[]&gt; postComments = query.getResultList();</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div id="sql-hibernate-call-sp-ref-cursor-oracle-example" class="exampleblock">
+<div class="title">Example 52. Calling an Oracle <code>REF_CURSOR</code> stored procedure using Hibernate</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">Session session = entityManager.unwrap(Session.class);
+
+ProcedureCall call = session.createStoredProcedureCall( "sp_person_phones");
+call.registerParameter(1, Long.class, ParameterMode.IN).bindValue(1L);
+call.registerParameter(2, Class.class, ParameterMode.REF_CURSOR);
+
+Output output = call.getOutputs().getCurrent();
+List&lt;Object[]&gt; postComments = ( (ResultSetOutput) output ).getResultList();
+assertEquals(2, postComments.size());</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>If the database defines an SQL function:</p>
+</div>
+<div id="sql-function-mysql-example" class="exampleblock">
+<div class="title">Example 53. MySQL function</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">statement.executeUpdate(
+    "CREATE FUNCTION fn_count_phones(personId integer)  " +
+    "RETURNS integer " +
+    "DETERMINISTIC " +
+    "READS SQL DATA " +
+    "BEGIN " +
+    "    DECLARE phoneCount integer; " +
+    "    SELECT COUNT(*) INTO phoneCount " +
+    "    FROM phone  " +
+    "    WHERE phone.person_id = personId; " +
+    "    RETURN phoneCount; " +
+    "END"
+);</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Because the current <code>StoredProcedureQuery</code> implementation doesn&#8217;t yet support SQL functions,
+we need to use the JDBC syntax.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>This limitation is acknowledged and will be addressed by the <a href="https://hibernate.atlassian.net/browse/HHH-10530">HHH-10530</a> issue.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div id="sql-call-function-mysql-example" class="exampleblock">
+<div class="title">Example 54. Calling a MySQL function</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">final AtomicReference&lt;Integer&gt; phoneCount = new AtomicReference&lt;&gt;();
+Session session = entityManager.unwrap( Session.class );
+session.doWork( connection -&gt; {
+    try (CallableStatement function = connection.prepareCall(
+            "{ ? = call fn_count_phones(?) }" )) {
+        function.registerOutParameter( 1, Types.INTEGER );
+        function.setInt( 2, 1 );
+        function.execute();
+        phoneCount.set( function.getInt( 1 ) );
+    }
+} );</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Stored procedure queries cannot be paged with <code>setFirstResult()/setMaxResults()</code>.</p>
+</div>
+<div class="paragraph">
+<p>Since these servers can return multiple result sets and update counts,
+Hibernate will iterate the results and take the first result that is a result set as its return value, so everything else will be discarded.</p>
+</div>
+<div class="paragraph">
+<p>For SQL Server, if you can enable <code>SET NOCOUNT ON</code> in your procedure it will probably be more efficient, but this is not a requirement.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="sql-crud">Custom SQL for create, update, and delete</h3>
+<div class="paragraph">
+<p>Hibernate can use custom SQL for create, update, and delete operations.
+The SQL can be overridden at the statement level or individual column level.
+This section describes statement overrides.
+For columns, see <a href="chapters/domain/basic_types.html#mapping-column-read-and-write">Column transformers: read and write expressions</a>.</p>
+</div>
+<div class="paragraph">
+<p>The following example shows how to define custom SQL operations using annotations.
+<code>@SQLInsert</code>, <code>@SQLUpdate</code> and <code>@SQLDelete</code> override the INSERT, UPDATE, DELETE statements of a given entity.
+For the SELECT clause, a <code>@Loader</code> must be defined along with a <code>@NamedNativeQuery</code> used for loading the underlying table record.</p>
+</div>
+<div class="paragraph">
+<p>For collections, Hibernate allows defining a custom <code>@SQLDeleteAll</code> which is used for removing all child records associated with a given parent entity.
+To filter collections, the <code>@Where</code> annotation allows customizing the underlying SQL WHERE clause.</p>
+</div>
+<div id="sql-custom-crud-example" class="exampleblock">
+<div class="title">Example 55. Custom CRUD</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">@Entity(name = "Person")
+@SQLInsert(
+    sql = "INSERT INTO person (name, id, valid) VALUES (?, ?, true) ",
+    check = ResultCheckStyle.COUNT
+)
+@SQLUpdate(
+    sql = "UPDATE person SET name = ? where id = ? ")
+@SQLDelete(
+    sql = "UPDATE person SET valid = false WHERE id = ? ")
+@Loader(namedQuery = "find_valid_person")
+@NamedNativeQueries({
+    @NamedNativeQuery(
+        name = "find_valid_person",
+        query = "SELECT id, name " +
+                "FROM person " +
+                "WHERE id = ? and valid = true",
+        resultClass = Person.class
+    )
+})
+public static class Person {
+
+    @Id
+    @GeneratedValue
+    private Long id;
+
+    private String name;
+
+    @ElementCollection
+    @SQLInsert(
+        sql = "INSERT INTO person_phones (person_id, phones, valid) VALUES (?, ?, true) ")
+    @SQLDeleteAll(
+        sql = "UPDATE person_phones SET valid = false WHERE person_id = ?")
+    @Where( clause = "valid = true" )
+    private List&lt;String&gt; phones = new ArrayList&lt;&gt;();
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public List&lt;String&gt; getPhones() {
+        return phones;
+    }
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>In the example above, the entity is mapped so that entries are soft-deleted (the records are not removed from the database, but instead, a flag marks the row validity).
+The <code>Person</code> entity benefits from custom INSERT, UPDATE, and DELETE statements which update the <code>valid</code> column accordingly.
+The custom <code>@Loader</code> is used to retrieve only <code>Person</code> rows that are valid.</p>
+</div>
+<div class="paragraph">
+<p>The same is done for the <code>phones</code> collection. The <code>@SQLDeleteAll</code> and the <code>SQLInsert</code> queries are used whenever the collection is modified.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>You also call a store procedure using the custom CRUD statements; the only requirement is to set the <code>callable</code> attribute to <code>true</code>.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>To check that the execution happens correctly, Hibernate allows you to define one of those three strategies:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>none: no check is performed; the store procedure is expected to fail upon constraint violations</p>
+</li>
+<li>
+<p>count: use of row-count returned by the <code>executeUpdate()</code> method call to check that the update was successful</p>
+</li>
+<li>
+<p>param: like count but using a <code>CallableStatement</code> output parameter.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>To define the result check style, use the <code>check</code> parameter.</p>
+</div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>The parameter order is important and is defined by the order Hibernate handles properties.
+You can see the expected order by enabling debug logging, so Hibernate can print out the static SQL that is used to create, update, delete etc. entities.</p>
+</div>
+<div class="paragraph">
+<p>To see the expected sequence, remember to not include your custom SQL through annotations or mapping files as that will override the Hibernate generated static sql.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Overriding SQL statements for secondary tables is also possible using <code>@org.hibernate.annotations.Table</code> and the <code>sqlInsert</code>, <code>sqlUpdate</code>, <code>sqlDelete</code> attributes.</p>
+</div>
+<div id="sql-custom-crud-secondary-table-example" class="exampleblock">
+<div class="title">Example 56. Overriding SQL statements for secondary tables</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">@Entity(name = "Person")
+@Table(name = "person")
+@SQLInsert(
+    sql = "INSERT INTO person (name, id, valid) VALUES (?, ?, true) "
+)
+@SQLDelete(
+    sql = "UPDATE person SET valid = false WHERE id = ? "
+)
+@SecondaryTable(name = "person_details",
+    pkJoinColumns = @PrimaryKeyJoinColumn(name = "person_id"))
+@org.hibernate.annotations.Table(
+    appliesTo = "person_details",
+    sqlInsert = @SQLInsert(
+        sql = "INSERT INTO person_details (image, person_id, valid) VALUES (?, ?, true) ",
+        check = ResultCheckStyle.COUNT
+    ),
+    sqlDelete = @SQLDelete(
+        sql = "UPDATE person_details SET valid = false WHERE person_id = ? "
+    )
+)
+@Loader(namedQuery = "find_valid_person")
+@NamedNativeQueries({
+    @NamedNativeQuery(
+        name = "find_valid_person",
+        query = "select " +
+                "    p.id, " +
+                "    p.name, " +
+                "    pd.image  " +
+                "from person p  " +
+                "left outer join person_details pd on p.id = pd.person_id  " +
+                "where p.id = ? and p.valid = true and pd.valid = true",
+        resultClass = Person.class
+    )
+})
+public static class Person {
+
+    @Id
+    @GeneratedValue
+    private Long id;
+
+    private String name;
+
+    @Column(name = "image", table = "person_details")
+    private byte[] image;
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public byte[] getImage() {
+        return image;
+    }
+
+    public void setImage(byte[] image) {
+        this.image = image;
+    }
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>The SQL is directly executed in your database, so you can use any dialect you like.
+This will, however, reduce the portability of your mapping if you use database specific SQL.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>You can also use stored procedures for customizing the CRUD statements.</p>
+</div>
+<div class="paragraph">
+<p>Assuming the following stored procedure:</p>
+</div>
+<div id="sql-sp-soft-delete-example" class="exampleblock">
+<div class="title">Example 57. Oracle stored procedure to soft-delete a given entity</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">statement.executeUpdate(
+    "CREATE OR REPLACE PROCEDURE sp_delete_person ( " +
+    "   personId IN NUMBER ) " +
+    "AS  " +
+    "BEGIN " +
+    "    UPDATE person SET valid = 0 WHERE id = personId; " +
+    "END;"
+);}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>The entity can use this stored procedure to soft-delete the entity in question:</p>
+</div>
+<div id="sql-sp-custom-crud-example" class="exampleblock">
+<div class="title">Example 58. Customizing the entity delete statement to use the Oracle stored procedure= instead</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">@SQLDelete(
+    sql =   "{ call sp_delete_person( ? ) } ",
+    callable = true
+)</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>You need to set the <code>callable</code> attribute when using a stored procedure instead of an SQL statement.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div id="footer">
+<div id="footer-text">
+Last updated 2016-10-05 09:27:39 +01:00
+</div>
+</div>
+</body>
+</html>

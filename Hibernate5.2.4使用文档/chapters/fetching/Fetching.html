@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<!--[if IE]><meta http-equiv="X-UA-Compatible" content="IE=edge"><![endif]-->
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="generator" content="Asciidoctor 1.5.2">
+<title>Fetching</title>
+<link rel="stylesheet" href="./css/hibernate.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.2.0/css/font-awesome.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prettify/r298/prettify.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prettify/r298/prettify.min.js"></script>
+<script>document.addEventListener('DOMContentLoaded', prettyPrint)</script>
+</head>
+<body class="article">
+<div id="header">
+</div>
+<div id="content">
+<div class="sect1">
+<h2 id="fetching">Fetching</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Fetching, essentially, is the process of grabbing data from the database and making it available to the application.
+Tuning how an application does fetching is one of the biggest factors in determining how an application will perform.
+Fetching too much data, in terms of width (values/columns) and/or depth (results/rows),
+adds unnecessary overhead in terms of both JDBC communication and ResultSet processing.
+Fetching too little data might cause additional fetching to be needed.
+Tuning how an application fetches data presents a great opportunity to influence the application overall performance.</p>
+</div>
+<div class="sect2">
+<h3 id="fetching-basics">The basics</h3>
+<div class="paragraph">
+<p>The concept of fetching breaks down into two different questions.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>When should the data be fetched? Now? Later?</p>
+</li>
+<li>
+<p>How should the data be fetched?</p>
+</li>
+</ul>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>"now" is generally termed eager or immediate. "later" is generally termed lazy or delayed.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>There are a number of scopes for defining fetching:</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><em>static</em></dt>
+<dd>
+<p>Static definition of fetching strategies is done in the mappings.
+The statically-defined fetch strategies is used in the absence of any dynamically defined strategies</p>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">SELECT</dt>
+<dd>
+<p>Performs a separate SQL select to load the data. This can either be EAGER (the second select is issued immediately) or LAZY (the second select is delayed until the data is needed).
+This is the strategy generally termed N+1.</p>
+</dd>
+<dt class="hdlist1">JOIN</dt>
+<dd>
+<p>Inherently an EAGER style of fetching. The data to be fetched is obtained through the use of an SQL outer join.</p>
+</dd>
+<dt class="hdlist1">BATCH</dt>
+<dd>
+<p>Performs a separate SQL select to load a number of related data items using an IN-restriction as part of the SQL WHERE-clause based on a batch size.
+Again, this can either be EAGER (the second select is issued immediately) or LAZY (the second select is delayed until the data is needed).</p>
+</dd>
+<dt class="hdlist1">SUBSELECT</dt>
+<dd>
+<p>Performs a separate SQL select to load associated data based on the SQL restriction used to load the owner.
+Again, this can either be EAGER (the second select is issued immediately) or LAZY (the second select is delayed until the data is needed).</p>
+</dd>
+</dl>
+</div>
+</dd>
+<dt class="hdlist1"><em>dynamic</em> (sometimes referred to as runtime)</dt>
+<dd>
+<p>Dynamic definition is really use-case centric. There are multiple ways to define dynamic fetching:</p>
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><em>fetch profiles</em></dt>
+<dd>
+<p>defined in mappings, but can be enabled/disabled on the <code>Session</code>.</p>
+</dd>
+<dt class="hdlist1">HQL/JPQL</dt>
+<dd>
+<p>and both Hibernate and JPA Criteria queries have the ability to specify fetching, specific to said query.</p>
+</dd>
+<dt class="hdlist1">entity graphs</dt>
+<dd>
+<p>Starting in Hibernate 4.2 (JPA 2.1) this is also an option.</p>
+</dd>
+</dl>
+</div>
+</dd>
+</dl>
+</div>
+</div>
+<div class="sect2">
+<h3 id="fetching-strategies">Applying fetch strategies</h3>
+<div class="paragraph">
+<p>Let&#8217;s consider these topics as it relates to an simple domain model and a few use cases.</p>
+</div>
+<div id="fetching-strategies-domain-model-example" class="exampleblock">
+<div class="title">Example 1. Sample domain model</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">@Entity(name = "Department")
+public static class Department {
+
+    @Id
+    private Long id;
+
+    @OneToMany(mappedBy = "department")
+    private List&lt;Employee&gt; employees = new ArrayList&lt;&gt;();
+
+    //Getters and setters omitted for brevity
+}
+
+@Entity(name = "Employee")
+public static class Employee {
+
+    @Id
+    private Long id;
+
+    @NaturalId
+    private String username;
+
+    @Column(name = "pswd")
+    @ColumnTransformer(
+        read = "decrypt( 'AES', '00', pswd  )",
+        write = "encrypt('AES', '00', ?)"
+    )
+    private String password;
+
+    private int accessLevel;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    private Department department;
+
+    @ManyToMany(mappedBy = "employees")
+    private List&lt;Project&gt; projects = new ArrayList&lt;&gt;();
+
+    //Getters and setters omitted for brevity
+}
+
+@Entity(name = "Project")
+public class Project {
+
+    @Id
+    private Long id;
+
+    @ManyToMany
+    private List&lt;Employee&gt; employees = new ArrayList&lt;&gt;();
+
+    //Getters and setters omitted for brevity
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>The Hibernate recommendation is to statically mark all associations lazy and to use dynamic fetching strategies for eagerness.
+This is unfortunately at odds with the JPA specification which defines that all one-to-one and many-to-one associations should be eagerly fetched by default.
+Hibernate, as a JPA provider, honors that default.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="fetching-strategies-no-fetching">No fetching</h3>
+<div class="paragraph">
+<p>For the first use case, consider the application login process for an <code>Employee</code>.
+Let&#8217;s assume that login only requires access to the <code>Employee</code> information, not <code>Project</code> nor <code>Department</code> information.</p>
+</div>
+<div id="fetching-strategies-no-fetching-example" class="exampleblock">
+<div class="title">Example 2. No fetching example</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">Employee employee = entityManager.createQuery(
+    "select e " +
+    "from Employee e " +
+    "where " +
+    "    e.username = :username and " +
+    "    e.password = :password",
+    Employee.class)
+.setParameter( "username", username)
+.setParameter( "password", password)
+.getSingleResult();</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>In this example, the application gets the <code>Employee</code> data.
+However, because all associations from `Employee `are declared as LAZY (JPA defines the default for collections as LAZY) no other data is fetched.</p>
+</div>
+<div class="paragraph">
+<p>If the login process does not need access to the <code>Employee</code> information specifically, another fetching optimization here would be to limit the width of the query results.</p>
+</div>
+<div id="fetching-strategies-no-fetching-scalar-example" class="exampleblock">
+<div class="title">Example 3. No fetching (scalar) example</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">Integer accessLevel = entityManager.createQuery(
+    "select e.accessLevel " +
+    "from Employee e " +
+    "where " +
+    "    e.username = :username and " +
+    "    e.password = :password",
+    Integer.class)
+.setParameter( "username", username)
+.setParameter( "password", password)
+.getSingleResult();</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="fetching-strategies-dynamic-fetching">Dynamic fetching via queries</h3>
+<div class="paragraph">
+<p>For the second use case, consider a screen displaying the <code>Projects</code> for an <code>Employee</code>.
+Certainly access to the <code>Employee `is needed, as is the collection of `Projects</code> for that Employee. Information about <code>Departments</code>, other <code>Employees</code> or other <code>Projects</code> is not needed.</p>
+</div>
+<div id="fetching-strategies-dynamic-fetching-jpql-example" class="exampleblock">
+<div class="title">Example 4. Dynamic JPQL fetching example</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">Employee employee = entityManager.createQuery(
+    "select e " +
+    "from Employee e " +
+    "left join fetch e.projects " +
+    "where " +
+    "    e.username = :username and " +
+    "    e.password = :password",
+    Employee.class)
+.setParameter( "username", username)
+.setParameter( "password", password)
+.getSingleResult();</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div id="fetching-strategies-dynamic-fetching-criteria-example" class="exampleblock">
+<div class="title">Example 5. Dynamic query fetching example</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">CriteriaBuilder builder = entityManager.getCriteriaBuilder();
+CriteriaQuery&lt;Employee&gt; query = builder.createQuery( Employee.class );
+Root&lt;Employee&gt; root = query.from( Employee.class );
+root.fetch( "projects", JoinType.LEFT);
+query.select(root).where(
+    builder.and(
+        builder.equal(root.get("username"), username),
+        builder.equal(root.get("password"), password)
+    )
+);
+Employee employee = entityManager.createQuery( query ).getSingleResult();</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>In this example we have an <code>Employee `and their `Projects</code> loaded in a single query shown both as an HQL query and a JPA Criteria query.
+In both cases, this resolves to exactly one database query to get all that information.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="fetching-strategies-dynamic-fetching-entity-graph">Dynamic fetching via JPA entity graph</h3>
+<div class="paragraph">
+<p>JPA 2.1 introduced entity graphs so the application developer has more control over fetch plans.</p>
+</div>
+<div id="fetching-strategies-dynamic-fetching-entity-graph-example" class="exampleblock">
+<div class="title">Example 6. Fetch graph example</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">@Entity(name = "Employee")
+@NamedEntityGraph(name = "employee.projects",
+    attributeNodes = @NamedAttributeNode("projects")
+)</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">Employee employee = entityManager.find(
+    Employee.class,
+    userId,
+    Collections.singletonMap(
+        "javax.persistence.fetchgraph",
+        entityManager.getEntityGraph( "employee.projects" )
+    )
+);</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Entity graphs are the way to override the EAGER fetching associations at runtime.
+With JPQL, if an EAGER association is omitted, Hibernate will issue a secondary select for every association needed to be fetched eagerly.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="fetching-strategies-dynamic-fetching-profile">Dynamic fetching via Hibernate profiles</h3>
+<div class="paragraph">
+<p>Suppose we wanted to leverage loading by natural-id to obtain the <code>Employee</code> information in the "projects for and employee" use-case.
+Loading by natural-id uses the statically defined fetching strategies, but does not expose a means to define load-specific fetching.
+So we would leverage a fetch profile.</p>
+</div>
+<div id="fetching-strategies-dynamic-fetching-profile-example" class="exampleblock">
+<div class="title">Example 7. Fetch profile example</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">@Entity(name = "Employee")
+@FetchProfile(
+    name = "employee.projects",
+    fetchOverrides = {
+        @FetchProfile.FetchOverride(
+            entity = Employee.class,
+            association = "projects",
+            mode = FetchMode.JOIN
+        )
+    }
+)</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">session.enableFetchProfile( "employee.projects" );
+Employee employee = session.bySimpleNaturalId( Employee.class ).load( username );</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Here the <code>Employee</code> is obtained by natural-id lookup and the Employee&#8217;s <code>Project</code> data is fetched eagerly.
+If the <code>Employee</code> data is resolved from cache, the <code>Project</code> data is resolved on its own.
+However, if the <code>Employee</code> data is not resolved in cache, the <code>Employee</code> and <code>Project</code> data is resolved in one SQL query via join as we saw above.</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div id="footer">
+<div id="footer-text">
+Last updated 2016-10-05 09:27:39 +01:00
+</div>
+</div>
+</body>
+</html>

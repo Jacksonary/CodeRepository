@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<!--[if IE]><meta http-equiv="X-UA-Compatible" content="IE=edge"><![endif]-->
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="generator" content="Asciidoctor 1.5.2">
+<title>Batching</title>
+<link rel="stylesheet" href="./css/hibernate.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.2.0/css/font-awesome.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prettify/r298/prettify.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prettify/r298/prettify.min.js"></script>
+<script>document.addEventListener('DOMContentLoaded', prettyPrint)</script>
+</head>
+<body class="article">
+<div id="header">
+</div>
+<div id="content">
+<div class="sect1">
+<h2 id="batch">Batching</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="batch-jdbcbatch">JDBC batching</h3>
+<div class="paragraph">
+<p>JDBC offers support for batching together SQL statements that can be represented as a single PreparedStatement.
+Implementation wise this generally means that drivers will send the batched operation to the server in one call,
+which can save on network calls to the database. Hibernate can leverage JDBC batching.
+The following settings control this behavior.</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><code>hibernate.jdbc.batch_size</code></dt>
+<dd>
+<p>Controls the maximum number of statements Hibernate will batch together before asking the driver to execute the batch.
+Zero or a negative number disables this feature.</p>
+</dd>
+<dt class="hdlist1"><code>hibernate.jdbc.batch_versioned_data</code></dt>
+<dd>
+<p>Some JDBC drivers return incorrect row counts when a batch is executed.
+If your JDBC driver falls into this category this setting should be set to <code>false</code>.
+Otherwise, it is safe to enable this which will allow Hibernate to still batch the DML for versioned entities and still use the returned row counts for optimistic lock checks.
+Since 5.0, it defaults to true. Previously (versions 3.x and 4.x), it used to be false.</p>
+</dd>
+<dt class="hdlist1"><code>hibernate.jdbc.batch.builder</code></dt>
+<dd>
+<p>Names the implementation class used to manage batching capabilities.
+It is almost never a good idea to switch from Hibernate&#8217;s default implementation.
+But if you wish to, this setting would name the <code>org.hibernate.engine.jdbc.batch.spi.BatchBuilder</code> implementation to use.</p>
+</dd>
+<dt class="hdlist1"><code>hibernate.order_updates</code></dt>
+<dd>
+<p>Forces Hibernate to order SQL updates by the entity type and the primary key value of the items being updated.
+This allows for more batching to be used. It will also result in fewer transaction deadlocks in highly concurrent systems.
+Comes with a performance hit, so benchmark before and after to see if this actually helps or hurts your application.</p>
+</dd>
+<dt class="hdlist1"><code>hibernate.order_inserts</code></dt>
+<dd>
+<p>Forces Hibernate to order inserts to allow for more batching to be used.
+Comes with a performance hit, so benchmark before and after to see if this actually helps or hurts your application.</p>
+</dd>
+</dl>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Since version 5.2, Hibernate allows overriding the global JDBC batch size given by the <code>hibernate.jdbc.batch_size</code> configuration property for a given <code>Session</code>.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div id="batch-session-jdbc-batch-size-example" class="exampleblock">
+<div class="title">Example 1. Hibernate specific JDBC batch size configuration on a per <code>Session</code> basis</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">entityManager
+    .unwrap( Session.class )
+    .setJdbcBatchSize( 10 );</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="batch-session-batch">Session batching</h3>
+<div class="paragraph">
+<p>The following example shows an anti-pattern for batch inserts.</p>
+</div>
+<div id="batch-session-batch-example" class="exampleblock">
+<div class="title">Example 2. Naive way to insert 100 000 entities with Hibernate</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">EntityManager entityManager = null;
+EntityTransaction txn = null;
+try {
+    entityManager = entityManagerFactory().createEntityManager();
+
+    txn = entityManager.getTransaction();
+    txn.begin();
+
+    for ( int i = 0; i &lt; 100_000; i++ ) {
+        Person Person = new Person( String.format( "Person %d", i ) );
+        entityManager.persist( Person );
+    }
+
+    txn.commit();
+} catch (RuntimeException e) {
+    if ( txn != null &amp;&amp; txn.isActive()) txn.rollback();
+        throw e;
+} finally {
+    if (entityManager != null) {
+        entityManager.close();
+    }
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>There are several problems associated with this example:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Hibernate caches all the newly inserted <code>Customer</code> instances in the session-level c1ache, so, when the transaction ends, 100 000 entities are managed by the persistence context.
+If the maximum memory allocated to the JVM is rather low, this example could fails with an <code>OutOfMemoryException</code>.
+The Java 1.8 JVM allocated either 1/4 of available RAM or 1Gb, which can easily accommodate 100 000 objects on the heap.</p>
+</li>
+<li>
+<p>long-running transactions can deplete a connection pool so other transactions don&#8217;t get a chance to proceed.</p>
+</li>
+<li>
+<p>JDBC batching is not enabled by default, so every insert statement requires a database roundtrip.
+To enable JDBC batching, set the <code>hibernate.jdbc.batch_size</code> property to an integer between 10 and 50.</p>
+</li>
+</ol>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Hibernate disables insert batching at the JDBC level transparently if you use an identity identifier generator.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="sect3">
+<h4 id="batch-session-batch-insert">Batch inserts</h4>
+<div class="paragraph">
+<p>When you make new objects persistent, employ methods <code>flush()</code> and <code>clear()</code> to the session regularly, to control the size of the first-level cache.</p>
+</div>
+<div id="batch-session-batch-insert-example" class="exampleblock">
+<div class="title">Example 3. Flushing and clearing the <code>Session</code></div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">EntityManager entityManager = null;
+EntityTransaction txn = null;
+try {
+    entityManager = entityManagerFactory().createEntityManager();
+
+    txn = entityManager.getTransaction();
+    txn.begin();
+
+    int batchSize = 25;
+
+    for ( int i = 0; i &lt; entityCount; ++i ) {
+        Person Person = new Person( String.format( "Person %d", i ) );
+        entityManager.persist( Person );
+
+        if ( i &gt; 0 &amp;&amp; i % batchSize == 0 ) {
+            //flush a batch of inserts and release memory
+            entityManager.flush();
+            entityManager.clear();
+        }
+    }
+
+    txn.commit();
+} catch (RuntimeException e) {
+    if ( txn != null &amp;&amp; txn.isActive()) txn.rollback();
+        throw e;
+} finally {
+    if (entityManager != null) {
+        entityManager.close();
+    }
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="batch-session-scroll">Session scroll</h4>
+<div class="paragraph">
+<p>When you retrieve and update data, <code>flush()</code> and <code>clear()</code> the session regularly.
+In addition, use method <code>scroll()</code> to take advantage of server-side cursors for queries that return many rows of data.</p>
+</div>
+<div id="batch-session-scroll-example" class="exampleblock">
+<div class="title">Example 4. Using <code>scroll()</code></div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">EntityManager entityManager = null;
+EntityTransaction txn = null;
+ScrollableResults scrollableResults = null;
+try {
+    entityManager = entityManagerFactory().createEntityManager();
+
+    txn = entityManager.getTransaction();
+    txn.begin();
+
+    int batchSize = 25;
+
+    Session session = entityManager.unwrap( Session.class );
+
+    scrollableResults = session
+        .createQuery( "select p from Person p" )
+        .setCacheMode( CacheMode.IGNORE )
+        .scroll( ScrollMode.FORWARD_ONLY );
+
+    int count = 0;
+    while ( scrollableResults.next() ) {
+        Person Person = (Person) scrollableResults.get( 0 );
+        processPerson(Person);
+        if ( ++count % batchSize == 0 ) {
+            //flush a batch of updates and release memory:
+            entityManager.flush();
+            entityManager.clear();
+        }
+    }
+
+    txn.commit();
+} catch (RuntimeException e) {
+    if ( txn != null &amp;&amp; txn.isActive()) txn.rollback();
+        throw e;
+} finally {
+    if (scrollableResults != null) {
+        scrollableResults.close();
+    }
+    if (entityManager != null) {
+        entityManager.close();
+    }
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>You should always close the <code>ScrollableResults</code>, to deallocate the associated <code>PreparedStatement</code> and avoid resource leaking.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_statelesssession">StatelessSession</h4>
+<div class="paragraph">
+<p><code>StatelessSession</code> is a command-oriented API provided by Hibernate.
+Use it to stream data to and from the database in the form of detached objects.
+A <code>StatelessSession</code> has no persistence context associated with it and does not provide many of the higher-level life cycle semantics.</p>
+</div>
+<div class="paragraph">
+<p>Some of the things not provided by a <code>StatelessSession</code> include:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>a first-level cache</p>
+</li>
+<li>
+<p>interaction with any second-level or query cache</p>
+</li>
+<li>
+<p>transactional write-behind or automatic dirty checking</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Limitations of <code>StatelessSession</code>:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Operations performed using a stateless session never cascade to associated instances.</p>
+</li>
+<li>
+<p>Collections are ignored by a stateless session.</p>
+</li>
+<li>
+<p>Lazy loading of associations is not supported.</p>
+</li>
+<li>
+<p>Operations performed via a stateless session bypass Hibernate&#8217;s event model and interceptors.</p>
+</li>
+<li>
+<p>Due to the lack of a first-level cache, Stateless sessions are vulnerable to data aliasing effects.</p>
+</li>
+<li>
+<p>A stateless session is a lower-level abstraction that is much closer to the underlying JDBC.</p>
+</li>
+</ul>
+</div>
+<div id="batch-stateless-session-example" class="exampleblock">
+<div class="title">Example 5. Using a  <code>StatelessSession</code></div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">StatelessSession statelessSession = null;
+Transaction txn = null;
+ScrollableResults scrollableResults = null;
+try {
+    SessionFactory sessionFactory = entityManagerFactory().unwrap( SessionFactory.class );
+    statelessSession = sessionFactory.openStatelessSession();
+
+    txn = statelessSession.getTransaction();
+    txn.begin();
+
+    scrollableResults = statelessSession
+        .createQuery( "select p from Person p" )
+        .scroll(ScrollMode.FORWARD_ONLY);
+
+    while ( scrollableResults.next() ) {
+        Person Person = (Person) scrollableResults.get( 0 );
+        processPerson(Person);
+        statelessSession.update( Person );
+    }
+
+    txn.commit();
+} catch (RuntimeException e) {
+    if ( txn != null &amp;&amp; txn.getStatus() == TransactionStatus.ACTIVE) txn.rollback();
+        throw e;
+} finally {
+    if (scrollableResults != null) {
+        scrollableResults.close();
+    }
+    if (statelessSession != null) {
+        statelessSession.close();
+    }
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>The <code>Customer</code> instances returned by the query are immediately detached.
+They are never associated with any persistence context.</p>
+</div>
+<div class="paragraph">
+<p>The <code>insert()</code>, <code>update()</code>, and <code>delete()</code> operations defined by the <code>StatelessSession</code> interface operate directly on database rows.
+They cause the corresponding SQL operations to be executed immediately.
+They have different semantics from the <code>save()</code>, <code>saveOrUpdate()</code>, and <code>delete()</code> operations defined by the <code>Session</code> interface.</p>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="batch-bulk-hql">Hibernate Query Language for DML</h3>
+<div class="paragraph">
+<p>DML, or Data Manipulation Language, refers to SQL statements such as <code>INSERT</code>, <code>UPDATE</code>, and <code>DELETE</code>.
+Hibernate provides methods for bulk SQL-style DML statement execution, in the form of Hibernate Query Language (HQL).</p>
+</div>
+<div class="sect3">
+<h4 id="batch-bulk-hql-update-delete">HQL/JPQL for UPDATE and DELETE</h4>
+<div class="paragraph">
+<p>Both the Hibernate native Query Language and JPQL (Java Persistence Query Language) provide support for bulk UPDATE and DELETE.</p>
+</div>
+<div id="batch-bulk-hql-update-delete-example" class="exampleblock">
+<div class="title">Example 6. Psuedo-syntax for UPDATE and DELETE statements using HQL</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">UPDATE FROM EntityName e WHERE e.name = ?
+
+DELETE FROM EntityName e WHERE e.name = ?</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>The <code>FROM</code> and <code>WHERE</code> clauses are each optional, but it&#8217;s good practice to use them.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>The <code>FROM</code> clause can only refer to a single entity, which can be aliased.
+If the entity name is aliased, any property references must be qualified using that alias.
+If the entity name is not aliased, then it is illegal for any property references to be qualified.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Joins, either implicit or explicit, are prohibited in a bulk HQL query.
+You can use sub-queries in the <code>WHERE</code> clause, and the sub-queries themselves can contain joins.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div id="batch-bulk-jpql-update-example" class="exampleblock">
+<div class="title">Example 7. Executing a JPQL <code>UPDATE</code>, using the <code>Query.executeUpdate()</code></div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">int updatedEntities = entityManager.createQuery(
+    "update Person p " +
+    "set p.name = :newName " +
+    "where p.name = :oldName" )
+.setParameter( "oldName", oldName )
+.setParameter( "newName", newName )
+.executeUpdate();</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div id="batch-bulk-hql-update-example" class="exampleblock">
+<div class="title">Example 8. Executing an HQL <code>UPDATE</code>, using the <code>Query.executeUpdate()</code></div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">int updatedEntities = session.createQuery(
+    "update Person " +
+    "set name = :newName " +
+    "where name = :oldName" )
+.setParameter( "oldName", oldName )
+.setParameter( "newName", newName )
+.executeUpdate();</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>In keeping with the EJB3 specification, HQL <code>UPDATE</code> statements, by default, do not effect the version or the timestamp property values for the affected entities.
+You can use a versioned update to force Hibernate to reset the version or timestamp property values, by adding the <code>VERSIONED</code> keyword after the <code>UPDATE</code> keyword.</p>
+</div>
+<div id="batch-bulk-hql-update-version-example" class="exampleblock">
+<div class="title">Example 9. Updating the version of timestamp</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">int updatedEntities = session.createQuery(
+    "update versioned Person " +
+    "set name = :newName " +
+    "where name = :oldName" )
+.setParameter( "oldName", oldName )
+.setParameter( "newName", newName )
+.executeUpdate();</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>If you use the <code>VERSIONED</code> statement, you cannot use custom version types, which use class <code>org.hibernate.usertype.UserVersionType</code>.</p>
+</div>
+<div class="paragraph">
+<p>This feature is only available in HQL since it&#8217;s not standardized by JPA.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div id="batch-bulk-jpql-delete-example" class="exampleblock">
+<div class="title">Example 10. A JPQL <code>DELETE</code> statement</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">int deletedEntities = entityManager.createQuery(
+    "delete Person p " +
+    "where p.name = :name" )
+.setParameter( "name", name )
+.executeUpdate();</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div id="batch-bulk-hql-delete-example" class="exampleblock">
+<div class="title">Example 11. An HQL <code>DELETE</code> statement</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">int deletedEntities = session.createQuery(
+    "delete Person " +
+    "where name = :name" )
+.setParameter( "name", name )
+.executeUpdate();</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Method <code>Query.executeUpdate()</code> returns an <code>int</code> value, which indicates the number of entities effected by the operation.
+This may or may not correlate to the number of rows effected in the database.
+An JPQL/HQL bulk operation might result in multiple SQL statements being executed, such as for joined-subclass.
+In the example of joined-subclass, a <code>DELETE</code> against one of the subclasses may actually result in deletes in the tables underlying the join, or further down the inheritance hierarchy.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_hql_syntax_for_insert">HQL syntax for INSERT</h4>
+<div class="exampleblock">
+<div class="title">Example 12. Pseudo-syntax for INSERT statements</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">INSERT INTO EntityName
+	properties_list
+SELECT properties_list
+FROM ...</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Only the <code>INSERT INTO &#8230;&#8203; SELECT &#8230;&#8203;</code> form is supported.
+You cannot specify explicit values to insert.</p>
+</div>
+<div class="paragraph">
+<p>The <code>properties_list</code> is analogous to the column specification in the <code>SQL</code> <code>INSERT</code> statement.
+For entities involved in mapped inheritance, you can only use properties directly defined on that given class-level in the <code>properties_list</code>.
+Superclass properties are not allowed and subclass properties are irrelevant.
+In other words, <code>INSERT</code> statements are inherently non-polymorphic.</p>
+</div>
+<div class="paragraph">
+<p>The SELECT statement can be any valid HQL select query, but the return types must match the types expected by the INSERT.
+Hibernate verifies the return types during query compilation, instead of expecting the database to check it.
+Problems might result from Hibernate types which are equivalent, rather than equal.
+One such example is a mismatch between a property defined as an <code>org.hibernate.type.DateType</code> and a property defined as an <code>org.hibernate.type.TimestampType</code>,
+even though the database may not make a distinction, or may be capable of handling the conversion.</p>
+</div>
+<div class="paragraph">
+<p>If id property is not specified in the <code>properties_list</code>,
+Hibernate generates a value automatically.
+Automatic generation is only available if you use ID generators which operate on the database.
+Otherwise, Hibernate throws an exception during parsing.
+Available in-database generators are <code>org.hibernate.id.SequenceGenerator</code> and its subclasses, and objects which implement <code>org.hibernate.id.PostInsertIdentifierGenerator</code>.
+The most notable exception is <code>org.hibernate.id.TableHiLoGenerator</code>, which does not expose a selectable way to get its values.</p>
+</div>
+<div class="paragraph">
+<p>For properties mapped as either version or timestamp, the insert statement gives you two options.
+You can either specify the property in the properties_list, in which case its value is taken from the corresponding select expressions, or omit it from the properties_list,
+in which case the seed value defined by the org.hibernate.type.VersionType is used.</p>
+</div>
+<div id="batch-bulk-hql-insert-example" class="exampleblock">
+<div class="title">Example 13. HQL INSERT statement</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">int insertedEntities = session.createQuery(
+    "insert into Partner (id, name) " +
+    "select p.id, p.name " +
+    "from Person p ")
+.executeUpdate();</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>This section is only a brief overview of HQL. For more information, see <a href="chapters/query/hql/HQL.html#hql">HQL</a>.</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div id="footer">
+<div id="footer-text">
+Last updated 2016-10-05 09:27:39 +01:00
+</div>
+</div>
+</body>
+</html>

@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<!--[if IE]><meta http-equiv="X-UA-Compatible" content="IE=edge"><![endif]-->
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="generator" content="Asciidoctor 1.5.2">
+<title>Embeddable types</title>
+<link rel="stylesheet" href="./css/hibernate.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.2.0/css/font-awesome.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prettify/r298/prettify.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prettify/r298/prettify.min.js"></script>
+<script>document.addEventListener('DOMContentLoaded', prettyPrint)</script>
+</head>
+<body class="article">
+<div id="header">
+</div>
+<div id="content">
+<div class="sect2">
+<h3 id="embeddables">Embeddable types</h3>
+<div class="paragraph">
+<p>Historically Hibernate called these components.
+JPA calls them embeddables.
+Either way the concept is the same: a composition of values.
+For example we might have a Name class that is a composition of first-name and last-name, or an Address class that is a composition of street, city, postal code, etc.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="title">Usage of the word <em>embeddable</em></div>
+<div class="paragraph">
+<p>To avoid any confusion with the annotation that marks a given embeddable type, the annotation will be further referred as <code>@Embeddable</code>.</p>
+</div>
+<div class="paragraph">
+<p>Throughout this chapter and thereafter, for brevity sake, embeddable types may also be referred as <em>embeddable</em>.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="exampleblock">
+<div class="title">Example 1. Simple embeddable type example</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">@Embeddable
+public class Name {
+
+    private String firstName;
+
+    private String middleName;
+
+    private String lastName;
+
+    ...
+}</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">@Embeddable
+public class Address {
+
+    private String line1;
+
+    private String line2;
+
+    @Embedded
+    private ZipCode zipCode;
+
+    ...
+
+    @Embeddable
+    public static class Zip {
+
+        private String postalCode;
+
+        private String plus4;
+
+        ...
+    }
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>An embeddable type is another form of value type, and its lifecycle is bound to a parent entity type, therefore inheriting the attribute access from its parent (for details on attribute access, see <a href="chapters/domain/entity.html#access-embeddable-types">Access strategies</a>).</p>
+</div>
+<div class="paragraph">
+<p>Embeddable types can be made up of basic values as well as associations, with the caveat that, when used as collection elements, they cannot define collections themselves.</p>
+</div>
+<div class="sect3">
+<h4 id="_component_embedded">Component / Embedded</h4>
+<div class="paragraph">
+<p>Most often, embeddable types are used to group multiple basic type mappings and reuse them across several entities.</p>
+</div>
+<div class="exampleblock">
+<div class="title">Example 2. Simple Embeddedable</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">@Entity
+public class Person {
+
+    @Id
+    private Integer id;
+
+    @Embedded
+    private Name name;
+
+    ...
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>JPA defines two terms for working with an embeddable type: <code>@Embeddable</code> and <code>@Embedded</code>.
+<code>@Embeddable</code> is used to describe the mapping type itself (e.g. <code>Name</code>).
+<code>@Embedded</code> is for referencing a given embeddable type (e.g. <code>person.name</code>).</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>So, the embeddable type is represented by the <code>Name</code> class and the parent makes use of it through the <code>person.name</code> object composition.</p>
+</div>
+<div class="exampleblock">
+<div class="title">Example 3. Person table</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-sql" data-lang="sql">create table Person (
+    id integer not null,
+    firstName VARCHAR,
+    middleName VARCHAR,
+    lastName VARCHAR,
+    ...
+)</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>The composed values are mapped to the same table as the parent table.
+Composition is part of good OO data modeling (idiomatic Java).
+In fact, that table could also be mapped by the following entity type instead.</p>
+</div>
+<div class="exampleblock">
+<div class="title">Example 4. Alternative to embeddable type composition</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">@Entity
+public class Person {
+
+    @Id
+    private Integer id;
+
+    private String firstName;
+
+    private String middleName;
+
+    private String lastName;
+
+    ...
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>The composition form is certainly more Object-oriented, and that becomes more evident as we work with multiple embeddable types.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="embeddable-multiple">Multiple embeddable types</h4>
+<div class="exampleblock">
+<div class="title">Example 5. Multiple embeddable types</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">@Entity
+public class Contact {
+
+    @Id
+    private Integer id;
+
+    @Embedded
+    private Name name;
+
+    @Embedded
+    private Address homeAddress;
+
+    @Embedded
+    private Address mailingAddress;
+
+    @Embedded
+    private Address workAddress;
+
+    ...
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Although from an object-oriented perspective, it&#8217;s much more convenient to work with embeddable types, this example doesn&#8217;t work as-is.
+When the same embeddable type is included multiple times in the same parent entity type, the JPA specification demands setting the associated column names explicitly.</p>
+</div>
+<div class="paragraph">
+<p>This requirement is due to how object properties are mapped to database columns.
+By default, JPA expects a database column having the same name with its associated object property.
+When including multiple embeddables, the implicit name-based mapping rule doesn&#8217;t work anymore because multiple object properties could end-up being mapped to the same database column.</p>
+</div>
+<div class="paragraph">
+<p>We have a few options to handle this issue.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="embeddable-multiple-jpa">JPA&#8217;s AttributeOverride</h4>
+<div class="paragraph">
+<p>JPA defines the <code>@AttributeOverride</code> annotation to handle this scenario.</p>
+</div>
+<div class="exampleblock">
+<div class="title">Example 6. JPA&#8217;s AttributeOverride</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">@Entity
+public class Contact {
+
+    @Id
+    private Integer id;
+
+    @Embedded
+    private Name name;
+
+    @Embedded
+    @AttributeOverrides(
+        @AttributeOverride(
+            name = "line1",
+            column = @Column( name = "home_address_line1" ),
+        ),
+        @AttributeOverride(
+            name = "line2",
+            column = @Column( name = "home_address_line2" )
+        ),
+        @AttributeOverride(
+            name = "zipCode.postalCode",
+            column = @Column( name = "home_address_postal_cd" )
+        ),
+        @AttributeOverride(
+            name = "zipCode.plus4",
+            column = @Column( name = "home_address_postal_plus4" )
+        )
+    )
+    private Address homeAddress;
+
+    @Embedded
+    @AttributeOverrides(
+        @AttributeOverride(
+            name = "line1",
+            column = @Column( name = "mailing_address_line1" ),
+        ),
+        @AttributeOverride(
+            name = "line2",
+            column = @Column( name = "mailing_address_line2" )
+        ),
+        @AttributeOverride(
+            name = "zipCode.postalCode",
+            column = @Column( name = "mailing_address_postal_cd" )
+        ),
+        @AttributeOverride(
+            name = "zipCode.plus4",
+            column = @Column( name = "mailing_address_postal_plus4" )
+        )
+    )
+    private Address mailingAddress;
+
+    @Embedded
+    @AttributeOverrides(
+        @AttributeOverride(
+            name = "line1",
+            column = @Column( name = "work_address_line1" ),
+        ),
+        @AttributeOverride(
+            name = "line2",
+            column = @Column( name = "work_address_line2" )
+        ),
+        @AttributeOverride(
+            name = "zipCode.postalCode",
+            column = @Column( name = "work_address_postal_cd" )
+        ),
+        @AttributeOverride(
+            name = "zipCode.plus4",
+            column = @Column( name = "work_address_postal_plus4" )
+        )
+    )
+    private Address workAddress;
+
+    ...
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>This way, the mapping conflict is resolved by setting up explicit name-based property-column type mappings.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="embeddable-multiple-namingstrategy">ImplicitNamingStrategy</h4>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>This is a Hibernate specific feature.
+Users concerned with JPA provider portability should instead prefer explicit column naming with <a href="#embeddable-multiple-jpa"><code>@AttributeOverride</code></a>.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Hibernate naming strategies are covered in detail in <a href="chapters/domain/naming.html#naming">Naming</a>.
+However, for the purposes of this discussion, Hibernate has the capability to interpret implicit column names in a way that is safe for use with multiple embeddable types.</p>
+</div>
+<div class="exampleblock">
+<div class="title">Example 7. Enabling embeddable type safe implicit naming</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">MetadataSources sources = ...;
+sources.addAnnotatedClass( Address.class );
+sources.addAnnotatedClass( Name.class );
+sources.addAnnotatedClass( Contact.class );
+
+Metadata metadata = sources.getMetadataBuilder().applyImplicitNamingStrategy( ImplicitNamingStrategyComponentPathImpl.INSTANCE )
+...
+.build();</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="exampleblock">
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-sql" data-lang="sql">create table Contact(
+    id integer not null,
+    name_firstName VARCHAR,
+    name_middleName VARCHAR,
+    name_lastName VARCHAR,
+    homeAddress_line1 VARCHAR,
+    homeAddress_line2 VARCHAR,
+    homeAddress_zipCode_postalCode VARCHAR,
+    homeAddress_zipCode_plus4 VARCHAR,
+    mailingAddress_line1 VARCHAR,
+    mailingAddress_line2 VARCHAR,
+    mailingAddress_zipCode_postalCode VARCHAR,
+    mailingAddress_zipCode_plus4 VARCHAR,
+    workAddress_line1 VARCHAR,
+    workAddress_line2 VARCHAR,
+    workAddress_zipCode_postalCode VARCHAR,
+    workAddress_zipCode_plus4 VARCHAR,
+    ...
+)</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Now the "path" to attributes are used in the implicit column naming.
+You could even develop your own to do special implicit naming.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="embeddable-collections">Collections of embeddable types</h4>
+<div class="paragraph">
+<p>Collections of embeddable types are specifically value collections (as embeddable types are a value type).
+Value collections are covered in detail in <a href="chapters/domain/collections.html#collections-value">Collections of value types</a>.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="embeddable-mapkey">Embeddable types as Map key</h4>
+<div class="paragraph">
+<p>Embeddable types can also be used as <code>Map</code> keys.
+This topic is converted in detail in <a href="chapters/domain/collections.html#collections-map">Map - key</a>.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="embeddable-identifier">Embeddable types as identifiers</h4>
+<div class="paragraph">
+<p>Embeddable types can also be used as entity type identifiers.
+This usage is covered in detail in <a href="chapters/domain/identifiers.html#identifiers-composite">Composite identifiers</a>.</p>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Embeddable types that are used as collection entries, map keys or entity type identifiers cannot include their own collection mappings.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+</div>
+<div id="footer">
+<div id="footer-text">
+Last updated 2016-10-05 09:27:39 +01:00
+</div>
+</div>
+</body>
+</html>

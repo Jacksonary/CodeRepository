@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<!--[if IE]><meta http-equiv="X-UA-Compatible" content="IE=edge"><![endif]-->
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="generator" content="Asciidoctor 1.5.2">
+<title>Interceptors and events</title>
+<link rel="stylesheet" href="./css/hibernate.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.2.0/css/font-awesome.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prettify/r298/prettify.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prettify/r298/prettify.min.js"></script>
+<script>document.addEventListener('DOMContentLoaded', prettyPrint)</script>
+</head>
+<body class="article">
+<div id="header">
+</div>
+<div id="content">
+<div class="sect1">
+<h2 id="events">Interceptors and events</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>It is useful for the application to react to certain events that occur inside Hibernate.
+This allows for the implementation of generic functionality and the extension of Hibernate functionality.</p>
+</div>
+<div class="sect2">
+<h3 id="events-interceptors">Interceptors</h3>
+<div class="paragraph">
+<p>The <code>org.hibernate.Interceptor</code> interface provides callbacks from the session to the application,
+allowing the application to inspect and/or manipulate properties of a persistent object before it is saved, updated, deleted or loaded.</p>
+</div>
+<div class="paragraph">
+<p>One possible use for this is to track auditing information.
+The following example shows an <code>Interceptor</code> implementation that automatically logs when an entity is updated.</p>
+</div>
+<div id="events-interceptors-example" class="exampleblock">
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">public static class LoggingInterceptor extends EmptyInterceptor {
+    @Override
+    public boolean onFlushDirty(
+        Object entity,
+        Serializable id,
+        Object[] currentState,
+        Object[] previousState,
+        String[] propertyNames,
+        Type[] types) {
+            LOGGER.debugv( "Entity {0}#{1} changed from {2} to {3}",
+                entity.getClass().getSimpleName(),
+                id,
+                Arrays.toString( previousState ),
+                Arrays.toString( currentState )
+            );
+            return super.onFlushDirty( entity, id, currentState,
+                previousState, propertyNames, types
+        );
+    }
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>You can either implement <code>Interceptor</code> directly or extend <code>org.hibernate.EmptyInterceptor</code>.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>An Interceptor can be either <code>Session</code>-scoped or <code>SessionFactory</code>-scoped.</p>
+</div>
+<div class="paragraph">
+<p>A Session-scoped interceptor is specified when a session is opened.</p>
+</div>
+<div id="events-interceptors-session-scope-example" class="exampleblock">
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">SessionFactory sessionFactory = entityManagerFactory.unwrap( SessionFactory.class );
+Session session = sessionFactory
+    .withOptions()
+    .interceptor(new LoggingInterceptor() )
+    .openSession();
+session.getTransaction().begin();
+
+Customer customer = session.get( Customer.class, customerId );
+customer.setName( "Mr. John Doe" );
+//Entity Customer#1 changed from [John Doe, 0] to [Mr. John Doe, 0]
+
+session.getTransaction().commit();</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>A <code>SessionFactory</code>-scoped interceptor is registered with the <code>Configuration</code> object prior to building the <code>SessionFactory</code>.
+Unless a session is opened explicitly specifying the interceptor to use, the <code>SessionFactory</code>-scoped interceptor will be applied to all sessions opened from that <code>SessionFactory</code>.
+<code>SessionFactory</code>-scoped interceptors must be thread safe.
+Ensure that you do not store session-specific states since multiple sessions will use this interceptor potentially concurrently.</p>
+</div>
+<div id="events-interceptors-session-factory-scope-example" class="exampleblock">
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">SessionFactory sessionFactory = new MetadataSources( new StandardServiceRegistryBuilder().build() )
+    .addAnnotatedClass( Customer.class )
+    .getMetadataBuilder()
+    .build()
+    .getSessionFactoryBuilder()
+    .applyInterceptor( new LoggingInterceptor() )
+    .build();</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="events-events">Native Event system</h3>
+<div class="paragraph">
+<p>If you have to react to particular events in the persistence layer, you can also use the Hibernate <em>event</em> architecture.
+The event system can be used in place of or in addition to interceptors.</p>
+</div>
+<div class="paragraph">
+<p>Many methods of the <code>Session</code> interface correlate to an event type.
+The full range of defined event types is declared as enum values on <code>org.hibernate.event.spi.EventType</code>.
+When a request is made of one of these methods, the Session generates an appropriate event and passes it to the configured event listener(s) for that type.</p>
+</div>
+<div class="paragraph">
+<p>Applications are free to implement a customization of one of the listener interfaces (i.e., the <code>LoadEvent</code> is processed by the registered implementation of the <code>LoadEventListener</code> interface), in which case their implementation would
+be responsible for processing any <code>load()</code> requests made of the <code>Session</code>.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>The listeners should be considered stateless; they are shared between requests, and should not save any state as instance variables.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>A custom listener implements the appropriate interface for the event it wants to process and/or extend one of the convenience base classes
+(or even the default event listeners used by Hibernate out-of-the-box as these are declared non-final for this purpose).
+Here is an example of a custom load event listener:</p>
+</div>
+<div id="events-interceptors-load-listener-example" class="exampleblock">
+<div class="title">Example 1. Custom LoadListener example</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">EntityManagerFactory entityManagerFactory = entityManagerFactory();
+SessionFactoryImplementor sessionFactory = entityManagerFactory.unwrap( SessionFactoryImplementor.class );
+sessionFactory
+    .getServiceRegistry()
+    .getService( EventListenerRegistry.class )
+    .prependListeners( EventType.LOAD, new SecuredLoadEntityListener() );
+
+Customer customer = entityManager.find( Customer.class, customerId );</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="events-declarative-security">Hibernate declarative security</h3>
+<div class="paragraph">
+<p>Usually, declarative security in Hibernate applications is managed in a session facade layer.
+Hibernate allows certain actions to be authorized via JACC and JAAS.
+This is an optional functionality that is built on top of the event architecture.</p>
+</div>
+<div class="paragraph">
+<p>First, you must configure the appropriate event listeners, to enable the use of JACC authorization.
+Again, see <a href="chapters/bootstrap/Bootstrap.html#bootstrap-event-listener-registration">Event Listener Registration</a> for the details.</p>
+</div>
+<div class="paragraph">
+<p>Below is an example of an appropriate <code>org.hibernate.integrator.spi.Integrator</code> implementation for this purpose.</p>
+</div>
+<div id="events-declarative-security-jacc-example" class="exampleblock">
+<div class="title">Example 2. JACC listener registration example</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">public static class JaccIntegrator implements ServiceContributingIntegrator {
+
+    private static final Logger log = Logger.getLogger( JaccIntegrator.class );
+
+    private static final DuplicationStrategy DUPLICATION_STRATEGY =
+            new DuplicationStrategy() {
+        @Override
+        public boolean areMatch(Object listener, Object original) {
+            return listener.getClass().equals( original.getClass() ) &amp;&amp;
+                    JaccSecurityListener.class.isInstance( original );
+        }
+
+        @Override
+        public Action getAction() {
+            return Action.KEEP_ORIGINAL;
+        }
+    };
+
+    @Override
+    public void prepareServices(
+            StandardServiceRegistryBuilder serviceRegistryBuilder) {
+        boolean isSecurityEnabled = serviceRegistryBuilder
+                .getSettings().containsKey( AvailableSettings.JACC_ENABLED );
+        final JaccService jaccService = isSecurityEnabled ?
+                new StandardJaccServiceImpl() : new DisabledJaccServiceImpl();
+        serviceRegistryBuilder.addService( JaccService.class, jaccService );
+    }
+
+    @Override
+    public void integrate(
+            Metadata metadata,
+            SessionFactoryImplementor sessionFactory,
+            SessionFactoryServiceRegistry serviceRegistry) {
+        doIntegration(
+                serviceRegistry
+                        .getService( ConfigurationService.class ).getSettings(),
+                // pass no permissions here, because atm actually injecting the
+                // permissions into the JaccService is handled on SessionFactoryImpl via
+                // the org.hibernate.boot.cfgxml.spi.CfgXmlAccessService
+                null,
+                serviceRegistry
+        );
+    }
+
+    private void doIntegration(
+            Map properties,
+            JaccPermissionDeclarations permissionDeclarations,
+            SessionFactoryServiceRegistry serviceRegistry) {
+        boolean isSecurityEnabled = properties
+                .containsKey( AvailableSettings.JACC_ENABLED );
+        if ( ! isSecurityEnabled ) {
+            log.debug( "Skipping JACC integration as it was not enabled" );
+            return;
+        }
+
+        final String contextId = (String) properties
+                .get( AvailableSettings.JACC_CONTEXT_ID );
+        if ( contextId == null ) {
+            throw new IntegrationException( "JACC context id must be specified" );
+        }
+
+        final JaccService jaccService = serviceRegistry
+                .getService( JaccService.class );
+        if ( jaccService == null ) {
+            throw new IntegrationException( "JaccService was not set up" );
+        }
+
+        if ( permissionDeclarations != null ) {
+            for ( GrantedPermission declaration : permissionDeclarations
+                    .getPermissionDeclarations() ) {
+                jaccService.addPermission( declaration );
+            }
+        }
+
+        final EventListenerRegistry eventListenerRegistry =
+                serviceRegistry.getService( EventListenerRegistry.class );
+        eventListenerRegistry.addDuplicationStrategy( DUPLICATION_STRATEGY );
+
+        eventListenerRegistry.prependListeners(
+                EventType.PRE_DELETE, new JaccPreDeleteEventListener() );
+        eventListenerRegistry.prependListeners(
+                EventType.PRE_INSERT, new JaccPreInsertEventListener() );
+        eventListenerRegistry.prependListeners(
+                EventType.PRE_UPDATE, new JaccPreUpdateEventListener() );
+        eventListenerRegistry.prependListeners(
+                EventType.PRE_LOAD, new JaccPreLoadEventListener() );
+    }
+
+    @Override
+    public void disintegrate(SessionFactoryImplementor sessionFactory,
+                             SessionFactoryServiceRegistry serviceRegistry) {
+        // nothing to do
+    }
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>You must also decide how to configure your JACC provider. Consult your JACC provider documentation.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="events-jpa-callbacks">JPA Callbacks</h3>
+<div class="paragraph">
+<p>JPA also defines a more limited set of callbacks through annotations.</p>
+</div>
+<table class="tableblock frame-all grid-all spread">
+<caption class="title">Table 1. Callback annotations</caption>
+<colgroup>
+<col style="width: %;">
+<col style="width: %;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Type</th>
+<th class="tableblock halign-left valign-top">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">@PrePersist</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Executed before the entity manager persist operation is actually executed or cascaded. This call is synchronous with the persist operation.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">@PreRemove</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Executed before the entity manager remove operation is actually executed or cascaded. This call is synchronous with the remove operation.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">@PostPersist</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Executed after the entity manager persist operation is actually executed or cascaded. This call is invoked after the database INSERT is executed.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">@PostRemove</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Executed after the entity manager remove operation is actually executed or cascaded. This call is synchronous with the remove operation.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">@PreUpdate</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Executed before the database UPDATE operation.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">@PostUpdate</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Executed after the database UPDATE operation.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">@PostLoad</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Executed after an entity has been loaded into the current persistence context or an entity has been refreshed.</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>There are two available approaches defined for specifying callback handling:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>The first approach is to annotate methods on the entity itself to receive notification of particular entity life cycle event(s).</p>
+</li>
+<li>
+<p>The second is to use a separate entity listener class.
+An entity listener is a stateless class with a no-arg constructor.
+The callback annotations are placed on a method of this class instead of the entity class.
+The entity listener class is then associated with the entity using the <code>javax.persistence.EntityListeners</code> annotation</p>
+</li>
+</ul>
+</div>
+<div id="events-jpa-callbacks-example" class="exampleblock">
+<div class="title">Example 3. Example of specifying JPA callbacks</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">@Entity
+@EntityListeners( LastUpdateListener.class )
+public static class Person {
+
+    @Id
+    private Long id;
+
+    private String name;
+
+    private Date dateOfBirth;
+
+    @Transient
+    private long age;
+
+    private Date lastUpdate;
+
+    public void setLastUpdate(Date lastUpdate) {
+        this.lastUpdate = lastUpdate;
+    }
+
+    /**
+     * Set the transient property at load time based on a calculation.
+     * Note that a native Hibernate formula mapping is better for this purpose.
+     */
+    @PostLoad
+    public void calculateAge() {
+        age = ChronoUnit.YEARS.between( LocalDateTime.ofInstant(
+                Instant.ofEpochMilli( dateOfBirth.getTime()), ZoneOffset.UTC),
+            LocalDateTime.now()
+        );
+    }
+}
+
+public static class LastUpdateListener {
+
+    @PreUpdate
+    @PrePersist
+    public void setLastUpdate( Person p ) {
+        p.setLastUpdate( new Date() );
+    }
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>These approaches can be mixed, meaning you can use both together.</p>
+</div>
+<div class="paragraph">
+<p>Regardless of whether the callback method is defined on the entity or on an entity listener, it must have a void-return signature.
+The name of the method is irrelevant as it is the placement of the callback annotations that makes the method a callback.
+In the case of callback methods defined on the entity class, the method must additionally have a no-argument signature.
+For callback methods defined on an entity listener class, the method must have a single argument signature; the type of that argument can be either <code>java.lang.Object</code> (to facilitate attachment to multiple entities) or the specific entity type.</p>
+</div>
+<div class="paragraph">
+<p>A callback method can throw a <code>RuntimeException</code>.
+If the callback method does throw a <code>RuntimeException</code>, then the current transaction, if any, must be rolled back.</p>
+</div>
+<div class="paragraph">
+<p>A callback method must not invoke <code>EntityManager</code> or <code>Query</code> methods!</p>
+</div>
+<div class="paragraph">
+<p>It is possible that multiple callback methods are defined for a particular lifecycle event.
+When that is the case, the defined order of execution is well defined by the JPA spec (specifically section 3.5.4):</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Any default listeners associated with the entity are invoked first, in the order they were specified in the XML. See the <code>javax.persistence.ExcludeDefaultListeners</code> annotation.</p>
+</li>
+<li>
+<p>Next, entity listener class callbacks associated with the entity hierarchy are invoked, in the order they are defined in the <code>EntityListeners</code>.
+If multiple classes in the entity hierarchy define entity listeners, the listeners defined for a superclass are invoked before the listeners defined for its subclasses.
+See the `javax.persistence.ExcludeSuperclassListener`s annotation.</p>
+</li>
+<li>
+<p>Lastly, callback methods defined on the entity hierarchy are invoked.
+If a callback type is annotated on both an entity and one or more of its superclasses without method overriding, both would be called, the most general superclass first.
+An entity class is also allowed to override a callback method defined in a superclass in which case the super callback would not get invoked; the overriding method would get invoked provided it is annotated.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div id="footer">
+<div id="footer-text">
+Last updated 2016-10-26 14:44:36 +01:00
+</div>
+</div>
+</body>
+</html>

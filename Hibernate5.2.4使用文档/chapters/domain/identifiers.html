@@ -1,0 +1,1107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<!--[if IE]><meta http-equiv="X-UA-Compatible" content="IE=edge"><![endif]-->
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="generator" content="Asciidoctor 1.5.2">
+<title>Identifiers</title>
+<link rel="stylesheet" href="./css/hibernate.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.2.0/css/font-awesome.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prettify/r298/prettify.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prettify/r298/prettify.min.js"></script>
+<script>document.addEventListener('DOMContentLoaded', prettyPrint)</script>
+</head>
+<body class="article">
+<div id="header">
+</div>
+<div id="content">
+<div class="sect2">
+<h3 id="identifiers">Identifiers</h3>
+<div class="paragraph">
+<p>Identifiers model the primary key of an entity. They are used to uniquely identify each specific entity.</p>
+</div>
+<div class="paragraph">
+<p>Hibernate and JPA both make the following assumptions about the corresponding database column(s):</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><code>UNIQUE</code></dt>
+<dd>
+<p>The values must uniquely identify each row.</p>
+</dd>
+<dt class="hdlist1"><code>NOT NULL</code></dt>
+<dd>
+<p>The values cannot be null. For composite ids, no part can
+be null.</p>
+</dd>
+<dt class="hdlist1"><code>IMMUTABLE</code></dt>
+<dd>
+<p>The values, once inserted, can never be changed.
+This is more a general guide, than a hard-fast rule as opinions vary.
+JPA defines the behavior of changing the value of the identifier attribute to be undefined; Hibernate simply does not support that.
+In cases where the values for the PK you have chosen will be updated, Hibernate recommends mapping the mutable value as a natural id, and use a surrogate id for the PK.
+See <a href="chapters/domain/natural_id.html#naturalid">Natural Ids</a>.</p>
+</dd>
+</dl>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Technically the identifier does not have to map to the column(s) physically defined as the table primary key.
+They just need to map to column(s) that uniquely identify each row.
+However this documentation will continue to use the terms identifier and primary key interchangeably.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Every entity must define an identifier. For entity inheritance hierarchies, the identifier must be defined just on the entity that is the root of the hierarchy.</p>
+</div>
+<div class="paragraph">
+<p>An identifier might be simple (single value) or composite (multiple values).</p>
+</div>
+<div class="sect3">
+<h4 id="identifiers-simple">Simple identifiers</h4>
+<div class="paragraph">
+<p>Simple identifiers map to a single basic attribute, and are denoted using the <code>javax.persistence.Id</code> annotation.</p>
+</div>
+<div class="paragraph">
+<p>According to JPA only the following types should be used as identifier attribute types:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>any Java primitive type</p>
+</li>
+<li>
+<p>any primitive wrapper type</p>
+</li>
+<li>
+<p><code>java.lang.String</code></p>
+</li>
+<li>
+<p><code>java.util.Date</code> (TemporalType#DATE)</p>
+</li>
+<li>
+<p><code>java.sql.Date</code></p>
+</li>
+<li>
+<p><code>java.math.BigDecimal</code></p>
+</li>
+<li>
+<p><code>java.math.BigInteger</code></p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Any types used for identifier attributes beyond this list will not be portable.</p>
+</div>
+<div class="sect4">
+<h5 id="identifiers-simple-assigned">Assigned identifiers</h5>
+<div class="paragraph">
+<p>Values for simple identifiers can be assigned, as we have seen in the examples above.
+The expectation for assigned identifier values is that the application assigns (sets them on the entity attribute) prior to calling save/persist.</p>
+</div>
+<div class="exampleblock">
+<div class="title">Example 1. Simple assigned identifier</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">@Entity
+public class MyEntity {
+
+    @Id
+    public Integer id;
+
+    ...
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect4">
+<h5 id="identifiers-simple-generated">Generated identifiers</h5>
+<div class="paragraph">
+<p>Values for simple identifiers can be generated. To denote that an identifier attribute is generated, it is annotated with <code>javax.persistence.GeneratedValue</code></p>
+</div>
+<div class="exampleblock">
+<div class="title">Example 2. Simple generated identifier</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">@Entity
+public class MyEntity {
+
+    @Id
+    @GeneratedValue
+    public Integer id;
+
+    ...
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Additionally, to the type restriction list above, JPA says that if using generated identifier values (see below) only integer types (short, int, long) will be portably supported.</p>
+</div>
+<div class="paragraph">
+<p>The expectation for generated identifier values is that Hibernate will generate the value when the save/persist occurs.</p>
+</div>
+<div class="paragraph">
+<p>Identifier value generations strategies are discussed in detail in the <a href="#identifiers-generators">Generated identifier values</a> section.</p>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="identifiers-composite">Composite identifiers</h4>
+<div class="paragraph">
+<p>Composite identifiers correspond to one or more persistent attributes.
+Here are the rules governing composite identifiers, as defined by the JPA specification.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>The composite identifier must be represented by a "primary key class".
+The primary key class may be defined using the <code>javax.persistence.EmbeddedId</code> annotation (see <a href="#identifiers-composite-aggregated">Composite identifiers with <code>@EmbeddedId</code></a>),
+or defined using the <code>javax.persistence.IdClass</code> annotation (see <a href="#identifiers-composite-nonaggregated">Composite identifiers with <code>@IdClass</code></a>).</p>
+</li>
+<li>
+<p>The primary key class must be public and must have a public no-arg constructor.</p>
+</li>
+<li>
+<p>The primary key class must be serializable.</p>
+</li>
+<li>
+<p>The primary key class must define equals and hashCode methods, consistent with equality for the underlying database types to which the primary key is mapped.</p>
+</li>
+</ul>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>The restriction that a composite identifier has to be represented by a "primary key class" is only JPA specific.
+Hibernate does allow composite identifiers to be defined without a "primary key class", although that modeling technique is deprecated and therefore omitted from this discussion.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>The attributes making up the composition can be either basic, composite, ManyToOne.
+Note especially that collections and one-to-ones are never appropriate.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="identifiers-composite-aggregated">Composite identifiers with <code>@EmbeddedId</code></h4>
+<div class="paragraph">
+<p>Modeling a composite identifier using an EmbeddedId simply means defining an embeddable to be a composition for the one or more attributes making up the identifier,
+and then exposing an attribute of that embeddable type on the entity.</p>
+</div>
+<div class="exampleblock">
+<div class="title">Example 3. Basic EmbeddedId</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">@Entity
+public class Login {
+
+    @EmbeddedId
+    private PK pk;
+
+    @Embeddable
+    public static class PK implements Serializable {
+
+        private String system;
+
+        private String username;
+
+        ...
+    }
+
+    ...
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>As mentioned before, EmbeddedIds can even contain ManyToOne attributes.</p>
+</div>
+<div class="exampleblock">
+<div class="title">Example 4. EmbeddedId with ManyToOne</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">@Entity
+public class Login {
+
+    @EmbeddedId
+    private PK pk;
+
+    @Embeddable
+    public static class PK implements Serializable {
+
+        @ManyToOne
+        private System system;
+
+        private String username;
+
+        ...
+    }
+
+    ...
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Hibernate supports directly modeling the ManyToOne in the PK class, whether EmbeddedId or IdClass.
+However that is not portably supported by the JPA specification.
+In JPA terms one would use "derived identifiers"; for details, see <a href="#identifiers-derived">Derived Identifiers</a>.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect3">
+<h4 id="identifiers-composite-nonaggregated">Composite identifiers with <code>@IdClass</code></h4>
+<div class="paragraph">
+<p>Modeling a composite identifier using an IdClass differs from using an EmbeddedId in that the entity defines each individual attribute making up the composition.
+The IdClass simply acts as a "shadow".</p>
+</div>
+<div class="exampleblock">
+<div class="title">Example 5. Basic IdClass</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">@Entity
+@IdClass( PK.class )
+public class Login {
+
+    @Id
+    private String system;
+
+    @Id
+    private String username;
+
+    public static class PK implements Serializable {
+
+        private String system;
+
+        private String username;
+
+        ...
+    }
+
+    ...
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Non-aggregated composite identifiers can also contain ManyToOne attributes as we saw with aggregated ones (still non-portably)</p>
+</div>
+<div class="exampleblock">
+<div class="title">Example 6. IdClass with ManyToOne</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">@Entity
+@IdClass( PK.class )
+public class Login {
+
+    @Id
+    @ManyToOne
+    private System system;
+
+    @Id
+    private String username;
+
+    public static class PK implements Serializable {
+
+        private System system;
+
+        private String username;
+
+        ...
+    }
+
+    ...
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>With non-aggregated composite identifiers, Hibernate also supports "partial" generation of the composite values.</p>
+</div>
+<div class="exampleblock">
+<div class="title">Example 7. IdClass with partial generation</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">@Entity
+@IdClass( PK.class )
+public class LogFile {
+
+    @Id
+    private String name;
+
+    @Id
+    private LocalDate date;
+
+    @Id
+    @GeneratedValue
+    private Integer uniqueStamp;
+
+    public static class PK implements Serializable {
+
+        private String name;
+
+        private LocalDate date;
+
+        private Integer uniqueStamp;
+
+        ...
+    }
+
+    ...
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>This feature exists because of a highly questionable interpretation of the JPA specification made by the SpecJ committee.
+Hibernate does not feel that JPA defines support for this, but added the feature simply to be usable in SpecJ benchmarks.
+Use of this feature may or may not be portable from a JPA perspective.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect3">
+<h4 id="identifiers-composite-associations">Composite identifiers with associations</h4>
+<div class="paragraph">
+<p>Hibernate allows defining a composite identifier out of entity associations.
+In the following example, the <code>PersonAddress</code> entity identifier is formed of two <code>@ManyToOne</code> associations.</p>
+</div>
+<div class="exampleblock">
+<div class="title">Example 8. Composite identifiers with associations</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">@Entity
+public class PersonAddress  implements Serializable {
+
+    @Id
+    @ManyToOne
+    private Person person;
+
+    @Id
+    @ManyToOne()
+    private Address address;
+
+    public PersonAddress() {}
+
+    public PersonAddress(Person person, Address address) {
+        this.person = person;
+        this.address = address;
+    }
+
+    public Person getPerson() {
+        return person;
+    }
+
+    public void setPerson(Person person) {
+        this.person = person;
+    }
+
+    public Address getAddress() {
+        return address;
+    }
+
+    public void setAddress(Address address) {
+        this.address = address;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        PersonAddress that = (PersonAddress) o;
+        return Objects.equals(person, that.person) &amp;&amp;
+                Objects.equals(address, that.address);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(person, address);
+    }
+}
+
+@Entity
+public class Person  {
+
+    @Id
+    @GeneratedValue
+    private Long id;
+
+    @NaturalId
+    private String registrationNumber;
+
+    public Person() {}
+
+    public Person(String registrationNumber) {
+        this.registrationNumber = registrationNumber;
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Person person = (Person) o;
+        return Objects.equals(registrationNumber, person.registrationNumber);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(registrationNumber);
+    }
+}
+
+@Entity
+public class Address  {
+
+    @Id
+    @GeneratedValue
+    private Long id;
+
+    private String street;
+
+    private String number;
+
+    private String postalCode;
+
+    public Address() {}
+
+    public Address(String street, String number, String postalCode) {
+        this.street = street;
+        this.number = number;
+        this.postalCode = postalCode;
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public String getStreet() {
+        return street;
+    }
+
+    public String getNumber() {
+        return number;
+    }
+
+    public String getPostalCode() {
+        return postalCode;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Address address = (Address) o;
+        return Objects.equals(street, address.street) &amp;&amp;
+                Objects.equals(number, address.number) &amp;&amp;
+                Objects.equals(postalCode, address.postalCode);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(street, number, postalCode);
+    }
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Although the mapping is much simpler than using an <code>@EmbeddedId</code> or an <code>@IdClass</code>, there&#8217;s no separation between the entity instance and the actual identifier.
+To query this entity, an instance of the entity itself must be supplied to the persistence context.</p>
+</div>
+<div class="exampleblock">
+<div class="title">Example 9. Composite identifiers with associations query</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">PersonAddress personAddress = entityManager.find(
+    PersonAddress.class,
+    new PersonAddress( person, address )
+);</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="identifiers-generators">Generated identifier values</h4>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>For discussion of generated values for non-identifier attributes, see <a href="chapters/domain/basic_types.html#mapping-generated">Generated properties</a></p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Hibernate supports identifier value generation across a number of different types.
+Remember that JPA portably defines identifier value generation just for integer types.</p>
+</div>
+<div class="paragraph">
+<p>Identifier value generation is indicates using the <code>javax.persistence.GeneratedValue</code> annotation.
+The most important piece of information here is the specified <code>javax.persistence.GenerationType</code> which indicates how values will be generated.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>The discussions below assume that the application is using Hibernate&#8217;s "new generator mappings" as indicated by the <code>hibernate.id.new_generator_mappings</code> setting or
+<code>MetadataBuilder.enableNewIdentifierGeneratorSupport</code> method during bootstrap.
+Starting with Hibernate 5, this is set to true by default.
+If applications set this to false the resolutions discussed here will be very different.
+The rest of the discussion here assumes this setting is enabled (true).</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><code>AUTO</code> (the default)</dt>
+<dd>
+<p>Indicates that the persistence provider (Hibernate) should choose an appropriate generation strategy. See <a href="#identifiers-generators-auto">Interpreting AUTO</a>.</p>
+</dd>
+<dt class="hdlist1"><code>IDENTITY</code></dt>
+<dd>
+<p>Indicates that database IDENTITY columns will be used for primary key value generation. See <a href="#identifiers-generators-identity">Using IDENTITY columns</a>.</p>
+</dd>
+<dt class="hdlist1"><code>SEQUENCE</code></dt>
+<dd>
+<p>Indicates that database sequence should be used for obtaining primary key values. See <a href="#identifiers-generators-sequence">Using sequences</a>.</p>
+</dd>
+<dt class="hdlist1"><code>TABLE</code></dt>
+<dd>
+<p>Indicates that a database table should be used for obtaining primary key values. See <a href="#identifiers-generators-table">Using identifier table</a>.</p>
+</dd>
+</dl>
+</div>
+</div>
+<div class="sect3">
+<h4 id="identifiers-generators-auto">Interpreting AUTO</h4>
+<div class="paragraph">
+<p>How a persistence provider interprets the AUTO generation type is left up to the provider.</p>
+</div>
+<div class="paragraph">
+<p>The default behavior is to look at the java type of the identifier attribute.</p>
+</div>
+<div class="paragraph">
+<p>If the identifier type is UUID, Hibernate is going to use an <a href="#identifiers-generators-uuid">UUID identifier</a>.</p>
+</div>
+<div class="paragraph">
+<p>If the identifier type is numerical (e.g. <code>Long</code>, <code>Integer</code>), then Hibernate is going to use the <code>IdGeneratorStrategyInterpreter</code> to resolve the identifier generator strategy.
+The <code>IdGeneratorStrategyInterpreter</code> has two implementations:</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><code>FallbackInterpreter</code></dt>
+<dd>
+<p>This is the default strategy since Hibernate 5.0. For older versions, this strategy is enabled through the <a href="appendices/Configurations.html#configurations-mapping"><code>hibernate.id.new_generator_mappings</code></a> configuration property .
+When using this strategy, <code>AUTO</code> always resolves to <code>SequenceStyleGenerator</code>.
+If the underlying database supports sequences, then a SEQUENCE generator is used. Otherwise, a TABLE generator is going to be used instead.</p>
+</dd>
+<dt class="hdlist1"><code>LegacyFallbackInterpreter</code></dt>
+<dd>
+<p>This is a legacy mechanism that was used by Hibernate prior to version 5.0 or when the <a href="appendices/Configurations.html#configurations-mapping"><code>hibernate.id.new_generator_mappings</code></a> configuration property is false.
+The legacy strategy maps <code>AUTO</code> to the <code>native</code> generator strategy which uses the <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/dialect/Dialect.html#getNativeIdentifierGeneratorStrategy--">Dialect#getNativeIdentifierGeneratorStrategy</a> to resolve the actual identifier generator (e.g. <code>identity</code> or <code>sequence</code>).</p>
+</dd>
+</dl>
+</div>
+</div>
+<div class="sect3">
+<h4 id="identifiers-generators-sequence">Using sequences</h4>
+<div class="paragraph">
+<p>For implementing database sequence-based identifier value generation Hibernate makes use of its <code>org.hibernate.id.enhanced.SequenceStyleGenerator</code> id generator.
+It is important to note that SequenceStyleGenerator is capable of working against databases that do not support sequences by switching to a table as the underlying backing.
+This gives Hibernate a huge degree of portability across databases while still maintaining consistent id generation behavior (versus say choosing between sequence and IDENTITY).
+This backing storage is completely transparent to the user.</p>
+</div>
+<div class="paragraph">
+<p>The preferred (and portable) way to configure this generator is using the JPA-defined javax.persistence.SequenceGenerator annotation.</p>
+</div>
+<div class="paragraph">
+<p>The simplest form is to simply request sequence generation; Hibernate will use a single, implicitly-named sequence (<code>hibernate_sequence</code>) for all such unnamed definitions.</p>
+</div>
+<div class="exampleblock">
+<div class="title">Example 10. Unnamed sequence</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">@Entity
+public class MyEntity {
+
+    @Id
+    @GeneratedValue( generation = SEQUENCE )
+    public Integer id;
+
+    ...
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Or a specifically named sequence can be requested</p>
+</div>
+<div class="exampleblock">
+<div class="title">Example 11. Named sequence</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">@Entity
+public class MyEntity {
+
+    @Id
+    @GeneratedValue( generation = SEQUENCE, name = "my_sequence" )
+    public Integer id;
+
+    ...
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Use javax.persistence.SequenceGenerator to specify additional
+configuration.</p>
+</div>
+<div class="exampleblock">
+<div class="title">Example 12. Configured sequence</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">@Entity
+public class MyEntity {
+
+    @Id
+    @GeneratedValue( generation = SEQUENCE, name = "my_sequence" )
+    @SequenceGenerator( name = "my_sequence", schema = "globals", allocationSize = 30 )
+    public Integer id;
+
+    ...
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="identifiers-generators-identity">Using IDENTITY columns</h4>
+<div class="paragraph">
+<p>For implementing identifier value generation based on IDENTITY columns,
+Hibernate makes use of its <code>org.hibernate.id.IdentityGenerator</code> id generator which expects the identifier to generated by INSERT into the table.
+IdentityGenerator understands 3 different ways that the INSERT-generated value might be retrieved:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>If Hibernate believes the JDBC environment supports <code>java.sql.Statement#getGeneratedKeys</code>, then that approach will be used for extracting the IDENTITY generated keys.</p>
+</li>
+<li>
+<p>Otherwise, if <code>Dialect#supportsInsertSelectIdentity</code> reports true, Hibernate will use the Dialect specific INSERT+SELECT statement syntax.</p>
+</li>
+<li>
+<p>Otherwise, Hibernate will expect that the database supports some form of asking for the most recently inserted IDENTITY value via a separate SQL command as indicated by <code>Dialect#getIdentitySelectString</code></p>
+</li>
+</ul>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>It is important to realize that this imposes a runtime behavior where the entity row <strong>must</strong> be physically inserted prior to the identifier value being known.
+This can mess up extended persistence contexts (conversations).
+Because of the runtime imposition/inconsistency Hibernate suggest other forms of identifier value generation be used.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>There is yet another important runtime impact of choosing IDENTITY generation: Hibernate will not be able to JDBC batching for inserts of the entities that use IDENTITY generation.
+The importance of this depends on the application specific use cases.
+If the application is not usually creating many new instances of a given type of entity that uses IDENTITY generation, then this is not an important impact since batching would not have been helpful anyway.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect3">
+<h4 id="identifiers-generators-table">Using identifier table</h4>
+<div class="paragraph">
+<p>Hibernate achieves table-based identifier generation based on its <code>org.hibernate.id.enhanced.TableGenerator</code> id generator which defines a table capable of holding multiple named value segments for any number of entities.</p>
+</div>
+<div class="exampleblock">
+<div class="title">Example 13. Table generator table structure</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-sql" data-lang="sql">create table hibernate_sequences(
+    sequence_name VARCHAR NOT NULL,
+    next_val INTEGER NOT NULL
+)</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>The basic idea is that a given table-generator table (<code>hibernate_sequences</code> for example) can hold multiple segments of identifier generation values.</p>
+</div>
+<div class="exampleblock">
+<div class="title">Example 14. Unnamed table generator</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">@Entity
+public class MyEntity {
+
+    @Id
+    @GeneratedValue( generation = TABLE )
+    public Integer id;
+
+    ...
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>If no table name is given Hibernate assumes an implicit name of <code>hibernate_sequences</code>.
+Additionally, because no <code>javax.persistence.TableGenerator#pkColumnValue</code> is specified, Hibernate will use the default segment (<code>sequence_name='default'</code>) from the hibernate_sequences table.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="identifiers-generators-uuid">Using UUID generation</h4>
+<div class="paragraph">
+<p>As mentioned above, Hibernate supports UUID identifier value generation.
+This is supported through its <code>org.hibernate.id.UUIDGenerator</code> id generator.</p>
+</div>
+<div class="paragraph">
+<p><code>UUIDGenerator</code> supports pluggable strategies for exactly how the UUID is generated.
+These strategies are defined by the <code>org.hibernate.id.UUIDGenerationStrategy</code> contract.
+The default strategy is a version 4 (random) strategy according to IETF RFC 4122.
+Hibernate does ship with an alternative strategy which is a RFC 4122 version 1 (time-based) strategy (using ip address rather than mac address).</p>
+</div>
+<div class="exampleblock">
+<div class="title">Example 15. Implicitly using the random UUID strategy</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">@Entity
+public class MyEntity {
+
+    @Id
+    @GeneratedValue
+    public UUID id;
+
+    ...
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>To specify an alternative generation strategy, we&#8217;d have to define some configuration via <code>@GenericGenerator</code>.
+Here we choose the RFC 4122 version 1 compliant strategy named <code>org.hibernate.id.uuid.CustomVersionOneStrategy</code></p>
+</div>
+<div class="exampleblock">
+<div class="title">Example 16. Implicitly using the random UUID strategy</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">@Entity
+public class MyEntity {
+
+    @Id
+    @GeneratedValue( generator = "uuid" )
+    @GenericGenerator(
+        name = "uuid",
+        strategy = "org.hibernate.id.UUIDGenerator",
+        parameters = {
+            @Parameter(
+                name = "uuid_gen_strategy_class",
+                value = "org.hibernate.id.uuid.CustomVersionOneStrategy"
+            )
+        }
+    )
+    public UUID id;
+
+    ...
+
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="identifiers-generators-generic">Using @GenericGenerator</h4>
+<div class="paragraph">
+<p>@GenericGenerator allows integration of any Hibernate <code>org.hibernate.id.IdentifierGenerator</code> implementation, including any of the specific ones discussed here and any custom ones.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="identifiers-generators-optimizer">Optimizers</h4>
+<div class="paragraph">
+<p>Most of the Hibernate generators that separately obtain identifier values from database structures support the use of pluggable optimizers.
+Optimizers help manage the number of times Hibernate has to talk to the database in order to generate identifier values.
+For example, with no optimizer applied to a sequence-generator, every time the application asked Hibernate to generate an identifier it would need to grab the next sequence value from the database.
+But if we can minimize the number of times we need to communicate with the database here, the application will be able to perform better.
+Which is, in fact, the role of these optimizers.</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">none</dt>
+<dd>
+<p>No optimization is performed. We communicate with the database each and every time an identifier value is needed from the generator.</p>
+</dd>
+<dt class="hdlist1">pooled-lo</dt>
+<dd>
+<p>The pooled-lo optimizer works on the principle that the increment-value is encoded into the database table/sequence structure.
+In sequence-terms this means that the sequence is defined with a greater-that-1 increment size.</p>
+<div class="paragraph">
+<p>For example, consider a brand new sequence defined as <code>create sequence m_sequence start with 1 increment by 20</code>.
+This sequence essentially defines a "pool" of 20 usable id values each and every time we ask it for its next-value.
+The pooled-lo optimizer interprets the next-value as the low end of that pool.</p>
+</div>
+<div class="paragraph">
+<p>So when we first ask it for next-value, we&#8217;d get 1.
+We then assume that the valid pool would be the values from 1-20 inclusive.</p>
+</div>
+<div class="paragraph">
+<p>The next call to the sequence would result in 21, which would define 21-40 as the valid range. And so on.
+The "lo" part of the name indicates that the value from the database table/sequence is interpreted as the pool lo(w) end.</p>
+</div>
+</dd>
+<dt class="hdlist1">pooled</dt>
+<dd>
+<p>Just like pooled-lo, except that here the value from the table/sequence is interpreted as the high end of the value pool.</p>
+</dd>
+<dt class="hdlist1">hilo; legacy-hilo</dt>
+<dd>
+<p>Define a custom algorithm for generating pools of values based on a single value from a table or sequence.</p>
+<div class="paragraph">
+<p>These optimizers are not recommended for use. They are maintained (and mentioned) here simply for use by legacy applications that used these strategies previously.</p>
+</div>
+</dd>
+</dl>
+</div>
+<div class="paragraph">
+<p>Applications can also implement and use their own optimizer strategies, as defined by the <code>org.hibernate.id.enhanced.Optimizer</code> contract.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="identifiers-derived">Derived Identifiers</h4>
+<div class="paragraph">
+<p>JPA 2.0 added support for derived identifiers which allow an entity to borrow the identifier from a many-to-one or one-to-one association.</p>
+</div>
+<div id="identifiers-derived-mapsid" class="exampleblock">
+<div class="title">Example 17. Derived identifier with <code>@MapsId</code></div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">@Entity
+public class Person  {
+
+    @Id
+    @GeneratedValue
+    private Long id;
+
+    @NaturalId
+    private String registrationNumber;
+
+    public Person() {}
+
+    public Person(String registrationNumber) {
+        this.registrationNumber = registrationNumber;
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public String getRegistrationNumber() {
+        return registrationNumber;
+    }
+}
+
+@Entity
+public class PersonDetails  {
+
+    @Id
+    private Long id;
+
+    private String nickName;
+
+    @ManyToOne
+    @MapsId
+    private Person person;
+
+    public String getNickName() {
+        return nickName;
+    }
+
+    public void setNickName(String nickName) {
+        this.nickName = nickName;
+    }
+
+    public Person getPerson() {
+        return person;
+    }
+
+    public void setPerson(Person person) {
+        this.person = person;
+    }
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>In the example above, the <code>PersonDetails</code> entity uses the <code>id</code> column for both the entity identifier and for the many-to-one association to the <code>Person</code> entity.
+The value of the <code>PersonDetails</code> entity identifier is "derived" from the identifier of its parent <code>Person</code> entity.
+The <code>@MapsId</code> annotation can also reference columns from an <code>@EmbeddedId</code> identifier as well.</p>
+</div>
+<div class="paragraph">
+<p>The previous example can also be mapped using <code>@PrimaryKeyJoinColumn</code>.</p>
+</div>
+<div id="identifiers-derived-primarykeyjoincolumn" class="exampleblock">
+<div class="title">Example 18. Derived identifier <code>@PrimaryKeyJoinColumn</code></div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">@Entity
+public class PersonDetails  {
+
+    @Id
+    private Long id;
+
+    private String nickName;
+
+    @ManyToOne
+    @PrimaryKeyJoinColumn
+    private Person person;
+
+    public String getNickName() {
+        return nickName;
+    }
+
+    public void setNickName(String nickName) {
+        this.nickName = nickName;
+    }
+
+    public Person getPerson() {
+        return person;
+    }
+
+    public void setPerson(Person person) {
+        this.person = person;
+        this.id = person.getId();
+    }
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Unlike <code>@MapsId</code>, the application developer is responsible for ensuring that the identifier and the many-to-one (or one-to-one) association are in sync.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+</div>
+<div id="footer">
+<div id="footer-text">
+Last updated 2016-10-26 14:44:36 +01:00
+</div>
+</div>
+</body>
+</html>

@@ -1,0 +1,3659 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<!--[if IE]><meta http-equiv="X-UA-Compatible" content="IE=edge"><![endif]-->
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="generator" content="Asciidoctor 1.5.2">
+<title>HQL and JPQL</title>
+<link rel="stylesheet" href="./css/hibernate.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.2.0/css/font-awesome.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prettify/r298/prettify.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prettify/r298/prettify.min.js"></script>
+<script>document.addEventListener('DOMContentLoaded', prettyPrint)</script>
+</head>
+<body class="article">
+<div id="header">
+</div>
+<div id="content">
+<div class="sect1">
+<h2 id="hql">HQL and JPQL</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The Hibernate Query Language (HQL) and Java Persistence Query Language (JPQL) are both object model focused query languages similar in nature to SQL.
+JPQL is a heavily-inspired-by subset of HQL.
+A JPQL query is always a valid HQL query, the reverse is not true however.</p>
+</div>
+<div class="paragraph">
+<p>Both HQL and JPQL are non-type-safe ways to perform query operations.
+Criteria queries offer a type-safe approach to querying.  See <a href="chapters/query/criteria/Criteria.html#criteria">Criteria</a> for more information.</p>
+</div>
+<div class="sect2">
+<h3 id="query-api">Query API</h3>
+
+</div>
+<div class="sect2">
+<h3 id="hql-examples-domain-model">Examples domain model</h3>
+<div class="paragraph">
+<p>To better understand the further HQL and JPQL examples, it&#8217;s time to familiarize the domain model entities that are used in all the examples features in this chapter.</p>
+</div>
+<div id="hql-examples-domain-model-example" class="exampleblock">
+<div class="title">Example 1. Examples domain model</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">@NamedQueries(
+    @NamedQuery(
+        name = "get_person_by_name",
+        query = "select p from Person p where name = :name"
+    )
+)
+@Entity
+public class Person {
+
+    @Id
+    @GeneratedValue
+    private Long id;
+
+    private String name;
+
+    private String nickName;
+
+    private String address;
+
+    @Temporal(TemporalType.TIMESTAMP )
+    private Date createdOn;
+
+    @OneToMany(mappedBy = "person", cascade = CascadeType.ALL)
+    @OrderColumn(name = "order_id")
+    private List&lt;Phone&gt; phones = new ArrayList&lt;&gt;();
+
+    @ElementCollection
+    @MapKeyEnumerated(EnumType.STRING)
+    private Map&lt;AddressType, String&gt; addresses = new HashMap&lt;&gt;();
+
+    @Version
+    private int version;
+
+    //Getters and setters are omitted for brevity
+
+}
+
+public enum AddressType {
+    HOME,
+    OFFICE
+}
+
+@Entity
+public class Partner {
+
+	@Id
+	@GeneratedValue
+	private Long id;
+
+	private String name;
+
+	@Version
+	private int version;
+
+	//Getters and setters are omitted for brevity
+
+}
+
+@Entity
+public class Phone {
+
+    @Id
+    private Long id;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    private Person person;
+
+    @Column(name = "phone_number")
+    private String number;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "phone_type")
+    private PhoneType type;
+
+    @OneToMany(mappedBy = "phone", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List&lt;Call&gt; calls = new ArrayList&lt;&gt;(  );
+
+    @OneToMany(mappedBy = "phone")
+    @MapKey(name = "timestamp")
+    @MapKeyTemporal(TemporalType.TIMESTAMP )
+    private Map&lt;Date, Call&gt; callHistory = new HashMap&lt;&gt;();
+
+    @ElementCollection
+    private List&lt;Date&gt; repairTimestamps = new ArrayList&lt;&gt;(  );
+
+    //Getters and setters are omitted for brevity
+
+}
+
+public enum PhoneType {
+    LAND_LINE,
+    MOBILE;
+}
+
+@Entity
+@Table(name = "phone_call")
+public class Call {
+
+    @Id
+    @GeneratedValue
+    private Long id;
+
+    @ManyToOne
+    private Phone phone;
+
+    @Column(name = "call_timestamp")
+    private Date timestamp;
+
+    private int duration;
+
+    //Getters and setters are omitted for brevity
+
+}
+
+@Entity
+@Inheritance(strategy = InheritanceType.JOINED)
+public class Payment {
+
+    @Id
+    @GeneratedValue
+    private Long id;
+
+    private BigDecimal amount;
+
+    private boolean completed;
+
+    @ManyToOne
+    private Person person;
+
+    //Getters and setters are omitted for brevity
+
+}
+
+@Entity
+public class CreditCardPayment extends Payment {
+}
+
+@Entity
+public class WireTransferPayment extends Payment {
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="jpql-api">JPA Query API</h3>
+<div class="paragraph">
+<p>In JPA the query is represented by <code>javax.persistence.Query</code> or <code>javax.persistence.TypedQuery</code> as obtained from the <code>EntityManager</code>.
+The create an inline <code>Query</code> or <code>TypedQuery</code>, you need to use the <code>EntityManager#createQuery</code> method.
+For named queries, the <code>EntityManager#createNamedQuery</code> method is needed.</p>
+</div>
+<div id="jpql-api-example" class="exampleblock">
+<div class="title">Example 2. Obtaining a JPA <code>Query</code> or a <code>TypedQuery</code> reference</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">Query query = entityManager.createQuery(
+    "select p " +
+    "from Person p " +
+    "where p.name like :name"
+);
+
+TypedQuery&lt;Person&gt; typedQuery = entityManager.createQuery(
+    "select p " +
+    "from Person p " +
+    "where p.name like :name", Person.class
+);</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div id="jpql-api-named-query-example" class="exampleblock">
+<div class="title">Example 3. Obtaining a JPA <code>Query</code> or a <code>TypedQuery</code> reference for a named query</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">@NamedQueries(
+    @NamedQuery(
+        name = "get_person_by_name",
+        query = "select p from Person p where name = :name"
+    )
+)
+
+Query query = entityManager.createNamedQuery( "get_person_by_name" );
+
+TypedQuery&lt;Person&gt; typedQuery = entityManager.createNamedQuery(
+    "get_person_by_name", Person.class
+);</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>The <code>Query</code> interface can then be used to control the execution of the query.
+For example, we may want to specify an execution timeout or control caching.</p>
+</div>
+<div id="jpql-api-basic-usage-example" class="exampleblock">
+<div class="title">Example 4. Basic JPA <code>Query</code> usage</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">Query query = entityManager.createQuery(
+    "select p " +
+    "from Person p " +
+    "where p.name like :name" )
+// timeout - in milliseconds
+.setHint( "javax.persistence.query.timeout", 2000 )
+// flush only at commit time
+.setFlushMode( FlushModeType.COMMIT );</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>For complete details, see the <code>Query</code> <a href="http://docs.oracle.com/javaee/7/api/javax/persistence/Query.html">Javadocs</a>.
+Many of the settings controlling the execution of the query are defined as hints.
+JPA defines some standard hints (like timeout in the example), but most are provider specific.
+Relying on provider specific hints limits your applications portability to some degree.</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><code>javax.persistence.query.timeout</code></dt>
+<dd>
+<p>Defines the query timeout, in milliseconds.</p>
+</dd>
+<dt class="hdlist1"><code>javax.persistence.fetchgraph</code></dt>
+<dd>
+<p>Defines a <em>fetchgraph</em> EntityGraph.
+Attributes explicitly specified as <code>AttributeNodes</code> are treated as <code>FetchType.EAGER</code> (via join fetch or subsequent select).
+For details, see the EntityGraph discussions in <a href="chapters/fetching/Fetching.html#fetching">Fetching</a>.</p>
+</dd>
+<dt class="hdlist1"><code>javax.persistence.loadgraph</code></dt>
+<dd>
+<p>Defines a <em>loadgraph</em> EntityGraph.
+Attributes explicitly specified as AttributeNodes are treated as <code>FetchType.EAGER</code> (via join fetch or subsequent select).
+Attributes that are not specified are treated as <code>FetchType.LAZY</code> or <code>FetchType.EAGER</code> depending on the attribute&#8217;s definition in metadata.
+For details, see the EntityGraph discussions in <a href="chapters/fetching/Fetching.html#fetching">Fetching</a>.</p>
+</dd>
+<dt class="hdlist1"><code>org.hibernate.cacheMode</code></dt>
+<dd>
+<p>Defines the <code>CacheMode</code> to use. See <code>org.hibernate.query.Query#setCacheMode</code>.</p>
+</dd>
+<dt class="hdlist1"><code>org.hibernate.cacheable</code></dt>
+<dd>
+<p>Defines whether the query is cacheable. true/false. See <code>org.hibernate.query.Query#setCacheable</code>.</p>
+</dd>
+<dt class="hdlist1"><code>org.hibernate.cacheRegion</code></dt>
+<dd>
+<p>For queries that are cacheable, defines a specific cache region to use. See <code>org.hibernate.query.Query#setCacheRegion</code>.</p>
+</dd>
+<dt class="hdlist1"><code>org.hibernate.comment</code></dt>
+<dd>
+<p>Defines the comment to apply to the generated SQL. See <code>org.hibernate.query.Query#setComment</code>.</p>
+</dd>
+<dt class="hdlist1"><code>org.hibernate.fetchSize</code></dt>
+<dd>
+<p>Defines the JDBC fetch-size to use. See <code>org.hibernate.query.Query#setFetchSize</code></p>
+</dd>
+<dt class="hdlist1"><code>org.hibernate.flushMode</code></dt>
+<dd>
+<p>Defines the Hibernate-specific <code>FlushMode</code> to use. See <code>org.hibernate.query.Query#setFlushMode.</code> If possible, prefer using <code>javax.persistence.Query#setFlushMode</code> instead.</p>
+</dd>
+<dt class="hdlist1"><code>org.hibernate.readOnly</code></dt>
+<dd>
+<p>Defines that entities and collections loaded by this query should be marked as read-only. See <code>org.hibernate.query.Query#setReadOnly</code></p>
+</dd>
+</dl>
+</div>
+<div class="paragraph">
+<p>The final thing that needs to happen before the query can be executed is to bind the values for any defined parameters.
+JPA defines a simplified set of parameter binding methods.
+Essentially it supports setting the parameter value (by name/position) and a specialized form for <code>Calendar</code>/<code>Date</code> types additionally accepting a <code>TemporalType</code>.</p>
+</div>
+<div id="jpql-api-parameter-example" class="exampleblock">
+<div class="title">Example 5. JPA name parameter binding</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">Query query = entityManager.createQuery(
+    "select p " +
+    "from Person p " +
+    "where p.name like :name" )
+.setParameter( "name", "J%" );
+
+// For generic temporal field types (e.g. `java.util.Date`, `java.util.Calendar`)
+// we also need to provide the associated `TemporalType`
+Query query = entityManager.createQuery(
+    "select p " +
+    "from Person p " +
+    "where p.createdOn &gt; :timestamp" )
+.setParameter( "timestamp", timestamp, TemporalType.DATE );</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>JPQL-style positional parameters are declared using a question mark followed by an ordinal - <code>?1</code>, <code>?2</code>.
+The ordinals start with 1.
+Just like with named parameters, positional parameters can also appear multiple times in a query.</p>
+</div>
+<div id="jpql-api-positional-parameter-example" class="exampleblock">
+<div class="title">Example 6. JPA positional parameter binding</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">Query query = entityManager.createQuery(
+    "select p " +
+    "from Person p " +
+    "where p.name like ?1" )
+.setParameter( 1, "J%" );</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>It&#8217;s good practice not to mix forms in a given query.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>In terms of execution, JPA <code>Query</code> offers 2 different methods for retrieving a result set.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>Query#getResultList()</code> - executes the select query and returns back the list of results.</p>
+</li>
+<li>
+<p><code>Query#getSingleResult()</code> - executes the select query and returns a single result. If there were more than one result an exception is thrown.</p>
+</li>
+</ul>
+</div>
+<div id="hql-api-list-example" class="exampleblock">
+<div class="title">Example 7. JPA <code>getResultList()</code> result</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">List&lt;Person&gt; persons = entityManager.createQuery(
+    "select p " +
+    "from Person p " +
+    "where p.name like :name" )
+.setParameter( "name", "J%" )
+.getResultList();</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div id="hql-api-unique-result-example" class="exampleblock">
+<div class="title">Example 8. JPA <code>getSingleResult()</code></div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">Person person = (Person) entityManager.createQuery(
+    "select p " +
+    "from Person p " +
+    "where p.name like :name" )
+.setParameter( "name", "J%" )
+.getSingleResult();</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="hql-api">Hibernate Query API</h3>
+<div class="paragraph">
+<p>In Hibernate, the HQL query is represented as <code>org.hibernate.query.Query</code> which is obtained from a <code>Session</code>.
+If the HQL is a named query, <code>Session#getNamedQuery</code> would be used; otherwise <code>Session#createQuery</code> is needed.</p>
+</div>
+<div id="hql-api-example" class="exampleblock">
+<div class="title">Example 9. Obtaining a Hibernate <code>Query</code></div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">org.hibernate.query.Query query = session.createQuery(
+    "select p " +
+    "from Person p " +
+    "where p.name like :name"
+);</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div id="hql-api-named-query-example" class="exampleblock">
+<div class="title">Example 10. Obtaining a Hibernate <code>Query</code> reference for a named query</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">org.hibernate.query.Query query = session.getNamedQuery( "get_person_by_name" );</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Not only was the JPQL syntax heavily inspired by HQL, but many of the JPA APIs were heavily inspired by Hibernate too.
+The two <code>Query</code> contracts are very similar.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>The Query interface can then be used to control the execution of the query.
+For example, we may want to specify an execution timeout or control caching.</p>
+</div>
+<div id="hql-api-basic-usage-example" class="exampleblock">
+<div class="title">Example 11. Basic Query usage - Hibernate</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">org.hibernate.query.Query query = session.createQuery(
+    "select p " +
+    "from Person p " +
+    "where p.name like :name" )
+// timeout - in seconds
+.setTimeout( 2 )
+// write to L2 caches, but do not read from them
+.setCacheMode( CacheMode.REFRESH )
+// assuming query cache was enabled for the SessionFactory
+.setCacheable( true )
+// add a comment to the generated SQL if enabled via the hibernate.use_sql_comments configuration property
+.setComment( "+ INDEX(p idx_person_name)" );</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>For complete details, see the <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/Query.html">Query</a> Javadocs.</p>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Query hints here are database query hints.
+They are added directly to the generated SQL according to <code>Dialect#getQueryHintString</code>.
+The JPA notion of query hints, on the other hand, refer to hints that target the provider (Hibernate).
+So even though they are called the same, be aware they have a very different purpose.
+Also, be aware that Hibernate query hints generally make the application non-portable across databases unless the code adding them first checks the Dialect.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Flushing is covered in detail in <a href="chapters/flushing/Flushing.html#flushing">Flushing</a>.
+Locking is covered in detail in <a href="chapters/locking/Locking.html#locking">Locking</a>.
+The concept of read-only state is covered in <a href="chapters/pc/PersistenceContext.html#pc">Persistence Contexts</a>.</p>
+</div>
+<div class="paragraph">
+<p>Hibernate also allows an application to hook into the process of building the query results via the <code>org.hibernate.transform.ResultTransformer</code> contract.
+See its <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/transform/ResultTransformer.html">Javadocs</a> as well as the Hibernate-provided implementations for additional details.</p>
+</div>
+<div class="paragraph">
+<p>The last thing that needs to happen before we can execute the query is to bind the values for any parameters defined in the query.
+Query defines many overloaded methods for this purpose.
+The most generic form takes the value as well as the Hibernate Type.</p>
+</div>
+<div id="hql-api-parameter-example" class="exampleblock">
+<div class="title">Example 12. Hibernate name parameter binding</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">org.hibernate.query.Query query = session.createQuery(
+    "select p " +
+    "from Person p " +
+    "where p.name like :name" )
+.setParameter( "name", "J%", StringType.INSTANCE );</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Hibernate generally understands the expected type of the parameter given its context in the query.
+In the previous example since we are using the parameter in a <code>LIKE</code> comparison against a String-typed attribute Hibernate would automatically infer the type; so the above could be simplified.</p>
+</div>
+<div id="hql-api-parameter-inferred-type-example" class="exampleblock">
+<div class="title">Example 13. Hibernate name parameter binding (inferred type)</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">org.hibernate.query.Query query = session.createQuery(
+    "select p " +
+    "from Person p " +
+    "where p.name like :name" )
+.setParameter( "name", "J%" );</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>There are also short hand forms for binding common types such as strings, booleans, integers, etc.</p>
+</div>
+<div id="hql-api-parameter-short-form-example" class="exampleblock">
+<div class="title">Example 14. Hibernate name parameter binding (short forms)</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">org.hibernate.query.Query query = session.createQuery(
+    "select p " +
+    "from Person p " +
+    "where p.name like :name " +
+    "  and p.createdOn &gt; :timestamp" )
+.setParameter( "name", "J%" )
+.setParameter( "timestamp", timestamp, TemporalType.TIMESTAMP);</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>HQL-style positional parameters follow JDBC positional parameter syntax.
+They are declared using <code>?</code> without a following ordinal.
+There is no way to relate two such positional parameters as being "the same" aside from binding the same value to each.</p>
+</div>
+<div id="hql-api-positional-parameter-example" class="exampleblock">
+<div class="title">Example 15. Hibernate positional parameter binding</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">org.hibernate.query.Query query = session.createQuery(
+    "select p " +
+    "from Person p " +
+    "where p.name like ? " )
+.setParameter( 0, "J%" );</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>This form should be considered deprecated and may be removed in the near future.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>In terms of execution, Hibernate offers 4 different methods. The 2 most commonly used are</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>Query#list</code> - executes the select query and returns back the list of results.</p>
+</li>
+<li>
+<p><code>Query#uniqueResult</code> - executes the select query and returns the single result. If there were more than one result an exception is thrown.</p>
+</li>
+</ul>
+</div>
+<div id="hql-api-list-example" class="exampleblock">
+<div class="title">Example 16. Hibernate <code>list()</code> result</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">List&lt;Person&gt; persons = session.createQuery(
+    "select p " +
+    "from Person p " +
+    "where p.name like :name" )
+.setParameter( "name", "J%" )
+.list();</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Since 5.2, Hibernate offers support for returning a <code>Stream</code> which can be later used to transform the underlying <code>ResultSet</code>.</p>
+</div>
+<div class="paragraph">
+<p>Internally, the <code>stream()</code> behaves like a <code>Query#scroll</code> and the underlying result is backed by a <code>ScrollableResults</code>.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Fetching a projection using the <code>Query#stream</code> method can be done as follows:</p>
+</div>
+<div id="hql-api-stream-projection-example" class="exampleblock">
+<div class="title">Example 17. Hibernate <code>stream()</code> using a projection result type</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">Stream&lt;Object[]&gt; persons = session.createQuery(
+    "select p.name, p.nickName " +
+    "from Person p " +
+    "where p.name like :name" )
+.setParameter( "name", "J%" )
+.stream();
+
+List&lt;PersonNames&gt; personNames = persons
+    .map( row -&gt; new PersonNames( (String) row[0], (String)row[1] ) )
+    .collect(Collectors.toList());</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>When fetching a single result, like a <code>Person</code> entity, instead of a <code>Stream&lt;Object[]&gt;</code>, Hibernate is going to figure out the actual type, so the result is a <code>Stream&lt;Person&gt;</code>.</p>
+</div>
+<div id="hql-api-stream-example" class="exampleblock">
+<div class="title">Example 18. Hibernate <code>stream()</code> using an entity result type</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">Stream&lt;Person&gt; persons = session.createQuery(
+    "select p " +
+    "from Person p " +
+    "where p.name like :name" )
+.setParameter( "name", "J%" )
+.stream();
+
+Map&lt;Phone, List&lt;Call&gt;&gt; callRegistry = persons
+    .flatMap( person -&gt; person.getPhones().stream() )
+    .flatMap( phone -&gt; phone.getCalls().stream() )
+    .collect(Collectors.groupingBy(Call::getPhone));</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>It is also possible to extract a single result from a <code>Query</code>.</p>
+</div>
+<div id="hql-api-unique-result-example" class="exampleblock">
+<div class="title">Example 19. Hibernate <code>uniqueResult()</code></div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">Person person = (Person) session.createQuery(
+    "select p " +
+    "from Person p " +
+    "where p.name like :name" )
+.setParameter( "name", "J%" )
+.uniqueResult();</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>If the unique result is used often and the attributes upon which it is based are unique, you may want to consider mapping a natural-id and using the natural-id loading API.
+See the <a href="chapters/domain/natural_id.html#naturalid">Natural Ids</a> for more information on this topic.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Hibernate offers 2 additional, specialized methods for performing the query and handling results.
+<code>Query#scroll</code> works in tandem with the JDBC notion of a scrollable <code>ResultSet</code>.
+The <code>scroll</code> method is overloaded.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Then main form accepts a single argument of type <code>org.hibernate.ScrollMode</code> which indicates the type of scrolling to be used.
+See the <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/ScrollMode.html">Javadocs</a> for the details on each.</p>
+</li>
+<li>
+<p>The second form takes no argument and will use the <code>ScrollMode</code> indicated by <code>Dialect#defaultScrollMode</code>.
+<code>Query#scroll</code> returns a <code>org.hibernate.ScrollableResults</code> which wraps the underlying JDBC (scrollable) <code>ResultSet</code> and provides access to the results.
+Since this form holds the JDBC <code>ResultSet</code> open, the application should indicate when it is done with the <code>ScrollableResults</code> by calling its <code>close()</code> method (as inherited from <code>java.io.Closeable</code> so that <code>ScrollableResults</code> will work with try-with-resources blocks!).
+If left unclosed by the application, Hibernate will automatically close the <code>ScrollableResults</code> when the current transaction completes.</p>
+</li>
+</ul>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>If you plan to use <code>Query#scroll</code> with collection fetches it is important that your query explicitly order the results so that the JDBC results contain the related rows sequentially.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>The last is <code>Query#iterate</code>, which is intended for loading entities which the application feels certain will be in the second-level cache.
+The idea behind iterate is that just the matching identifiers will be obtained in the SQL query.
+From these the identifiers are resolved by second-level cache lookup.
+If these second-level cache lookups fail, additional queries will need to be issued against the database.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>This operation can perform significantly better for loading large numbers of entities that for certain already exist in the second-level cache.
+In cases where many of the entities do not exist in the second-level cache, this operation will almost definitely perform worse.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>The <code>Iterator</code> returned from <code>Query#iterate</code> is actually a specially typed Iterator: <code>org.hibernate.engine.HibernateIterator</code>.
+It is specialized to expose a <code>close()</code> method (again, inherited from <code>java.io.Closeable</code>).
+When you are done with this <code>Iterator</code> you should close it, either by casting to <code>HibernateIterator</code> or <code>Closeable</code>, or by calling <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/Hibernate.html#close-java.util.Iterator-"><code>Hibernate#close(java.util.Iterator)</code></a>.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="hql-case-sensitivity">Case Sensitivity</h3>
+<div class="paragraph">
+<p>With the exception of names of Java classes and properties, queries are case-insensitive.
+So <code>SeLeCT</code> is the same as <code>sELEct</code> is the same as <code>SELECT</code>, but <code>org.hibernate.eg.FOO</code> and <code>org.hibernate.eg.Foo</code> are different, as are <code>foo.barSet</code> and <code>foo.BARSET</code>.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>This documentation uses lowercase keywords as convention in examples.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="hql-statement-types">Statement types</h3>
+<div class="paragraph">
+<p>Both HQL and JPQL allow <code>SELECT</code>, <code>UPDATE</code> and <code>DELETE</code> statements to be performed.
+HQL additionally allows <code>INSERT</code> statements, in a form similar to a SQL <code>INSERT FROM SELECT</code>.</p>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Care should be taken as to when a <code>UPDATE</code> or <code>DELETE</code> statement is executed.</p>
+</div>
+<div class="quoteblock">
+<blockquote>
+<div class="paragraph">
+<p>Caution should be used when executing bulk update or delete operations because they may result in
+inconsistencies between the database and the entities in the active persistence context. In general, bulk
+update and delete operations should only be performed within a transaction in a new persistence con
+text or before fetching or accessing entities whose state might be affected by such operations.</p>
+</div>
+</blockquote>
+<div class="attribution">
+&#8212; Section 4.10 of the JPA 2.0 Specification
+</div>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="hql-select">Select statements</h3>
+<div class="paragraph">
+<p>The <a href="https://en.wikipedia.org/wiki/Backus%E2%80%93Naur_Form">BNF</a> for <code>SELECT</code> statements in HQL is:</p>
+</div>
+<div id="hql-select-bnf-example" class="exampleblock">
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-SQL" data-lang="SQL">select_statement :: =
+    [select_clause]
+    from_clause
+    [where_clause]
+    [groupby_clause]
+    [having_clause]
+    [orderby_clause]</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>The simplest possible HQL <code>SELECT</code> statement is of the form:</p>
+</div>
+<div id="hql-select-simplest-example" class="exampleblock">
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-SQL" data-lang="SQL">List&lt;Person&gt; persons = session.createQuery(
+    "from Person" )
+.list();</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>The select statement in JPQL is exactly the same as for HQL except that JPQL requires a <code>select_clause</code>, whereas HQL does not.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-SQL" data-lang="SQL">List&lt;Person&gt; persons = entityManager.createQuery(
+    "select p " +
+    "from Person p", Person.class )
+.getResultList();</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Even though HQL does not require the presence of a <code>select_clause</code>, it is generally good practice to include one.
+For simple queries the intent is clear and so the intended result of the <code>select_clause</code> is east to infer.
+But on more complex queries that is not always the case.</p>
+</div>
+<div class="paragraph">
+<p>It is usually better to explicitly specify intent.
+Hibernate does not actually enforce that a <code>select_clause</code> be present even when parsing JPQL queries, however applications interested in JPA portability should take heed of this.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="hql-update">Update statements</h3>
+<div class="paragraph">
+<p>The BNF for <code>UPDATE</code> statements is the same in HQL and JPQL:</p>
+</div>
+<div id="hql-update-bnf-example" class="exampleblock">
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-SQL" data-lang="SQL">update_statement ::=
+    update_clause [where_clause]
+
+update_clause ::=
+    UPDATE entity_name [[AS] identification_variable]
+    SET update_item {, update_item}*
+
+update_item ::=
+    [identification_variable.]{state_field | single_valued_object_field} = new_value
+
+new_value ::=
+    scalar_expression | simple_entity_expression | NULL</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p><code>UPDATE</code> statements, by default, do not effect the <code>version</code> or the <code>timestamp</code> attribute values for the affected entities.</p>
+</div>
+<div class="paragraph">
+<p>However, you can force Hibernate to set the <code>version</code> or <code>timestamp</code> attribute values through the use of a <code>versioned update</code>.
+This is achieved by adding the <code>VERSIONED</code> keyword after the <code>UPDATE</code> keyword.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>This is a Hibernate specific feature and will not work in a portable manner.</p>
+</div>
+<div class="paragraph">
+<p>Custom version types, <code>org.hibernate.usertype.UserVersionType</code>, are not allowed in conjunction with a <code>update versioned</code> statement.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>An <code>UPDATE</code> statement is executed using the <code>executeUpdate()</code> of either <code>org.hibernate.query.Query</code> or <code>javax.persistence.Query</code>.
+The method is named for those familiar with the JDBC <code>executeUpdate()</code> on <code>java.sql.PreparedStatement</code>.</p>
+</div>
+<div class="paragraph">
+<p>The <code>int</code> value returned by the <code>executeUpdate()</code> method indicates the number of entities effected by the operation.
+This may or may not correlate to the number of rows effected in the database.
+An HQL bulk operation might result in multiple actual SQL statements being executed (for joined-subclass, for example).
+The returned number indicates the number of actual entities affected by the statement.
+Using a JOINED inheritance hierarchy, a delete against one of the subclasses may actually result in deletes against not just the table to which that subclass is mapped, but also the "root" table and tables "in between".</p>
+</div>
+<div id="hql-update-example" class="exampleblock">
+<div class="title">Example 20. UPDATE query statements</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-SQL" data-lang="SQL">int updatedEntities = entityManager.createQuery(
+    "update Person p " +
+    "set p.name = :newName " +
+    "where p.name = :oldName" )
+.setParameter( "oldName", oldName )
+.setParameter( "newName", newName )
+.executeUpdate();
+
+int updatedEntities = session.createQuery(
+    "update Person " +
+    "set name = :newName " +
+    "where name = :oldName" )
+.setParameter( "oldName", oldName )
+.setParameter( "newName", newName )
+.executeUpdate();
+
+int updatedEntities = session.createQuery(
+    "update versioned Person " +
+    "set name = :newName " +
+    "where name = :oldName" )
+.setParameter( "oldName", oldName )
+.setParameter( "newName", newName )
+.executeUpdate();</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Neither <code>UPDATE</code> nor <code>DELETE</code> statements allow implicit joins. Their form already disallows explicit joins too.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="hql-delete">Delete statements</h3>
+<div class="paragraph">
+<p>The BNF for <code>DELETE</code> statements is the same in HQL and JPQL:</p>
+</div>
+<div id="hql-delete-bnf-example" class="exampleblock">
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-SQL" data-lang="SQL">delete_statement ::=
+    delete_clause [where_clause]
+
+delete_clause ::=
+    DELETE FROM entity_name [[AS] identification_variable]</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>A <code>DELETE</code> statement is also executed using the <code>executeUpdate()</code> method of either <code>org.hibernate.query.Query</code> or <code>javax.persistence.Query</code>.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="hql-insert">Insert statements</h3>
+<div class="paragraph">
+<p>HQL adds the ability to define <code>INSERT</code> statements as well.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>There is no JPQL equivalent to this.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>The BNF for an HQL <code>INSERT</code> statement is:</p>
+</div>
+<div id="hql-insert-bnf-example" class="exampleblock">
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-SQL" data-lang="SQL">insert_statement ::=
+    insert_clause select_statement
+
+insert_clause ::=
+    INSERT INTO entity_name (attribute_list)
+
+attribute_list ::=
+    state_field[, state_field ]*</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>The <code>attribute_list</code> is analogous to the <code>column specification</code> in the SQL <code>INSERT</code> statement.
+For entities involved in mapped inheritance, only attributes directly defined on the named entity can be used in the <code>attribute_list</code>.
+Superclass properties are not allowed and subclass properties do not make sense.
+In other words, <code>INSERT</code> statements are inherently non-polymorphic.</p>
+</div>
+<div class="paragraph">
+<p><code>select_statement</code> can be any valid HQL select query, with the caveat that the return types must match the types expected by the insert.
+Currently, this is checked during query compilation rather than allowing the check to relegate to the database.
+This may cause problems between Hibernate Types which are <em>equivalent</em> as opposed to <em>equal</em>.
+For example, this might cause lead to issues with mismatches between an attribute mapped as a <code>org.hibernate.type.DateType</code> and an attribute defined as a <code>org.hibernate.type.TimestampType</code>,
+even though the database might not make a distinction or might be able to handle the conversion.</p>
+</div>
+<div class="paragraph">
+<p>For the id attribute, the insert statement gives you two options.
+You can either explicitly specify the id property in the <code>attribute_list</code>, in which case its value is taken from the corresponding select expression, or omit it from the <code>attribute_list</code> in which case a generated value is used.
+This latter option is only available when using id generators that operate "in the database"; attempting to use this option with any "in memory" type generators will cause an exception during parsing.</p>
+</div>
+<div class="paragraph">
+<p>For optimistic locking attributes, the insert statement again gives you two options.
+You can either specify the attribute in the <code>attribute_list</code> in which case its value is taken from the corresponding select expressions, or omit it from the <code>attribute_list</code> in which case the <code>seed value</code> defined by the corresponding <code>org.hibernate.type.VersionType</code> is used.</p>
+</div>
+<div id="hql-insert-example" class="exampleblock">
+<div class="title">Example 21. INSERT query statements</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-SQL" data-lang="SQL">int insertedEntities = session.createQuery(
+    "insert into Partner (id, name) " +
+    "select p.id, p.name " +
+    "from Person p ")
+.executeUpdate();</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="hql-from-clause">The <code>FROM</code> clause</h3>
+<div class="paragraph">
+<p>The <code>FROM</code> clause is responsible defining the scope of object model types available to the rest of the query.
+It also is responsible for defining all the "identification variables" available to the rest of the query.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="hql-identification-variables">Identification variables</h3>
+<div class="paragraph">
+<p>Identification variables are often referred to as aliases.
+References to object model classes in the <code>FROM</code> clause can be associated with an identification variable that can then be used to refer to that type throughout the rest of the query.</p>
+</div>
+<div class="paragraph">
+<p>In most cases declaring an identification variable is optional, though it is usually good practice to declare them.</p>
+</div>
+<div class="paragraph">
+<p>An identification variable must follow the rules for Java identifier validity.</p>
+</div>
+<div class="paragraph">
+<p>According to JPQL, identification variables must be treated as case-insensitive.
+Good practice says you should use the same case throughout a query to refer to a given identification variable.
+In other words, JPQL says they <em>can be</em> case-insensitive and so Hibernate must be able to treat them as such, but this does not make it good practice.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="hql-root-reference">Root entity references</h3>
+<div class="paragraph">
+<p>A root entity reference, or what JPA calls a <code>range variable declaration</code>, is specifically a reference to a mapped entity type from the application.
+It cannot name component/ embeddable types.
+And associations, including collections, are handled in a different manner, as later discussed.</p>
+</div>
+<div class="paragraph">
+<p>The BNF for a root entity reference is:</p>
+</div>
+<div id="hql-root-reference-bnf-example" class="exampleblock">
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-SQL" data-lang="SQL">root_entity_reference ::=
+    entity_name [AS] identification_variable</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div id="hql-root-reference-jpql-fqn-example" class="exampleblock">
+<div class="title">Example 22. Simple query example</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">List&lt;Person&gt; persons = entityManager.createQuery(
+    "select p " +
+    "from org.hibernate.userguide.model.Person p", Person.class )
+.getResultList();</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>We see that the query is defining a root entity reference to the <code>org.hibernate.userguide.model.Person</code> object model type.
+Additionally, it declares an alias of <code>p</code> to that <code>org.hibernate.userguide.model.Person</code> reference, which is the identification variable.</p>
+</div>
+<div class="paragraph">
+<p>Usually, the root entity reference represents just the <code>entity name</code> rather than the entity class FQN (fully-qualified name).
+By default, the entity name is the unqualified entity class name, here <code>Person</code></p>
+</div>
+<div id="hql-root-reference-jpql-example" class="exampleblock">
+<div class="title">Example 23. Simple query using entity name for root entity reference</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">List&lt;Person&gt; persons = entityManager.createQuery(
+    "select p " +
+    "from Person p", Person.class )
+.getResultList();</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Multiple root entity references can also be specified, even when naming the same entity.</p>
+</div>
+<div id="hql-multiple-root-reference-jpql-example" class="exampleblock">
+<div class="title">Example 24. Simple query using multiple root entity references</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-SQL" data-lang="SQL">List&lt;Object[]&gt; persons = entityManager.createQuery(
+    "select distinct pr, ph " +
+    "from Person pr, Phone ph " +
+    "where ph.person = pr and ph is not null", Object[].class)
+.getResultList();</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">List&lt;Person&gt; persons = entityManager.createQuery(
+    "select distinct pr1 " +
+    "from Person pr1, Person pr2 " +
+    "where pr1.id &lt;&gt; pr2.id " +
+    "  and pr1.address = pr2.address " +
+    "  and pr1.createdOn &lt; pr2.createdOn", Person.class )
+.getResultList();</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="hql-explicit-join">Explicit joins</h3>
+<div class="paragraph">
+<p>The <code>FROM</code> clause can also contain explicit relationship joins using the <code>join</code> keyword.
+These joins can be either <code>inner</code> or <code>left outer</code> style joins.</p>
+</div>
+<div id="hql-explicit-inner-join-example" class="exampleblock">
+<div class="title">Example 25. Explicit inner join examples</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-SQL" data-lang="SQL">List&lt;Person&gt; persons = entityManager.createQuery(
+    "select distinct pr " +
+    "from Person pr " +
+    "join pr.phones ph " +
+    "where ph.type = :phoneType", Person.class )
+.setParameter( "phoneType", PhoneType.MOBILE )
+.getResultList();
+
+// same query but specifying join type as 'inner' explicitly
+List&lt;Person&gt; persons = entityManager.createQuery(
+    "select distinct pr " +
+    "from Person pr " +
+    "inner join pr.phones ph " +
+    "where ph.type = :phoneType", Person.class )
+.setParameter( "phoneType", PhoneType.MOBILE )
+.getResultList();</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div id="hql-explicit-outer-join-example" class="exampleblock">
+<div class="title">Example 26. Explicit left (outer) join examples</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">List&lt;Person&gt; persons = entityManager.createQuery(
+    "select distinct pr " +
+    "from Person pr " +
+    "left join pr.phones ph " +
+    "where ph is null " +
+    "   or ph.type = :phoneType", Person.class )
+.setParameter( "phoneType", PhoneType.LAND_LINE )
+.getResultList();
+
+// functionally the same query but using the 'left outer' phrase
+List&lt;Person&gt; persons = entityManager.createQuery(
+    "select distinct pr " +
+    "from Person pr " +
+    "left outer join pr.phones ph " +
+    "where ph is null " +
+    "   or ph.type = :phoneType", Person.class )
+.setParameter( "phoneType", PhoneType.LAND_LINE )
+.getResultList();</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>HQL also defines a <code>WITH</code> clause to qualify the join conditions.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>This is specific to HQL. JPQL defines the <code>ON</code> clause for this feature.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div id="hql-explicit-join-with-example" class="exampleblock">
+<div class="title">Example 27. HQL <code>WITH</code> clause join example</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">List&lt;Object[]&gt; personsAndPhones = session.createQuery(
+    "select pr.name, ph.number " +
+    "from Person pr " +
+    "left join pr.phones ph with ph.type = :phoneType " )
+.setParameter( "phoneType", PhoneType.LAND_LINE )
+.list();</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div id="hql-explicit-join-jpql-on-example" class="exampleblock">
+<div class="title">Example 28. JPQL <code>ON</code> clause join example</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">List&lt;Object[]&gt; personsAndPhones = entityManager.createQuery(
+    "select pr.name, ph.number " +
+    "from Person pr " +
+    "left join pr.phones ph on ph.type = :phoneType " )
+.setParameter( "phoneType", PhoneType.LAND_LINE )
+.getResultList();</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>The important distinction is that in the generated SQL the conditions of the <code>WITH/ON</code> clause are made part of the <code>ON</code> clause in the generated SQL,
+as opposed to the other queries in this section where the HQL/JPQL conditions are made part of the <code>WHERE</code> clause in the generated SQL.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>The distinction in this specific example is probably not that significant.
+The <code>with clause</code> is sometimes necessary for more complicated queries.</p>
+</div>
+<div class="paragraph">
+<p>Explicit joins may reference association or component/embedded attributes.
+In the case of component/embedded attributes, the join is simply logical and does not correlate to a physical (SQL) join.
+For further information about collection-valued association references, see <a href="#hql-collection-valued-associations">Collection member references</a>.</p>
+</div>
+<div class="paragraph">
+<p>An important use case for explicit joins is to define <code>FETCH JOINS</code> which override the laziness of the joined association.
+As an example, given an entity named <code>Person</code> with a collection-valued association named <code>phones</code>, the <code>JOIN FETCH</code> will also load the child collection in the same SQL query:</p>
+</div>
+<div id="hql-explicit-fetch-join-example" class="exampleblock">
+<div class="title">Example 29. Fetch join example</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">// functionally the same query but using the 'left outer' phrase
+List&lt;Person&gt; persons = entityManager.createQuery(
+    "select distinct pr " +
+    "from Person pr " +
+    "left join fetch pr.phones ", Person.class )
+.getResultList();</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>As you can see from the example, a fetch join is specified by injecting the keyword <code>fetch</code> after the keyword <code>join</code>.
+In the example, we used a left outer join because we also wanted to return customers who have no orders.</p>
+</div>
+<div class="paragraph">
+<p>Inner joins can also be fetched, but inner joins filter out the root entity.
+In the example, using an inner join instead would have resulted in customers without any orders being filtered out of the result.</p>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Fetch joins are not valid in sub-queries.</p>
+</div>
+<div class="paragraph">
+<p>Care should be taken when fetch joining a collection-valued association which is in any way further restricted (the fetched collection will be restricted too).
+For this reason, it is usually considered best practice not to assign an identification variable to fetched joins except for the purpose of specifying nested fetch joins.</p>
+</div>
+<div class="paragraph">
+<p>Fetch joins should not be used in paged queries (e.g. <code>setFirstResult()</code> or <code>setMaxResults()</code>), nor should they be used with the <code>scroll()</code> or <code>iterate()</code> features.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="hql-implicit-join">Implicit joins (path expressions)</h3>
+<div class="paragraph">
+<p>Another means of adding to the scope of object model types available to the query is through the use of implicit joins or path expressions.</p>
+</div>
+<div id="hql-implicit-join-example" class="exampleblock">
+<div class="title">Example 30. Simple implicit join example</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">List&lt;Phone&gt; phones = entityManager.createQuery(
+    "select ph " +
+    "from Phone ph " +
+    "where ph.person.address = :address ", Phone.class )
+.setParameter( "address", address )
+.getResultList();
+
+// same as
+List&lt;Phone&gt; phones = entityManager.createQuery(
+    "select ph " +
+    "from Phone ph " +
+    "join ph.person pr " +
+    "where pr.address = :address ", Phone.class )
+.setParameter( "address", address)
+.getResultList();</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>An implicit join always starts from an <code>identification variable</code>, followed by the navigation operator ( <code>.</code> ),
+followed by an attribute for the object model type referenced by the initial <code>identification variable</code>.
+In the example, the initial <code>identification variable</code> is <code>ph</code> which refers to the <code>Phone</code> entity.
+The <code>ph.person</code> reference then refers to the <code>person</code> attribute of the <code>Phone</code> entity.
+<code>person</code> is an association type so we further navigate to its age attribute.</p>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>If the attribute represents an entity association (non-collection) or a component/embedded, that reference can be further navigated.
+Basic values and collection-valued associations cannot be further navigated.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>As shown in the example, implicit joins can appear outside the <code>FROM clause</code>.
+However, they affect the <code>FROM clause</code>.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Implicit joins are always treated as inner joins.</p>
+</div>
+<div class="paragraph">
+<p>Multiple references to the same implicit join always refer to the same logical and physical (SQL) join.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div id="hql-implicit-join-alias-example" class="exampleblock">
+<div class="title">Example 31. Reused implicit join</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">List&lt;Phone&gt; phones = entityManager.createQuery(
+    "select ph " +
+    "from Phone ph " +
+    "where ph.person.address = :address " +
+    "  and ph.person.createdOn &gt; :timestamp", Phone.class )
+.setParameter( "address", address )
+.setParameter( "timestamp", timestamp )
+.getResultList();
+
+//same as
+List&lt;Phone&gt; phones = entityManager.createQuery(
+    "select ph " +
+    "from Phone ph " +
+    "inner join ph.person pr " +
+    "where pr.address = :address " +
+    "  and pr.createdOn &gt; :timestamp", Phone.class )
+.setParameter( "address", address )
+.setParameter( "timestamp", timestamp )
+.getResultList();</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Just as with explicit joins, implicit joins may reference association or component/embedded attributes.
+For further information about collection-valued association references, see <a href="#hql-collection-valued-associations">Collection member references</a>.</p>
+</div>
+<div class="paragraph">
+<p>In the case of component/embedded attributes, the join is simply logical and does not correlate to a physical (SQL) join.
+Unlike explicit joins, however, implicit joins may also reference basic state fields as long as the path expression ends there.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="hql-distinct">Distinct</h3>
+<div class="paragraph">
+<p>For JPQL and HQL, <code>DISTINCT</code> has two meanings:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>It can be passed to the database so that duplicates are removed from a result set</p>
+</li>
+<li>
+<p>It can be used to filter out the same parent entity references when join fetching a child collection</p>
+</li>
+</ol>
+</div>
+<div class="sect3">
+<h4 id="hql-distinct-projection-query">Using DISTINCT with SQL projections</h4>
+<div class="paragraph">
+<p>For SQL projections, <code>DISTINCT</code> needs to be passed to the database because the duplicated entries need to be filtered out before being returned to the database client.</p>
+</div>
+<div id="hql-distinct-projection-query-example" class="exampleblock">
+<div class="title">Example 32. Using DISTINCT with projection queries example</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">List&lt;String&gt; lastNames = entityManager.createQuery(
+    "select distinct p.lastName " +
+    "from Person p", String.class)
+.getResultList();</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>When running the query above, Hibernate generates the following SQL query:</p>
+</div>
+<div class="exampleblock">
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-SQL" data-lang="SQL">SELECT DISTINCT
+    p.last_name as col_0_0_
+FROM person p</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>For this particular use case, passing the <code>DISTINCT</code> keyword from JPQL/HQL to the database is the right thing to do.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="hql-distinct-entity-query">Using DISTINCT with entity queries</h4>
+<div class="paragraph">
+<p><code>DISTINCT</code> can also be used to filter out entity object references when fetching a child association along with the parent entities.</p>
+</div>
+<div id="hql-distinct-entity-query-example" class="exampleblock">
+<div class="title">Example 33. Using DISTINCT with entity queries example</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">List&lt;Person&gt; authors = entityManager.createQuery(
+    "select distinct p " +
+    "from Person p " +
+    "left join fetch p.books", Person.class)
+.getResultList();</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>In this case, <code>DISTINCT</code> is used because there can be multiple <code>Books</code> entities associated to a given <code>Person</code>.
+If in the database there are 3 <code>Persons</code> in the database and each person has 2 <code>Books</code>, without <code>DISTINCT</code> this query will return 6 <code>Persons</code> since
+the SQL-level result-set size is given by the number of joined <code>Book</code> records.</p>
+</div>
+<div class="paragraph">
+<p>However, the <code>DISTINCT</code> keyword is passed to the database as well:</p>
+</div>
+<div class="exampleblock">
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-SQL" data-lang="SQL">SELECT DISTINCT
+    p.id as id1_1_0_,
+    b.id as id1_0_1_,
+    p.first_name as first_na2_1_0_,
+    p.last_name as last_nam3_1_0_,
+    b.author_id as author_i3_0_1_,
+    b.title as title2_0_1_,
+    b.author_id as author_i3_0_0__,
+    b.id as id1_0_0__
+FROM person p
+LEFT OUTER JOIN book b ON p.id=b.author_id</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>In this case, the <code>DISTINCT</code> SQL keyword is undesirable since it does a redundant result set sorting, as explained <a href="http://in.relation.to/2016/08/04/introducing-distinct-pass-through-query-hint/">in this blog post</a>.
+To fix this issue, Hibernate 5.2.2 added support for the <code>HINT_PASS_DISTINCT_THROUGH</code> entity query hint:</p>
+</div>
+<div id="hql-distinct-entity-query-hint-example" class="exampleblock">
+<div class="title">Example 34. Using DISTINCT with entity queries example</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">List&lt;Person&gt; authors = entityManager.createQuery(
+    "select distinct p " +
+    "from Person p " +
+    "left join fetch p.books", Person.class)
+.setHint( QueryHints.HINT_PASS_DISTINCT_THROUGH, false )
+.getResultList();</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>With this entity query hint, Hibernate will not pass the <code>DISTINCT</code> keyword to the SQL query:</p>
+</div>
+<div class="exampleblock">
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-SQL" data-lang="SQL">SELECT
+    p.id as id1_1_0_,
+    b.id as id1_0_1_,
+    p.first_name as first_na2_1_0_,
+    p.last_name as last_nam3_1_0_,
+    b.author_id as author_i3_0_1_,
+    b.title as title2_0_1_,
+    b.author_id as author_i3_0_0__,
+    b.id as id1_0_0__
+FROM person p
+LEFT OUTER JOIN book b ON p.id=b.author_id</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>When using the <code>HINT_PASS_DISTINCT_THROUGH</code> entity query hint, Hibernate can still remove the duplicated parent-side entities from the query result.</p>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="hql-collection-valued-associations">Collection member references</h3>
+<div class="paragraph">
+<p>References to collection-valued associations actually refer to the <em>values</em> of that collection.</p>
+</div>
+<div id="hql-collection-valued-associations-example" class="exampleblock">
+<div class="title">Example 35. Collection references example</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">List&lt;Phone&gt; phones = entityManager.createQuery(
+    "select ph " +
+    "from Person pr " +
+    "join pr.phones ph " +
+    "join ph.calls c " +
+    "where pr.address = :address " +
+    "  and c.duration &gt; :duration", Phone.class )
+.setParameter( "address", address )
+.setParameter( "duration", duration )
+.getResultList();
+
+// alternate syntax
+List&lt;Phone&gt; phones = session.createQuery(
+    "select pr " +
+    "from Person pr, " +
+    "in (pr.phones) ph, " +
+    "in (ph.calls) c " +
+    "where pr.address = :address " +
+    "  and c.duration &gt; :duration" )
+.setParameter( "address", address )
+.setParameter( "duration", duration )
+.list();</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>In the example, the identification variable <code>ph</code> actually refers to the object model type <code>Phone</code>, which is the type of the elements of the <code>Person#phones</code> association.</p>
+</div>
+<div class="paragraph">
+<p>The example also shows the alternate syntax for specifying collection association joins using the <code>IN</code> syntax.
+Both forms are equivalent.
+Which form an application chooses to use is simply a matter of taste.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="hql-collection-qualification">Special case - qualified path expressions</h3>
+<div class="paragraph">
+<p>We said earlier that collection-valued associations actually refer to the <em>values</em> of that collection.
+Based on the type of collection, there are also available a set of explicit qualification expressions.</p>
+</div>
+<div id="hql-collection-qualification-example" class="exampleblock">
+<div class="title">Example 36. Qualified collection references example</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">@OneToMany(mappedBy = "phone")
+@MapKey(name = "timestamp")
+@MapKeyTemporal(TemporalType.TIMESTAMP )
+private Map&lt;Date, Call&gt; callHistory = new HashMap&lt;&gt;();
+
+
+// select all the calls (the map value) for a given Phone
+List&lt;Call&gt; calls = entityManager.createQuery(
+    "select ch " +
+    "from Phone ph " +
+    "join ph.callHistory ch " +
+    "where ph.id = :id ", Call.class )
+.setParameter( "id", id )
+.getResultList();
+
+// same as above
+List&lt;Call&gt; calls = entityManager.createQuery(
+    "select value(ch) " +
+    "from Phone ph " +
+    "join ph.callHistory ch " +
+    "where ph.id = :id ", Call.class )
+.setParameter( "id", id )
+.getResultList();
+
+// select all the Call timestamps (the map key) for a given Phone
+List&lt;Date&gt; timestamps = entityManager.createQuery(
+    "select key(ch) " +
+    "from Phone ph " +
+    "join ph.callHistory ch " +
+    "where ph.id = :id ", Date.class )
+.setParameter( "id", id )
+.getResultList();
+
+// select all the Call and their timestamps (the 'Map.Entry') for a given Phone
+List&lt;Map.Entry&lt;Date, Call&gt;&gt; callHistory = entityManager.createQuery(
+    "select entry(ch) " +
+    "from Phone ph " +
+    "join ph.callHistory ch " +
+    "where ph.id = :id " )
+.setParameter( "id", id )
+.getResultList();
+
+// Sum all call durations for a given Phone of a specific Person
+Long duration = entityManager.createQuery(
+    "select sum(ch.duration) " +
+    "from Person pr " +
+    "join pr.phones ph " +
+    "join ph.callHistory ch " +
+    "where ph.id = :id " +
+    "  and index(ph) = :phoneIndex", Long.class )
+.setParameter( "id", id )
+.setParameter( "phoneIndex", phoneIndex )
+.getSingleResult();</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">VALUE</dt>
+<dd>
+<p>Refers to the collection value.
+Same as not specifying a qualifier.
+Useful to explicitly show intent.
+Valid for any type of collection-valued reference.</p>
+</dd>
+<dt class="hdlist1">INDEX</dt>
+<dd>
+<p>According to HQL rules, this is valid for both <code>Maps</code> and <code>Lists</code> which specify a <code>javax.persistence.OrderColumn</code> annotation to refer to the <code>Map</code> key or the <code>List</code> position (aka the <code>OrderColumn</code> value).
+JPQL however, reserves this for use in the <code>List</code> case and adds <code>KEY</code> for the <code>Map</code> case.
+Applications interested in JPA provider portability should be aware of this distinction.</p>
+</dd>
+<dt class="hdlist1">KEY</dt>
+<dd>
+<p>Valid only for <code>Maps</code>. Refers to the map&#8217;s key. If the key is itself an entity, it can be further navigated.</p>
+</dd>
+<dt class="hdlist1">ENTRY</dt>
+<dd>
+<p>Only valid for <code>Maps</code>. Refers to the map&#8217;s logical <code>java.util.Map.Entry</code> tuple (the combination of its key and value).
+<code>ENTRY</code> is only valid as a terminal path and it&#8217;s applicable to the <code>SELECT</code> clause only.</p>
+</dd>
+</dl>
+</div>
+<div class="paragraph">
+<p>See <a href="#hql-collection-expressions">Collection-related expressions</a> for additional details on collection related expressions.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="hql-polymorphism">Polymorphism</h3>
+<div class="paragraph">
+<p>HQL and JPQL queries are inherently polymorphic.</p>
+</div>
+<div id="hql-polymorphism-example" class="exampleblock">
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">List&lt;Payment&gt; payments = entityManager.createQuery(
+    "select p " +
+    "from Payment p ", Payment.class )
+.getResultList();</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>This query names the <code>Payment</code> entity explicitly.
+However, all subclasses of <code>Payment</code> are also available to the query.
+So if the <code>CreditCardPayment</code> and <code>WireTransferPayment</code> entities extend the <code>Payment</code> class, all three types would be available to the entity query,
+and the query would return instances of all three.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>This can be altered by using either the <code>org.hibernate.annotations.Polymorphism</code> annotation (global, and Hibernate-specific) or limiting them using in the query itself using an entity type expression.</p>
+</div>
+<div class="paragraph">
+<p>The HQL query <code>from java.lang.Object</code> is totally valid! It returns every object of every type defined in your application.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="hql-expressions">Expressions</h3>
+<div class="paragraph">
+<p>Essentially expressions are references that resolve to basic or tuple values.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="hql-identification-variable">Identification variable</h3>
+<div class="paragraph">
+<p>See <a href="#hql-from-clause">The <code>FROM</code> clause</a>.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="hql-path-expressions">Path expressions</h3>
+<div class="paragraph">
+<p>Again, see <a href="#hql-from-clause">The <code>FROM</code> clause</a>.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="hql-literals">Literals</h3>
+<div class="paragraph">
+<p>String literals are enclosed in single quotes.
+To escape a single quote within a string literal, use double single quotes.</p>
+</div>
+<div id="hql-string-literals-example" class="exampleblock">
+<div class="title">Example 37. String literals examples</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">List&lt;Person&gt; persons = entityManager.createQuery(
+    "select p " +
+    "from Person p " +
+    "where p.name like 'Joe'", Person.class)
+.getResultList();
+
+// Escaping quotes
+List&lt;Person&gt; persons = entityManager.createQuery(
+    "select p " +
+    "from Person p " +
+    "where p.name like 'Joe''s'", Person.class)
+.getResultList();</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Numeric literals are allowed in a few different forms.</p>
+</div>
+<div id="hql-numeric-literals-example" class="exampleblock">
+<div class="title">Example 38. Numeric literal examples</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">// simple integer literal
+Person person = entityManager.createQuery(
+    "select p " +
+    "from Person p " +
+    "where p.id = 1", Person.class)
+.getSingleResult();
+
+// simple integer literal, typed as a long
+Person person = entityManager.createQuery(
+    "select p " +
+    "from Person p " +
+    "where p.id = 1L", Person.class)
+.getSingleResult();
+
+// decimal notation
+List&lt;Call&gt; calls = entityManager.createQuery(
+    "select c " +
+    "from Call c " +
+    "where c.duration &gt; 100.5", Call.class )
+.getResultList();
+
+// decimal notation, typed as a float
+List&lt;Call&gt; calls = entityManager.createQuery(
+    "select c " +
+    "from Call c " +
+    "where c.duration &gt; 100.5F", Call.class )
+.getResultList();
+
+// scientific notation
+List&lt;Call&gt; calls = entityManager.createQuery(
+    "select c " +
+    "from Call c " +
+    "where c.duration &gt; 1e+2", Call.class )
+.getResultList();
+
+// scientific notation, typed as a float
+List&lt;Call&gt; calls = entityManager.createQuery(
+    "select c " +
+    "from Call c " +
+    "where c.duration &gt; 1e+2F", Call.class )
+.getResultList();</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>In the scientific notation form, the <code>E</code> is case-insensitive.</p>
+</div>
+<div class="paragraph">
+<p>Specific typing can be achieved through the use of the same suffix approach specified by Java.
+So, <code>L</code> denotes a long, <code>D</code> denotes a double, <code>F</code> denotes a float.
+The actual suffix is case-insensitive.</p>
+</div>
+<div class="paragraph">
+<p>The boolean literals are <code>TRUE</code> and <code>FALSE</code>, again case-insensitive.</p>
+</div>
+<div class="paragraph">
+<p>Enums can even be referenced as literals. The fully-qualified enum class name must be used.
+HQL can also handle constants in the same manner, though JPQL does not define that as supported.</p>
+</div>
+<div class="paragraph">
+<p>Entity names can also be used as literal. See <a href="#hql-entity-type-exp">Entity type</a>.</p>
+</div>
+<div class="paragraph">
+<p>Date/time literals can be specified using the JDBC escape syntax:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>{d 'yyyy-mm-dd'}</code> for dates</p>
+</li>
+<li>
+<p><code>{t 'hh:mm:ss'}</code> for times</p>
+</li>
+<li>
+<p><code>{ts 'yyyy-mm-dd hh:mm:ss[.millis]'}</code> (millis optional) for timestamps.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>These Date/time literals only work if you JDBC drivers supports them.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="hql-numeric-arithmetic">Arithmetic</h3>
+<div class="paragraph">
+<p>Arithmetic operations also represent valid expressions.</p>
+</div>
+<div id="hql-numeric-arithmetic-example" class="exampleblock">
+<div class="title">Example 39. Numeric arithmetic examples</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">// select clause date/time arithmetic operations
+Long duration = entityManager.createQuery(
+    "select sum(ch.duration) * :multiplier " +
+    "from Person pr " +
+    "join pr.phones ph " +
+    "join ph.callHistory ch " +
+    "where ph.id = 1L ", Long.class )
+.setParameter( "multiplier", 1000L )
+.getSingleResult();
+
+// select clause date/time arithmetic operations
+Integer years = entityManager.createQuery(
+    "select year( current_date() ) - year( p.createdOn ) " +
+    "from Person p " +
+    "where p.id = 1L", Integer.class )
+.getSingleResult();
+
+// where clause arithmetic operations
+List&lt;Person&gt; persons = entityManager.createQuery(
+    "select p " +
+    "from Person p " +
+    "where year( current_date() ) - year( p.createdOn ) &gt; 1", Person.class )
+.getResultList();</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>The following rules apply to the result of arithmetic operations:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>If either of the operands is <code>Double</code>/<code>double</code>, the result is a <code>Double</code></p>
+</li>
+<li>
+<p>else, if either of the operands is <code>Float</code>/<code>float</code>, the result is a <code>Float</code></p>
+</li>
+<li>
+<p>else, if either operand is <code>BigDecimal</code>, the result is <code>BigDecimal</code></p>
+</li>
+<li>
+<p>else, if either operand is <code>BigInteger</code>, the result is <code>BigInteger</code> (except for division, in which case the result type is not further defined)</p>
+</li>
+<li>
+<p>else, if either operand is <code>Long</code>/<code>long</code>, the result is <code>Long</code> (except for division, in which case the result type is not further defined)</p>
+</li>
+<li>
+<p>else, (the assumption being that both operands are of integral type) the result is <code>Integer</code> (except for division, in which case the result type is not further defined)</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Date arithmetic is also supported, albeit in a more limited fashion.
+This is due partially to differences in database support and partially to the lack of support for <code>INTERVAL</code> definition in the query language itself.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="hql-concatenation">Concatenation (operation)</h3>
+<div class="paragraph">
+<p>HQL defines a concatenation operator in addition to supporting the concatenation (<code>CONCAT</code>) function.
+This is not defined by JPQL, so portable applications should avoid it use.
+The concatenation operator is taken from the SQL concatenation operator (e.g <code>||</code>).</p>
+</div>
+<div id="hql-concatenation-example" class="exampleblock">
+<div class="title">Example 40. Concatenation operation example</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">String name = entityManager.createQuery(
+    "select 'Customer ' || p.name " +
+    "from Person p " +
+    "where p.id = 1", String.class )
+.getSingleResult();</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>See <a href="#hql-exp-functions">Scalar functions</a> for details on the <code>concat()</code> function</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="hql-aggregate-functions">Aggregate functions</h3>
+<div class="paragraph">
+<p>Aggregate functions are also valid expressions in HQL and JPQL.
+The semantic is the same as their SQL counterpart.
+The supported aggregate functions are:</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><code>COUNT</code> (including distinct/all qualifiers)</dt>
+<dd>
+<p>The result type is always <code>Long</code>.</p>
+</dd>
+<dt class="hdlist1"><code>AVG</code></dt>
+<dd>
+<p>The result type is always <code>Double</code>.</p>
+</dd>
+<dt class="hdlist1"><code>MIN</code></dt>
+<dd>
+<p>The result type is the same as the argument type.</p>
+</dd>
+<dt class="hdlist1"><code>MAX</code></dt>
+<dd>
+<p>The result type is the same as the argument type.</p>
+</dd>
+<dt class="hdlist1"><code>SUM</code></dt>
+<dd>
+<p>The result type of the <code>SUM()</code> function depends on the type of the values being summed.
+For integral values (other than <code>BigInteger</code>), the result type is <code>Long</code>.</p>
+</dd>
+</dl>
+</div>
+<div class="paragraph">
+<p>For floating point values (other than <code>BigDecimal</code>) the result type is <code>Double</code>.
+For <code>BigInteger</code> values, the result type is <code>BigInteger</code>. For <code>BigDecimal</code> values, the result type is <code>BigDecimal</code>.</p>
+</div>
+<div id="hql-aggregate-functions-example" class="exampleblock">
+<div class="title">Example 41. Aggregate function examples</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">Object[] callStatistics = entityManager.createQuery(
+    "select " +
+    "    count(c), " +
+    "    sum(c.duration), " +
+    "    min(c.duration), " +
+    "    max(c.duration), " +
+    "    avg(c.duration)  " +
+    "from Call c ", Object[].class )
+.getSingleResult();
+
+Long phoneCount = entityManager.createQuery(
+    "select count( distinct c.phone ) " +
+    "from Call c ", Long.class )
+.getSingleResult();
+
+List&lt;Object[]&gt; callCount = entityManager.createQuery(
+    "select p.number, count(c) " +
+    "from Call c " +
+    "join c.phone p " +
+    "group by p.number", Object[].class )
+.getResultList();</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Aggregations often appear with grouping. For information on grouping see <a href="#hql-group-by">Group by</a>.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="hql-exp-functions">Scalar functions</h3>
+<div class="paragraph">
+<p>Both HQL and JPQL define some standard functions that are available regardless of the underlying database in use.
+HQL can also understand additional functions defined by the Dialect as well as the application.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="jpql-standardized-functions">JPQL standardized functions</h3>
+<div class="paragraph">
+<p>Here is the list of functions defined as supported by JPQL.
+Applications interested in remaining portable between JPA providers should stick to these functions.</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">CONCAT</dt>
+<dd>
+<p>String concatenation function. Variable argument length of 2 or more string values to be concatenated together.</p>
+</dd>
+</dl>
+</div>
+<div class="exampleblock">
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">List&lt;String&gt; callHistory = entityManager.createQuery(
+    "select concat( p.number, ' : ' ,c.duration ) " +
+    "from Call c " +
+    "join c.phone p", String.class )
+.getResultList();</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">SUBSTRING</dt>
+<dd>
+<p>Extracts a portion of a string value.
+The second argument denotes the starting position. The third (optional) argument denotes the length.</p>
+</dd>
+</dl>
+</div>
+<div class="exampleblock">
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">List&lt;String&gt; prefixes = entityManager.createQuery(
+    "select substring( p.number, 0, 2 ) " +
+    "from Call c " +
+    "join c.phone p", String.class )
+.getResultList();</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">UPPER</dt>
+<dd>
+<p>Upper cases the specified string</p>
+</dd>
+</dl>
+</div>
+<div class="exampleblock">
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">List&lt;String&gt; names = entityManager.createQuery(
+    "select upper( p.name ) " +
+    "from Person p ", String.class )
+.getResultList();</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">LOWER</dt>
+<dd>
+<p>Lower cases the specified string</p>
+</dd>
+</dl>
+</div>
+<div class="exampleblock">
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">List&lt;String&gt; names = entityManager.createQuery(
+    "select lower( p.name ) " +
+    "from Person p ", String.class )
+.getResultList();</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">TRIM</dt>
+<dd>
+<p>Follows the semantics of the SQL trim function.</p>
+</dd>
+</dl>
+</div>
+<div class="exampleblock">
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">List&lt;String&gt; names = entityManager.createQuery(
+    "select trim( p.name ) " +
+    "from Person p ", String.class )
+.getResultList();</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">LENGTH</dt>
+<dd>
+<p>Returns the length of a string.</p>
+</dd>
+</dl>
+</div>
+<div class="exampleblock">
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">List&lt;Integer&gt; lengths = entityManager.createQuery(
+    "select length( p.name ) " +
+    "from Person p ", Integer.class )
+.getResultList();</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">LOCATE</dt>
+<dd>
+<p>Locates a string within another string.
+The third argument (optional) is used to denote a position from which to start looking.</p>
+</dd>
+</dl>
+</div>
+<div class="exampleblock">
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">List&lt;Integer&gt; sizes = entityManager.createQuery(
+    "select locate( 'John', p.name ) " +
+    "from Person p ", Integer.class )
+.getResultList();</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">ABS</dt>
+<dd>
+<p>Calculates the mathematical absolute value of a numeric value.</p>
+</dd>
+</dl>
+</div>
+<div class="exampleblock">
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">List&lt;Integer&gt; abs = entityManager.createQuery(
+    "select abs( c.duration ) " +
+    "from Call c ", Integer.class )
+.getResultList();</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">MOD</dt>
+<dd>
+<p>Calculates the remainder of dividing the first argument by the second.</p>
+</dd>
+</dl>
+</div>
+<div class="exampleblock">
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">List&lt;Integer&gt; mods = entityManager.createQuery(
+    "select mod( c.duration, 10 ) " +
+    "from Call c ", Integer.class )
+.getResultList();</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">SQRT</dt>
+<dd>
+<p>Calculates the mathematical square root of a numeric value.</p>
+</dd>
+</dl>
+</div>
+<div class="exampleblock">
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">List&lt;Double&gt; sqrts = entityManager.createQuery(
+    "select sqrt( c.duration ) " +
+    "from Call c ", Double.class )
+.getResultList();</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">CURRENT_DATE</dt>
+<dd>
+<p>Returns the database current date.</p>
+</dd>
+</dl>
+</div>
+<div class="exampleblock">
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">List&lt;Call&gt; calls = entityManager.createQuery(
+    "select c " +
+    "from Call c " +
+    "where c.timestamp = current_date", Call.class )
+.getResultList();</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">CURRENT_TIME</dt>
+<dd>
+<p>Returns the database current time.</p>
+</dd>
+</dl>
+</div>
+<div class="exampleblock">
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">List&lt;Call&gt; calls = entityManager.createQuery(
+    "select c " +
+    "from Call c " +
+    "where c.timestamp = current_time", Call.class )
+.getResultList();</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">CURRENT_TIMESTAMP</dt>
+<dd>
+<p>Returns the database current timestamp.</p>
+</dd>
+</dl>
+</div>
+<div class="exampleblock">
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">List&lt;Call&gt; calls = entityManager.createQuery(
+    "select c " +
+    "from Call c " +
+    "where c.timestamp = current_timestamp", Call.class )
+.getResultList();</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="hql-functions">HQL functions</h3>
+<div class="paragraph">
+<p>Beyond the JPQL standardized functions, HQL makes some additional functions available regardless of the underlying database in use.</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">BIT_LENGTH</dt>
+<dd>
+<p>Returns the length of binary data.</p>
+</dd>
+</dl>
+</div>
+<div class="exampleblock">
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">List&lt;Number&gt; bits = entityManager.createQuery(
+    "select bit_length( c.duration ) " +
+    "from Call c ", Number.class )
+.getResultList();</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">CAST</dt>
+<dd>
+<p>Performs a SQL cast.
+The cast target should name the Hibernate mapping type to use.
+See the <a href="chapters/domain/basic_types.html#basic-provided">data types</a> chapter on for more information.</p>
+</dd>
+</dl>
+</div>
+<div class="exampleblock">
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">List&lt;String&gt; durations = entityManager.createQuery(
+    "select cast( c.duration as string ) " +
+    "from Call c ", String.class )
+.getResultList();</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">EXTRACT</dt>
+<dd>
+<p>Performs a SQL extraction on datetime values.
+An extraction extracts parts of the datetime (the year, for example).</p>
+</dd>
+</dl>
+</div>
+<div class="exampleblock">
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">List&lt;Integer&gt; years = entityManager.createQuery(
+    "select extract( YEAR from c.timestamp ) " +
+    "from Call c ", Integer.class )
+.getResultList();</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>See the abbreviated forms below.</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">YEAR</dt>
+<dd>
+<p>Abbreviated extract form for extracting the year.</p>
+</dd>
+</dl>
+</div>
+<div class="exampleblock">
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">List&lt;Integer&gt; years = entityManager.createQuery(
+    "select year( c.timestamp ) " +
+    "from Call c ", Integer.class )
+.getResultList();</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">MONTH</dt>
+<dd>
+<p>Abbreviated extract form for extracting the month.</p>
+</dd>
+<dt class="hdlist1">DAY</dt>
+<dd>
+<p>Abbreviated extract form for extracting the day.</p>
+</dd>
+<dt class="hdlist1">HOUR</dt>
+<dd>
+<p>Abbreviated extract form for extracting the hour.</p>
+</dd>
+<dt class="hdlist1">MINUTE</dt>
+<dd>
+<p>Abbreviated extract form for extracting the minute.</p>
+</dd>
+<dt class="hdlist1">SECOND</dt>
+<dd>
+<p>Abbreviated extract form for extracting the second.</p>
+</dd>
+<dt class="hdlist1">STR</dt>
+<dd>
+<p>Abbreviated form for casting a value as character data.</p>
+</dd>
+</dl>
+</div>
+<div class="exampleblock">
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">List&lt;String&gt; timestamps = entityManager.createQuery(
+    "select str( c.timestamp ) " +
+    "from Call c ", String.class )
+.getResultList();</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="hql-non-standard-functions">Non-standardized functions</h3>
+<div class="paragraph">
+<p>Hibernate Dialects can register additional functions known to be available for that particular database product.
+These functions are also available in HQL (and JPQL, though only when using Hibernate as the JPA provider obviously).
+However, they would only be available when using that database Dialect.
+Applications that aim for database portability should avoid using functions in this category.</p>
+</div>
+<div class="paragraph">
+<p>Application developers can also supply their own set of functions.
+This would usually represent either custom SQL functions or aliases for snippets of SQL.
+Such function declarations are made by using the <code>addSqlFunction()</code> method of <code>org.hibernate.cfg.Configuration</code>.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="hql-collection-expressions">Collection-related expressions</h3>
+<div class="paragraph">
+<p>There are a few specialized expressions for working with collection-valued associations.
+Generally, these are just abbreviated forms or other expressions for the sake of conciseness.</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">SIZE</dt>
+<dd>
+<p>Calculate the size of a collection. Equates to a subquery!</p>
+</dd>
+<dt class="hdlist1">MAXELEMENT</dt>
+<dd>
+<p>Available for use on collections of basic type.
+Refers to the maximum value as determined by applying the <code>max</code> SQL aggregation.</p>
+</dd>
+<dt class="hdlist1">MAXINDEX</dt>
+<dd>
+<p>Available for use on indexed collections.
+Refers to the maximum index (key/position) as determined by applying the <code>max</code> SQL aggregation.</p>
+</dd>
+<dt class="hdlist1">MINELEMENT</dt>
+<dd>
+<p>Available for use on collections of basic type.
+Refers to the minimum value as determined by applying the <code>min</code> SQL aggregation.</p>
+</dd>
+<dt class="hdlist1">MININDEX</dt>
+<dd>
+<p>Available for use on indexed collections.
+Refers to the minimum index (key/position) as determined by applying the <code>min</code> SQL aggregation.</p>
+</dd>
+<dt class="hdlist1">ELEMENTS</dt>
+<dd>
+<p>Used to refer to the elements of a collection as a whole.
+Only allowed in the where clause.
+Often used in conjunction with <code>ALL</code>, <code>ANY</code> or <code>SOME</code> restrictions.</p>
+</dd>
+<dt class="hdlist1">INDICES</dt>
+<dd>
+<p>Similar to <code>elements</code> except that <code>indices</code> refers to the collections indices (keys/positions) as a whole.</p>
+</dd>
+</dl>
+</div>
+<div id="hql-collection-expressions-example" class="exampleblock">
+<div class="title">Example 42. Collection-related expressions examples</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">List&lt;Phone&gt; phones = entityManager.createQuery(
+    "select p " +
+    "from Phone p " +
+    "where maxelement( p.calls ) = :call", Phone.class )
+.setParameter( "call", call )
+.getResultList();
+
+List&lt;Phone&gt; phones = entityManager.createQuery(
+    "select p " +
+    "from Phone p " +
+    "where minelement( p.calls ) = :call", Phone.class )
+.setParameter( "call", call )
+.getResultList();
+
+List&lt;Person&gt; persons = entityManager.createQuery(
+    "select p " +
+    "from Person p " +
+    "where maxindex( p.phones ) = 0", Person.class )
+.getResultList();
+
+// the above query can be re-written with member of
+List&lt;Person&gt; persons = entityManager.createQuery(
+    "select p " +
+    "from Person p " +
+    "where :phone member of p.phones", Person.class )
+.setParameter( "phone", phone )
+.getResultList();
+
+List&lt;Person&gt; persons = entityManager.createQuery(
+    "select p " +
+    "from Person p " +
+    "where :phone = some elements ( p.phones )", Person.class )
+.setParameter( "phone", phone )
+.getResultList();
+
+List&lt;Person&gt; persons = entityManager.createQuery(
+    "select p " +
+    "from Person p " +
+    "where exists elements ( p.phones )", Person.class )
+.getResultList();
+
+List&lt;Phone&gt; phones = entityManager.createQuery(
+    "select p " +
+    "from Phone p " +
+    "where current_date() &gt; key( p.callHistory )", Phone.class )
+.getResultList();
+
+List&lt;Phone&gt; phones = entityManager.createQuery(
+    "select p " +
+    "from Phone p " +
+    "where current_date() &gt; all elements( p.repairTimestamps )", Phone.class )
+.getResultList();
+
+List&lt;Person&gt; persons = entityManager.createQuery(
+    "select p " +
+    "from Person p " +
+    "where 1 in indices( p.phones )", Person.class )
+.getResultList();</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Elements of indexed collections (arrays, lists, and maps) can be referred to by index operator.</p>
+</div>
+<div id="hql-collection-index-operator-example" class="exampleblock">
+<div class="title">Example 43. Index operator examples</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">// indexed lists
+List&lt;Person&gt; persons = entityManager.createQuery(
+    "select p " +
+    "from Person p " +
+    "where p.phones[ 0 ].type = 'LAND_LINE'", Person.class )
+.getResultList();
+
+// maps
+List&lt;Person&gt; persons = entityManager.createQuery(
+    "select p " +
+    "from Person p " +
+    "where p.addresses[ 'HOME' ] = :address", Person.class )
+.setParameter( "address", address)
+.getResultList();
+
+//max index in list
+List&lt;Person&gt; persons = entityManager.createQuery(
+    "select pr " +
+    "from Person pr " +
+    "where pr.phones[ maxindex(pr.phones) ].type = 'LAND_LINE'", Person.class )
+.getResultList();</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>See also <a href="#hql-collection-qualification">Special case - qualified path expressions</a> as there is a good deal of overlap.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="hql-entity-type-exp">Entity type</h3>
+<div class="paragraph">
+<p>We can also refer to the type of an entity as an expression.
+This is mainly useful when dealing with entity inheritance hierarchies.
+The type can expressed using a <code>TYPE</code> function used to refer to the type of an identification variable representing an entity.
+The name of the entity also serves as a way to refer to an entity type.
+Additionally, the entity type can be parameterized, in which case the entity&#8217;s Java Class reference would be bound as the parameter value.</p>
+</div>
+<div id="hql-entity-type-exp-example" class="exampleblock">
+<div class="title">Example 44. Entity type expression examples</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">List&lt;Payment&gt; payments = entityManager.createQuery(
+    "select p " +
+    "from Payment p " +
+    "where type(p) = CreditCardPayment", Payment.class )
+.getResultList();
+List&lt;Payment&gt; payments = entityManager.createQuery(
+    "select p " +
+    "from Payment p " +
+    "where type(p) = :type", Payment.class )
+.setParameter( "type", WireTransferPayment.class)
+.getResultList();</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>HQL also has a legacy form of referring to an entity type, though that legacy form is considered deprecated in favor of <code>TYPE</code>.
+The legacy form would have used <code>p.class</code> in the examples rather than <code>type(p)</code>.
+It is mentioned only for completeness.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="hql-case-expressions">CASE expressions</h3>
+<div class="paragraph">
+<p>Both the simple and searched forms are supported, as well as the two SQL defined abbreviated forms (<code>NULLIF</code> and <code>COALESCE</code>)</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="hql-simple-case-expressions">Simple CASE expressions</h3>
+<div class="paragraph">
+<p>The simple form has the following syntax:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">CASE {operand} WHEN {test_value} THEN {match_result} ELSE {miss_result} END</code></pre>
+</div>
+</div>
+<div id="hql-simple-case-expressions-example" class="exampleblock">
+<div class="title">Example 45. Simple case expression example</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">List&lt;String&gt; nickNames = entityManager.createQuery(
+    "select " +
+    "    case p.nickName " +
+    "    when 'NA' " +
+    "    then '&lt;no nick name&gt;' " +
+    "    else p.nickName " +
+    "    end " +
+    "from Person p", String.class )
+.getResultList();
+
+// same as above
+List&lt;String&gt; nickNames = entityManager.createQuery(
+    "select coalesce(p.nickName, '&lt;no nick name&gt;') " +
+    "from Person p", String.class )
+.getResultList();</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="hql-searched-case-expressions">Searched CASE expressions</h3>
+<div class="paragraph">
+<p>The searched form has the following syntax:</p>
+</div>
+<div id="hql-searched-case-expressions-bnf" class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">CASE [ WHEN {test_conditional} THEN {match_result} ]* ELSE {miss_result} END</code></pre>
+</div>
+</div>
+<div id="hql-searched-case-expressions-example" class="exampleblock">
+<div class="title">Example 46. Searched case expression example</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">List&lt;String&gt; nickNames = entityManager.createQuery(
+    "select " +
+    "    case " +
+    "    when p.nickName is null " +
+    "    then " +
+    "        case " +
+    "        when p.name is null " +
+    "        then '&lt;no nick name&gt;' " +
+    "        else p.name " +
+    "        end" +
+    "    else p.nickName " +
+    "    end " +
+    "from Person p", String.class )
+.getResultList();
+
+// coalesce can handle this more succinctly
+List&lt;String&gt; nickNames = entityManager.createQuery(
+    "select coalesce( p.nickName, p.name, '&lt;no nick name&gt;' ) " +
+    "from Person p", String.class )
+.getResultList();</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="hql-nullif">NULLIF expressions</h3>
+<div class="paragraph">
+<p>NULLIF is an abbreviated CASE expression that returns NULL if its operands are considered equal.</p>
+</div>
+<div id="hql-nullif-example" class="exampleblock">
+<div class="title">Example 47. NULLIF example</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">List&lt;String&gt; nickNames = entityManager.createQuery(
+    "select nullif( p.nickName, p.name ) " +
+    "from Person p", String.class )
+.getResultList();
+
+// equivalent CASE expression
+List&lt;String&gt; nickNames = entityManager.createQuery(
+    "select " +
+    "    case" +
+    "    when p.nickName = p.name" +
+    "    then null" +
+    "    else p.nickName" +
+    "    end " +
+    "from Person p", String.class )
+.getResultList();</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_coalesce_expressions">COALESCE expressions</h3>
+<div class="paragraph">
+<p><code>COALESCE</code> is an abbreviated CASE expression that returns the first non-null operand.
+We have seen a number of <code>COALESCE</code> examples above.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="hql-select-clause">The <code>SELECT</code> clause</h3>
+<div class="paragraph">
+<p>The <code>SELECT</code> clause identifies which objects and values to return as the query results.
+The expressions discussed in <a href="#hql-expressions">Expressions</a> are all valid select expressions, except where otherwise noted.
+See the section <a href="#hql-api">Hibernate Query API</a> for information on handling the results depending on the types of values specified in the <code>SELECT</code> clause.</p>
+</div>
+<div class="paragraph">
+<p>There is a particular expression type that is only valid in the select clause.
+Hibernate calls this "dynamic instantiation".
+JPQL supports some of that feature and calls it a "constructor expression".</p>
+</div>
+<div class="paragraph">
+<p>So rather than dealing with the <code>Object[]</code> (again, see <a href="#hql-api">Hibernate Query API</a>) here we are wrapping the values in a type-safe java object that will be returned as the results of the query.</p>
+</div>
+<div id="hql-select-clause-dynamic-instantiation-example" class="exampleblock">
+<div class="title">Example 48. Dynamic HQL and JPQL instantiation example</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">public class CallStatistics {
+
+    private final long count;
+    private final long total;
+    private final int min;
+    private final int max;
+    private final double abg;
+
+    public CallStatistics(long count, long total, int min, int max, double abg) {
+        this.count = count;
+        this.total = total;
+        this.min = min;
+        this.max = max;
+        this.abg = abg;
+    }
+
+    //Getters and setters omitted for brevity
+}
+
+CallStatistics callStatistics = entityManager.createQuery(
+    "select new org.hibernate.userguide.hql.CallStatistics(" +
+    "    count(c), " +
+    "    sum(c.duration), " +
+    "    min(c.duration), " +
+    "    max(c.duration), " +
+    "    avg(c.duration)" +
+    ")  " +
+    "from Call c ", CallStatistics.class )
+.getSingleResult();</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>The class reference must be fully qualified and it must have a matching constructor.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>The class here need not be mapped.
+If it does represent an entity, the resulting instances are returned in the NEW state (not managed!).</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>HQL supports additional "dynamic instantiation" features.
+First, the query can specify to return a <code>List</code> rather than an <code>Object[]</code> for scalar results:</p>
+</div>
+<div id="hql-select-clause-dynamic-list-instantiation-example" class="exampleblock">
+<div class="title">Example 49. Dynamic instantiation example - list</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">List&lt;List&gt; phoneCallDurations = entityManager.createQuery(
+    "select new list(" +
+    "    p.number, " +
+    "    c.duration " +
+    ")  " +
+    "from Call c " +
+    "join c.phone p ", List.class )
+.getResultList();</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>The results from this query will be a <code>List&lt;List&gt;</code> as opposed to a <code>List&lt;Object[]&gt;</code></p>
+</div>
+<div class="paragraph">
+<p>HQL also supports wrapping the scalar results in a <code>Map</code>.</p>
+</div>
+<div id="hql-select-clause-dynamic-map-instantiation-example" class="exampleblock">
+<div class="title">Example 50. Dynamic instantiation example - map</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">List&lt;Map&gt; phoneCallTotalDurations = entityManager.createQuery(
+    "select new map(" +
+    "    p.number as phoneNumber , " +
+    "    sum(c.duration) as totalDuration, " +
+    "    avg(c.duration) as averageDuration " +
+    ")  " +
+    "from Call c " +
+    "join c.phone p " +
+    "group by p.number ", Map.class )
+.getResultList();</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>The results from this query will be a <code>List&lt;Map&lt;String, Object&gt;&gt;</code> as opposed to a <code>List&lt;Object[]&gt;</code>.
+The keys of the map are defined by the aliases given to the select expressions.
+If the user doesn&#8217;t assign aliases, the key will be the index of each particular result set column (e.g. 0, 1, 2, etc).</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="hql-conditional-expressions">Predicates</h3>
+<div class="paragraph">
+<p>Predicates form the basis of the where clause, the having clause and searched case expressions.
+They are expressions which resolve to a truth value, generally <code>TRUE</code> or <code>FALSE</code>, although boolean comparisons involving <code>NULL</code> generally resolve to <code>UNKNOWN</code>.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="hql-relational-comparisons">Relational comparisons</h3>
+<div class="paragraph">
+<p>Comparisons involve one of the comparison operators: <code>=</code>, <code>&gt;</code>, <code>&gt;=</code>, <code>&lt;</code>, <code>&lt;=</code>, <code>&lt;&gt;</code>.
+HQL also defines <code>!=</code> as a comparison operator synonymous with <code>&lt;&gt;</code>.
+The operands should be of the same type.</p>
+</div>
+<div id="hql-relational-comparisons-example" class="exampleblock">
+<div class="title">Example 51. Relational comparison examples</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">// numeric comparison
+List&lt;Call&gt; calls = entityManager.createQuery(
+    "select c " +
+    "from Call c " +
+    "where c.duration &lt; 30 ", Call.class )
+.getResultList();
+
+// string comparison
+List&lt;Person&gt; persons = entityManager.createQuery(
+    "select p " +
+    "from Person p " +
+    "where p.name like 'John%' ", Person.class )
+.getResultList();
+
+// datetime comparison
+List&lt;Person&gt; persons = entityManager.createQuery(
+    "select p " +
+    "from Person p " +
+    "where p.createdOn &gt; '1950-01-01' ", Person.class )
+.getResultList();
+
+// enum comparison
+List&lt;Phone&gt; phones = entityManager.createQuery(
+    "select p " +
+    "from Phone p " +
+    "where p.type = 'MOBILE' ", Phone.class )
+.getResultList();
+
+// boolean comparison
+List&lt;Payment&gt; payments = entityManager.createQuery(
+    "select p " +
+    "from Payment p " +
+    "where p.completed = true ", Payment.class )
+.getResultList();
+
+// boolean comparison
+List&lt;Payment&gt; payments = entityManager.createQuery(
+    "select p " +
+    "from Payment p " +
+    "where type(p) = WireTransferPayment ", Payment.class )
+.getResultList();
+
+// entity value comparison
+List&lt;Object[]&gt; phonePayments = entityManager.createQuery(
+    "select p " +
+    "from Payment p, Phone ph " +
+    "where p.person = ph.person ", Object[].class )
+.getResultList();</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Comparisons can also involve subquery qualifiers: <code>ALL</code>, <code>ANY</code>, <code>SOME</code>. <code>SOME</code> and <code>ANY</code> are synonymous.</p>
+</div>
+<div class="paragraph">
+<p>The <code>ALL</code> qualifier resolves to true if the comparison is true for all of the values in the result of the subquery.
+It resolves to false if the subquery result is empty.</p>
+</div>
+<div id="hql-all-subquery-comparison-qualifier-example" class="exampleblock">
+<div class="title">Example 52. ALL subquery comparison qualifier example</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">// select all persons with all calls shorter than 50 seconds
+List&lt;Person&gt; persons = entityManager.createQuery(
+    "select distinct p.person " +
+    "from Phone p " +
+    "join p.calls c " +
+    "where 50 &gt; all ( " +
+    "    select duration" +
+    "    from Call" +
+    "    where phone = p " +
+    ") ", Person.class )
+.getResultList();</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>The <code>ANY</code>/<code>SOME</code> qualifier resolves to true if the comparison is true for some of (at least one of) the values in the result of the subquery.
+It resolves to false if the subquery result is empty.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="hql-null-predicate">Nullness predicate</h3>
+<div class="paragraph">
+<p>Check a value for nullness.
+Can be applied to basic attribute references, entity references and parameters.
+HQL additionally allows it to be applied to component/embeddable types.</p>
+</div>
+<div id="hql-null-predicate-example" class="exampleblock">
+<div class="title">Example 53. Nullness checking examples</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">// select all persons with a nickname
+List&lt;Person&gt; persons = entityManager.createQuery(
+    "select p " +
+    "from Person p " +
+    "where p.nickName is not null", Person.class )
+.getResultList();
+
+// select all persons without a nickname
+List&lt;Person&gt; persons = entityManager.createQuery(
+    "select p " +
+    "from Person p " +
+    "where p.nickName is null", Person.class )
+.getResultList();</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="hql-like-predicate">Like predicate</h3>
+<div class="paragraph">
+<p>Performs a like comparison on string values. The syntax is:</p>
+</div>
+<div id="hql-like-predicate-bnf" class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">like_expression ::=
+    string_expression
+    [NOT] LIKE pattern_value
+    [ESCAPE escape_character]</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The semantics follow that of the SQL like expression.
+The <code>pattern_value</code> is the pattern to attempt to match in the <code>string_expression</code>.
+Just like SQL, <code>pattern_value</code> can use <code>_</code> and <code>%</code> as wildcards.
+The meanings are the same. The <code>_</code> symbol matches any single character and <code>%</code> matches any number of characters.</p>
+</div>
+<div id="hql-like-predicate-example" class="exampleblock">
+<div class="title">Example 54. Like predicate examples</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">List&lt;Person&gt; persons = entityManager.createQuery(
+    "select p " +
+    "from Person p " +
+    "where p.name like 'Jo%'", Person.class )
+.getResultList();
+
+List&lt;Person&gt; persons = entityManager.createQuery(
+    "select p " +
+    "from Person p " +
+    "where p.name not like 'Jo%'", Person.class )
+.getResultList();</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>The optional <code>escape 'escape character'</code> is used to specify an escape character used to escape the special meaning of <code>_</code> and <code>%</code> in the <code>pattern_value</code>.
+This is useful when needing to search on patterns including either <code>_</code> or <code>%</code>.</p>
+</div>
+<div class="paragraph">
+<p>The syntax is formed as follows: <code>'like_predicate' escape 'escape_symbol'</code>
+So, if <code>|</code> is the escape symbol and we want to match all stored procedures prefixed with <code>Dr_</code>, the like criteria becomes: <code>'Dr|_%' escape '|'</code>:</p>
+</div>
+<div id="hql-like-predicate-escape-example" class="exampleblock">
+<div class="title">Example 55. Like with escape symbol</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">// find any person with a name starting with "Dr_"
+List&lt;Person&gt; persons = entityManager.createQuery(
+    "select p " +
+    "from Person p " +
+    "where p.name like 'Dr|_%' escape '|'", Person.class )
+.getResultList();</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="hql-between-predicate">Between predicate</h3>
+<div class="paragraph">
+<p>Analogous to the SQL <code>BETWEEN</code> expression,
+it checks if the value is within boundaries.
+All the operands should have comparable types.</p>
+</div>
+<div id="hql-between-predicate-example" class="exampleblock">
+<div class="title">Example 56. Between predicate examples</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">List&lt;Person&gt; persons = entityManager.createQuery(
+    "select p " +
+    "from Person p " +
+    "join p.phones ph " +
+    "where p.id = 1L and index(ph) between 0 and 3", Person.class )
+.getResultList();
+
+List&lt;Person&gt; persons = entityManager.createQuery(
+    "select p " +
+    "from Person p " +
+    "where p.createdOn between '1999-01-01' and '2001-01-02'", Person.class )
+.getResultList();
+
+List&lt;Call&gt; calls = entityManager.createQuery(
+    "select c " +
+    "from Call c " +
+    "where c.duration between 5 and 20", Call.class )
+.getResultList();
+
+List&lt;Person&gt; persons = entityManager.createQuery(
+    "select p " +
+    "from Person p " +
+    "where p.name between 'H' and 'M'", Person.class )
+.getResultList();</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="hql-in-predicate">In predicate</h3>
+<div class="paragraph">
+<p><code>IN</code> predicates performs a check that a particular value is in a list of values. Its syntax is:</p>
+</div>
+<div id="hql-in-predicate-bnf" class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">in_expression ::=
+    single_valued_expression [NOT] IN single_valued_list
+
+single_valued_list ::=
+    constructor_expression | (subquery) | collection_valued_input_parameter
+
+constructor_expression ::= (expression[, expression]*)</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The types of the <code>single_valued_expression</code> and the individual values in the <code>single_valued_list</code> must be consistent.</p>
+</div>
+<div class="paragraph">
+<p>JPQL limits the valid types here to string, numeric, date, time, timestamp, and enum types, and , in JPQL, <code>single_valued_expression</code> can only refer to:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>"state fields", which is its term for simple attributes. Specifically this excludes association and component/embedded attributes.</p>
+</li>
+<li>
+<p>entity type expressions. See <a href="#hql-entity-type-exp">Entity type</a></p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>In HQL, <code>single_valued_expression</code> can refer to a far more broad set of expression types.
+Single-valued association are allowed, and so are component/embedded attributes, although that feature depends on the level of support for tuple or "row value constructor syntax" in the underlying database.
+Additionally, HQL does not limit the value type in any way, though application developers should be aware that different types may incur limited support based on the underlying database vendor.
+This is largely the reason for the JPQL limitations.</p>
+</div>
+<div class="paragraph">
+<p>The list of values can come from a number of different sources.
+In the <code>constructor_expression</code> and <code>collection_valued_input_parameter</code>, the list of values must not be empty; it must contain at least one value.</p>
+</div>
+<div id="hql-in-predicate-example" class="exampleblock">
+<div class="title">Example 57. In predicate examples</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">List&lt;Payment&gt; payments = entityManager.createQuery(
+    "select p " +
+    "from Payment p " +
+    "where type(p) in ( CreditCardPayment, WireTransferPayment )", Payment.class )
+.getResultList();
+
+List&lt;Phone&gt; phones = entityManager.createQuery(
+    "select p " +
+    "from Phone p " +
+    "where type in ( 'MOBILE', 'LAND_LINE' )", Phone.class )
+.getResultList();
+
+List&lt;Phone&gt; phones = entityManager.createQuery(
+    "select p " +
+    "from Phone p " +
+    "where type in :types", Phone.class )
+.setParameter( "types", Arrays.asList( PhoneType.MOBILE, PhoneType.LAND_LINE ) )
+.getResultList();
+
+List&lt;Phone&gt; phones = entityManager.createQuery(
+    "select distinct p " +
+    "from Phone p " +
+    "where p.person.id in (" +
+    "    select py.person.id " +
+    "    from Payment py" +
+    "    where py.completed = true and py.amount &gt; 50 " +
+    ")", Phone.class )
+.getResultList();
+
+// Not JPQL compliant!
+List&lt;Phone&gt; phones = entityManager.createQuery(
+    "select distinct p " +
+    "from Phone p " +
+    "where p.person in (" +
+    "    select py.person " +
+    "    from Payment py" +
+    "    where py.completed = true and py.amount &gt; 50 " +
+    ")", Phone.class )
+.getResultList();
+
+// Not JPQL compliant!
+List&lt;Payment&gt; payments = entityManager.createQuery(
+    "select distinct p " +
+    "from Payment p " +
+    "where ( p.amount, p.completed ) in (" +
+    "    (50, true )," +
+    "    (100, true )," +
+    "    (5, false )" +
+    ")", Payment.class )
+.getResultList();</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="hql-exists-predicate">Exists predicate</h3>
+<div class="paragraph">
+<p>Exists expressions test the existence of results from a subquery.
+The affirmative form returns true if the subquery result contains values. The negated form returns true if the subquery result is empty.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="hql-empty-collection-predicate">Empty collection predicate</h3>
+<div class="paragraph">
+<p>The <code>IS [NOT] EMPTY</code> expression applies to collection-valued path expressions.
+It checks whether the particular collection has any associated values.</p>
+</div>
+<div id="hql-empty-collection-predicate-example" class="exampleblock">
+<div class="title">Example 58. Empty collection expression examples</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">List&lt;Person&gt; persons = entityManager.createQuery(
+    "select p " +
+    "from Person p " +
+    "where p.phones is empty", Person.class )
+.getResultList();
+
+List&lt;Person&gt; persons = entityManager.createQuery(
+    "select p " +
+    "from Person p " +
+    "where p.phones is not empty", Person.class )
+.getResultList();</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="hql-member-of-collection-predicate">Member-of collection predicate</h3>
+<div class="paragraph">
+<p>The <code>[NOT] MEMBER [OF]</code> expression applies to collection-valued path expressions.
+It checks whether a value is a member of the specified collection.</p>
+</div>
+<div id="hql-member-of-collection-predicate-example" class="exampleblock">
+<div class="title">Example 59. Member-of collection expression examples</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">List&lt;Person&gt; persons = entityManager.createQuery(
+    "select p " +
+    "from Person p " +
+    "where 'Home address' member of p.addresses", Person.class )
+.getResultList();
+
+List&lt;Person&gt; persons = entityManager.createQuery(
+    "select p " +
+    "from Person p " +
+    "where 'Home address' not member of p.addresses", Person.class )
+.getResultList();</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="hql-not-predicate">NOT predicate operator</h3>
+<div class="paragraph">
+<p>The <code>NOT</code> operator is used to negate the predicate that follows it.
+If that following predicate is true, the NOT resolves to false.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>If the predicate is true, NOT resolves to false. If the predicate is unknown (e.g. <code>NULL</code>), the NOT resolves to unknown as well.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="hql-and-predicate">AND predicate operator</h3>
+<div class="paragraph">
+<p>The <code>AND</code> operator is used to combine 2 predicate expressions.
+The result of the AND expression is true if and only if both predicates resolve to true.
+If either predicates resolves to unknown, the AND expression resolves to unknown as well. Otherwise, the result is false.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="hql-or-predicate">OR predicate operator</h3>
+<div class="paragraph">
+<p>The <code>OR</code> operator is used to combine 2 predicate expressions.
+The result of the OR expression is true if one predicate resolves to true.
+If both predicates resolve to unknown, the OR expression resolves to unknown.
+Otherwise, the result is false.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="hql-where-clause">The <code>WHERE</code> clause</h3>
+<div class="paragraph">
+<p>The <code>WHERE</code> clause of a query is made up of predicates which assert whether values in each potential row match the current filtering criteria.
+Thus, the where clause restricts the results returned from a select query and limits the scope of update and delete queries.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="hql-group-by">Group by</h3>
+<div class="paragraph">
+<p>The <code>GROUP BY</code> clause allows building aggregated results for various value groups. As an example, consider the following queries:</p>
+</div>
+<div id="hql-group-by-example" class="exampleblock">
+<div class="title">Example 60. Group by example</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">Long totalDuration = entityManager.createQuery(
+    "select sum( c.duration ) " +
+    "from Call c ", Long.class )
+.getSingleResult();
+
+List&lt;Object[]&gt; personTotalCallDurations = entityManager.createQuery(
+    "select p.name, sum( c.duration ) " +
+    "from Call c " +
+    "join c.phone ph " +
+    "join ph.person p " +
+    "group by p.name", Object[].class )
+.getResultList();
+
+//It's even possible to group by entities!
+List&lt;Object[]&gt; personTotalCallDurations = entityManager.createQuery(
+    "select p, sum( c.duration ) " +
+    "from Call c " +
+    "join c.phone ph " +
+    "join ph.person p " +
+    "group by p", Object[].class )
+.getResultList();</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>The first query retrieves the complete total of all orders.
+The second retrieves the total for each customer, grouped by each customer.</p>
+</div>
+<div class="paragraph">
+<p>In a grouped query, the where clause applies to the non-aggregated values (essentially it determines whether rows will make it into the aggregation).
+The <code>HAVING</code> clause also restricts results, but it operates on the aggregated values.
+In the <a href="#hql-group-by-example">Group by example</a>, we retrieved <code>Call</code> duration totals for all persons.
+If that ended up being too much data to deal with, we might want to restrict the results to focus only on customers with a summed total of more than 1000:</p>
+</div>
+<div id="hql-group-by-having-example" class="exampleblock">
+<div class="title">Example 61. Having example</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">List&lt;Object[]&gt; personTotalCallDurations = entityManager.createQuery(
+    "select p.name, sum( c.duration ) " +
+    "from Call c " +
+    "join c.phone ph " +
+    "join ph.person p " +
+    "group by p.name " +
+    "having sum( c.duration ) &gt; 1000", Object[].class )
+.getResultList();</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>The <code>HAVING</code> clause follows the same rules as the <code>WHERE</code> clause and is also made up of predicates.
+<code>HAVING</code> is applied after the groupings and aggregations have been done, while the <code>WHERE</code> clause is applied before.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="hql-order-by">Order by</h3>
+<div class="paragraph">
+<p>The results of the query can also be ordered.
+The <code>ORDER BY</code> clause is used to specify the selected values to be used to order the result.
+The types of expressions considered valid as part of the <code>ORDER BY</code> clause include:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>state fields</p>
+</li>
+<li>
+<p>component/embeddable attributes</p>
+</li>
+<li>
+<p>scalar expressions such as arithmetic operations, functions, etc.</p>
+</li>
+<li>
+<p>identification variable declared in the select clause for any of the previous expression types</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Additionally, JPQL says that all values referenced in the <code>ORDER BY</code> clause must be named in the <code>SELECT</code> clause.
+HQL does not mandate that restriction, but applications desiring database portability should be aware that not all databases support referencing values in the <code>ORDER BY</code> clause that are not referenced in the select clause.</p>
+</div>
+<div class="paragraph">
+<p>Individual expressions in the order-by can be qualified with either <code>ASC</code> (ascending) or <code>DESC</code> (descending) to indicated the desired ordering direction.
+Null values can be placed in front or at the end of the sorted set using <code>NULLS FIRST</code> or <code>NULLS LAST</code> clause respectively.</p>
+</div>
+<div id="hql-order-by-example" class="exampleblock">
+<div class="title">Example 62. Order by example</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">List&lt;Person&gt; persons = entityManager.createQuery(
+    "select p " +
+    "from Person p " +
+    "order by p.name", Person.class )
+.getResultList();
+
+List&lt;Object[]&gt; personTotalCallDurations = entityManager.createQuery(
+    "select p.name, sum( c.duration ) as total " +
+    "from Call c " +
+    "join c.phone ph " +
+    "join ph.person p " +
+    "group by p.name " +
+    "order by total", Object[].class )
+.getResultList();</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="hql-read-only-entities">Read-only entities</h3>
+<div class="paragraph">
+<p>As explained in <a href="chapters/domain/immutability.html#entity-immutability">entity immutability</a> section, fetching entities in read-only mode is much more efficient than fetching read-write entities.
+Even if the entities are mutable, you can still fetch them in read-only mode, and benefit from reducing the memory footprint and sepeding up the flushing process.</p>
+</div>
+<div class="paragraph">
+<p>Read-only entities are skipped by the dirty checking mechanism as illustrated by the following example:</p>
+</div>
+<div id="hql-read-only-entities-example" class="exampleblock">
+<div class="title">Example 63. Read-only entities query example</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">List&lt;Call&gt; calls = entityManager.createQuery(
+    "select c " +
+    "from Call c " +
+    "join c.phone p " +
+    "where p.number = :phoneNumber ", Call.class )
+.setParameter( "phoneNumber", "123-456-7890" )
+.setHint( "org.hibernate.readOnly", true )
+.getResultList();
+
+calls.forEach( c -&gt; c.setDuration( 0 ) );</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-SQL" data-lang="SQL">SELECT c.id AS id1_5_ ,
+       c.duration AS duration2_5_ ,
+       c.phone_id AS phone_id4_5_ ,
+       c.call_timestamp AS call_tim3_5_
+FROM   phone_call c
+INNER JOIN phone p ON c.phone_id = p.id
+WHERE   p.phone_number = '123-456-7890'</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>As you can see, there is no SQL <code>UPDATE</code> being executed.</p>
+</div>
+<div class="paragraph">
+<p>The Hibernate native API offers a <code>Query#setReadOnly</code> method, as an alternative to using a JPA query hint:</p>
+</div>
+<div id="hql-read-only-entities-native-example" class="exampleblock">
+<div class="title">Example 64. Read-only entities native query example</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">List&lt;Call&gt; calls = entityManager.createQuery(
+    "select c " +
+    "from Call c " +
+    "join c.phone p " +
+    "where p.number = :phoneNumber ", Call.class )
+.setParameter( "phoneNumber", "123-456-7890" )
+.unwrap( org.hibernate.query.Query.class )
+.setReadOnly( true )
+.getResultList();</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div id="footer">
+<div id="footer-text">
+Last updated 2016-10-26 14:44:36 +01:00
+</div>
+</div>
+</body>
+</html>

@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<!--[if IE]><meta http-equiv="X-UA-Compatible" content="IE=edge"><![endif]-->
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="generator" content="Asciidoctor 1.5.2">
+<title>Schema generation</title>
+<link rel="stylesheet" href="./css/hibernate.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.2.0/css/font-awesome.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prettify/r298/prettify.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prettify/r298/prettify.min.js"></script>
+<script>document.addEventListener('DOMContentLoaded', prettyPrint)</script>
+</head>
+<body class="article">
+<div id="header">
+</div>
+<div id="content">
+<div class="sect1">
+<h2 id="schema-generation">Schema generation</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Hibernate allows you to generate the database from the entity mappings.</p>
+</div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Although the automatic schema generation is very useful for testing and prototyping purposes, in a production environment,
+it&#8217;s much more flexible to manage the schema using incremental migration scripts.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Traditionally, the process of generating  schema from entity mapping has been called <code>HBM2DDL</code>.
+To get a list of Hibernate-native and JPA-specific configuration properties consider reading the <a href="appendices/Configurations.html#configurations-hbmddl">Configurations</a> section.</p>
+</div>
+<div class="paragraph">
+<p>Considering the following Domain Model:</p>
+</div>
+<div id="schema-generation-domain-model-example" class="exampleblock">
+<div class="title">Example 1. Schema generation Domain Model</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">@Entity(name = "Customer")
+public class Customer {
+
+    @Id
+    private Integer id;
+
+    private String name;
+
+    @Basic( fetch = FetchType.LAZY )
+    private UUID accountsPayableXrefId;
+
+    @Lob
+    @Basic( fetch = FetchType.LAZY )
+    @LazyGroup( "lobs" )
+    private Blob image;
+
+    public Integer getId() {
+        return id;
+    }
+
+    public void setId(Integer id) {
+        this.id = id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public UUID getAccountsPayableXrefId() {
+        return accountsPayableXrefId;
+    }
+
+    public void setAccountsPayableXrefId(UUID accountsPayableXrefId) {
+        this.accountsPayableXrefId = accountsPayableXrefId;
+    }
+
+    public Blob getImage() {
+        return image;
+    }
+
+    public void setImage(Blob image) {
+        this.image = image;
+    }
+}
+
+@Entity(name = "Person")
+public static class Person {
+
+    @Id
+    private Long id;
+
+    private String name;
+
+    @OneToMany(mappedBy = "author")
+    private List&lt;Book&gt; books = new ArrayList&lt;&gt;(  );
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public List&lt;Book&gt; getBooks() {
+        return books;
+    }
+}
+
+@Entity(name = "Book")
+public static class Book {
+
+    @Id
+    private Long id;
+
+    private String title;
+
+    @NaturalId
+    private String isbn;
+
+    @ManyToOne
+    private Person author;
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
+    public void setTitle(String title) {
+        this.title = title;
+    }
+
+    public Person getAuthor() {
+        return author;
+    }
+
+    public void setAuthor(Person author) {
+        this.author = author;
+    }
+
+    public String getIsbn() {
+        return isbn;
+    }
+
+    public void setIsbn(String isbn) {
+        this.isbn = isbn;
+    }
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>If the <code>hibernate.hbm2ddl.auto</code> configuration is set to <code>create</code>, Hibernate is going to generate the following database schema:</p>
+</div>
+<div id="sql-schema-generation-domain-model-example" class="exampleblock">
+<div class="title">Example 2. Auto-generated database schema</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-SQL" data-lang="SQL">create table Customer (
+    id integer not null,
+    accountsPayableXrefId binary,
+    image blob,
+    name varchar(255),
+    primary key (id)
+)
+
+create table Book (
+    id bigint not null,
+    isbn varchar(255),
+    title varchar(255),
+    author_id bigint,
+    primary key (id)
+)
+
+create table Person (
+    id bigint not null,
+    name varchar(255),
+    primary key (id)
+)
+
+alter table Book
+    add constraint UK_u31e1frmjp9mxf8k8tmp990i unique (isbn)
+
+alter table Book
+    add constraint FKrxrgiajod1le3gii8whx2doie
+    foreign key (author_id)
+    references Person</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_importing_script_files">Importing script files</h3>
+<div class="paragraph">
+<p>To customize the schema generation process, the <code>hibernate.hbm2ddl.import_files</code> configuration property must be used to provide other scripts files that Hibernate can use when the <code>SessionFactory</code> is started.</p>
+</div>
+<div class="paragraph">
+<p>For instance, considering the following <code>schema-generation.sql</code> import file:</p>
+</div>
+<div id="schema-generation-import-file-example" class="exampleblock">
+<div class="title">Example 3. Schema generation import file</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">create sequence book_sequence start with 1 increment by 1</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>If we configure Hibernate to import the script above:</p>
+</div>
+<div id="schema-generation-import-file-configuration-example" class="exampleblock">
+<div class="title">Example 4. Enabling query cache</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-XML" data-lang="XML">&lt;property
+    name="hibernate.hbm2ddl.import_files"
+    value="schema-generation.sql" /&gt;</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Hibernate is going to execute the script file after the schema is automatically generated.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_database_objects">Database objects</h3>
+<div class="paragraph">
+<p>Hibernate allows you to customize the schema generation process via the HBM <code>database-object</code> element.</p>
+</div>
+<div class="paragraph">
+<p>Considering the following HBM mapping:</p>
+</div>
+<div id="schema-generation-database-object-example" class="exampleblock">
+<div class="title">Example 5. Schema generation HBM database-object</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">&lt;?xml version="1.0"?&gt;
+&lt;!DOCTYPE hibernate-mapping PUBLIC
+        "-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+        "http://www.hibernate.org/dtd/hibernate-mapping-3.0.dtd" &gt;
+
+&lt;hibernate-mapping&gt;
+    &lt;database-object&gt;
+        &lt;create&gt;
+            CREATE OR REPLACE FUNCTION sp_count_books(
+                IN authorId bigint,
+                OUT bookCount bigint)
+                RETURNS bigint AS
+            $BODY$
+                BEGIN
+                    SELECT COUNT(*) INTO bookCount
+                    FROM book
+                    WHERE author_id = authorId;
+                END;
+            $BODY$
+            LANGUAGE plpgsql;
+        &lt;/create&gt;
+        &lt;drop&gt;&lt;/drop&gt;
+        &lt;dialect-scope name="org.hibernate.dialect.PostgreSQL95Dialect" /&gt;
+    &lt;/database-object&gt;
+&lt;/hibernate-mapping&gt;</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>When the <code>SessionFactory</code> is bootstrapped, Hibernate is going to execute the <code>database-object</code>, therefore creating the <code>sp_count_books</code> funtion.</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div id="footer">
+<div id="footer-text">
+Last updated 2016-10-05 09:27:39 +01:00
+</div>
+</div>
+</body>
+</html>

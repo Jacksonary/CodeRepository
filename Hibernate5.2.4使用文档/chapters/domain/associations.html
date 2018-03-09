@@ -1,0 +1,1561 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<!--[if IE]><meta http-equiv="X-UA-Compatible" content="IE=edge"><![endif]-->
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="generator" content="Asciidoctor 1.5.2">
+<title>Associations</title>
+<link rel="stylesheet" href="./css/hibernate.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.2.0/css/font-awesome.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prettify/r298/prettify.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prettify/r298/prettify.min.js"></script>
+<script>document.addEventListener('DOMContentLoaded', prettyPrint)</script>
+</head>
+<body class="article">
+<div id="header">
+</div>
+<div id="content">
+<div class="sect2">
+<h3 id="associations">Associations</h3>
+<div class="paragraph">
+<p>Associations describe how two or more entities form a relationship based on a database joining semantics.</p>
+</div>
+<div class="sect3">
+<h4 id="associations-many-to-one"><code>@ManyToOne</code></h4>
+<div class="paragraph">
+<p><code>@ManyToOne</code> is the most common association, having a direct equivalent in the relational database as well (e.g. foreign key),
+and so it establishes a relationship between a child entity and a parent.</p>
+</div>
+<div id="associations-many-to-one-example" class="exampleblock">
+<div class="title">Example 1. <code>@ManyToOne</code> association</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">@Entity(name = "Person")
+public static class Person {
+
+    @Id
+    @GeneratedValue
+    private Long id;
+
+    public Person() {
+    }
+}
+
+@Entity(name = "Phone")
+public static class Phone {
+
+    @Id
+    @GeneratedValue
+    private Long id;
+
+    @Column(name = "`number`")
+    private String number;
+
+    @ManyToOne
+    @JoinColumn(name = "person_id",
+            foreignKey = @ForeignKey(name = "PERSON_ID_FK")
+    )
+    private Person person;
+
+    public Phone() {
+    }
+
+    public Phone(String number) {
+        this.number = number;
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public String getNumber() {
+        return number;
+    }
+
+    public Person getPerson() {
+        return person;
+    }
+
+    public void setPerson(Person person) {
+        this.person = person;
+    }
+}</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-sql" data-lang="sql">CREATE TABLE Person (
+    id BIGINT NOT NULL ,
+    PRIMARY KEY ( id )
+)
+
+CREATE TABLE Phone (
+    id BIGINT NOT NULL ,
+    number VARCHAR(255) ,
+    person_id BIGINT ,
+    PRIMARY KEY ( id )
+ )
+
+ALTER TABLE Phone
+ADD CONSTRAINT PERSON_ID_FK
+FOREIGN KEY (person_id) REFERENCES Person</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Each entity has a lifecycle of its own. Once the <code>@ManyToOne</code> association is set, Hibernate will set the associated database foreign key column.</p>
+</div>
+<div id="associations-many-to-one-lifecycle-example" class="exampleblock">
+<div class="title">Example 2. <code>@ManyToOne</code> association lifecycle</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">Person person = new Person();
+entityManager.persist( person );
+
+Phone phone = new Phone( "123-456-7890" );
+phone.setPerson( person );
+entityManager.persist( phone );
+
+entityManager.flush();
+phone.setPerson( null );</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-sql" data-lang="sql">INSERT INTO Person ( id )
+VALUES ( 1 )
+
+INSERT INTO Phone ( number, person_id, id )
+VALUES ( '123-456-7890', 1, 2 )
+
+UPDATE Phone
+SET    number = '123-456-7890',
+       person_id = NULL
+WHERE  id = 2</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="associations-one-to-many"><code>@OneToMany</code></h4>
+<div class="paragraph">
+<p>The <code>@OneToMany</code> association links a parent entity with one or more child entities.
+If the <code>@OneToMany</code> doesn&#8217;t have a mirroring <code>@ManyToOne</code> association on the child side, the <code>@OneToMany</code> association is unidirectional.
+If there is a <code>@ManyToOne</code> association on the child side, the <code>@OneToMany</code> association is bidirectional and the application developer can navigate this relationship from both ends.</p>
+</div>
+<div class="sect4">
+<h5 id="associations-one-to-many-unidirectional">Unidirectional <code>@OneToMany</code></h5>
+<div class="paragraph">
+<p>When using a unidirectional <code>@OneToMany</code> association, Hibernate resorts to using a link table between the two joining entities.</p>
+</div>
+<div id="associations-one-to-many-unidirectional-example" class="exampleblock">
+<div class="title">Example 3. Unidirectional <code>@OneToMany</code> association</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">@Entity(name = "Person")
+public static class Person {
+
+    @Id
+    @GeneratedValue
+    private Long id;
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+    private List&lt;Phone&gt; phones = new ArrayList&lt;&gt;();
+
+    public Person() {
+    }
+
+    public List&lt;Phone&gt; getPhones() {
+        return phones;
+    }
+}
+
+@Entity(name = "Phone")
+public static class Phone {
+
+    @Id
+    @GeneratedValue
+    private Long id;
+
+    @Column(name = "`number`")
+    private String number;
+
+    public Phone() {
+    }
+
+    public Phone(String number) {
+        this.number = number;
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public String getNumber() {
+        return number;
+    }
+}</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-sql" data-lang="sql">CREATE TABLE Person (
+    id BIGINT NOT NULL ,
+    PRIMARY KEY ( id )
+)
+
+CREATE TABLE Person_Phone (
+    Person_id BIGINT NOT NULL ,
+    phones_id BIGINT NOT NULL
+)
+
+CREATE TABLE Phone (
+    id BIGINT NOT NULL ,
+    number VARCHAR(255) ,
+    PRIMARY KEY ( id )
+)
+
+ALTER TABLE Person_Phone
+ADD CONSTRAINT UK_9uhc5itwc9h5gcng944pcaslf
+UNIQUE (phones_id)
+
+ALTER TABLE Person_Phone
+ADD CONSTRAINT FKr38us2n8g5p9rj0b494sd3391
+FOREIGN KEY (phones_id) REFERENCES Phone
+
+ALTER TABLE Person_Phone
+ADD CONSTRAINT FK2ex4e4p7w1cj310kg2woisjl2
+FOREIGN KEY (Person_id) REFERENCES Person</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>The <code>@OneToMany</code> association is by definition a parent association, even if it&#8217;s a unidirectional or a bidirectional one.
+Only the parent side of an association makes sense to cascade its entity state transitions to children.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div id="associations-one-to-many-unidirectional-lifecycle-example" class="exampleblock">
+<div class="title">Example 4. Cascading <code>@OneToMany</code> association</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">Person person = new Person();
+Phone phone1 = new Phone( "123-456-7890" );
+Phone phone2 = new Phone( "321-654-0987" );
+
+person.getPhones().add( phone1 );
+person.getPhones().add( phone2 );
+entityManager.persist( person );
+entityManager.flush();
+
+person.getPhones().remove( phone1 );</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-sql" data-lang="sql">INSERT INTO Person
+       ( id )
+VALUES ( 1 )
+
+INSERT INTO Phone
+       ( number, id )
+VALUES ( '123 - 456 - 7890', 2 )
+
+INSERT INTO Phone
+       ( number, id )
+VALUES ( '321 - 654 - 0987', 3 )
+
+INSERT INTO Person_Phone
+       ( Person_id, phones_id )
+VALUES ( 1, 2 )
+
+INSERT INTO Person_Phone
+       ( Person_id, phones_id )
+VALUES ( 1, 3 )
+
+DELETE FROM Person_Phone
+WHERE  Person_id = 1
+
+INSERT INTO Person_Phone
+       ( Person_id, phones_id )
+VALUES ( 1, 3 )
+
+DELETE FROM Phone
+WHERE  id = 2</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>When persisting the <code>Person</code> entity, the cascade will propagate the persist operation to the underlying <code>Phone</code> children as well.
+Upon removing a <code>Phone</code> from the phones collection, the association row is deleted from the link table, and the <code>orphanRemoval</code> attribute will trigger a <code>Phone</code> removal as well.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>The unidirectional associations are not very efficient when it comes to removing child entities.
+In this particular example, upon flushing the persistence context, Hibernate deletes all database child entries and reinserts the ones that are still found in the in-memory persistence context.</p>
+</div>
+<div class="paragraph">
+<p>On the other hand, a bidirectional <code>@OneToMany</code> association is much more efficient because the child entity controls the association.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect4">
+<h5 id="associations-one-to-many-bidirectional">Bidirectional <code>@OneToMany</code></h5>
+<div class="paragraph">
+<p>The bidirectional <code>@OneToMany</code> association also requires a <code>@ManyToOne</code> association on the child side.
+Although the Domain Model exposes two sides to navigate this association, behind the scenes, the relational database has only one foreign key for this relationship.</p>
+</div>
+<div class="paragraph">
+<p>Every bidirectional association must have one owning side only (the child side), the other one being referred to as the <em>inverse</em> (or the <code>mappedBy</code>) side.</p>
+</div>
+<div id="associations-one-to-many-bidirectional-example" class="exampleblock">
+<div class="title">Example 5. <code>@OneToMany</code> association mappedBy the <code>@ManyToOne</code> side</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">@Entity(name = "Person")
+public static class Person {
+
+    @Id
+    @GeneratedValue
+    private Long id;
+    @OneToMany(mappedBy = "person", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List&lt;Phone&gt; phones = new ArrayList&lt;&gt;();
+
+    public Person() {
+    }
+
+    public Person(Long id) {
+        this.id = id;
+    }
+
+    public List&lt;Phone&gt; getPhones() {
+        return phones;
+    }
+
+    public void addPhone(Phone phone) {
+        phones.add( phone );
+        phone.setPerson( this );
+    }
+
+    public void removePhone(Phone phone) {
+        phones.remove( phone );
+        phone.setPerson( null );
+    }
+}
+
+@Entity(name = "Phone")
+public static class Phone {
+
+    @Id
+    @GeneratedValue
+    private Long id;
+
+    @NaturalId
+    @Column(name = "`number`", unique = true)
+    private String number;
+
+    @ManyToOne
+    private Person person;
+
+    public Phone() {
+    }
+
+    public Phone(String number) {
+        this.number = number;
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public String getNumber() {
+        return number;
+    }
+
+    public Person getPerson() {
+        return person;
+    }
+
+    public void setPerson(Person person) {
+        this.person = person;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if ( this == o ) {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() ) {
+            return false;
+        }
+        Phone phone = (Phone) o;
+        return Objects.equals( number, phone.number );
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash( number );
+    }
+}</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-sql" data-lang="sql">CREATE TABLE Person (
+    id BIGINT NOT NULL ,
+    PRIMARY KEY ( id )
+)
+
+CREATE TABLE Phone (
+    id BIGINT NOT NULL ,
+    number VARCHAR(255) ,
+    person_id BIGINT ,
+    PRIMARY KEY ( id )
+)
+
+ALTER TABLE Phone
+ADD CONSTRAINT UK_l329ab0g4c1t78onljnxmbnp6
+UNIQUE (number)
+
+ALTER TABLE Phone
+ADD CONSTRAINT FKmw13yfsjypiiq0i1osdkaeqpg
+FOREIGN KEY (person_id) REFERENCES Person</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Whenever a bidirectional association is formed, the application developer must make sure both sides are in-sync at all times.
+The <code>addPhone()</code> and <code>removePhone()</code> are utilities methods that synchronize both ends whenever a child element is added or removed.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Because the <code>Phone</code> class has a <code>@NaturalId</code> column (the phone number being unique),
+the <code>equals()</code> and the <code>hashCode()</code> can make use of this property, and so the <code>removePhone()</code> logic is reduced to the <code>remove()</code> Java <code>Collection</code> method.</p>
+</div>
+<div id="associations-one-to-many-bidirectional-lifecycle-example" class="exampleblock">
+<div class="title">Example 6. Bidirectional <code>@OneToMany</code> with an owner <code>@ManyToOne</code> side lifecycle</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">Person person = new Person();
+Phone phone1 = new Phone( "123-456-7890" );
+Phone phone2 = new Phone( "321-654-0987" );
+
+person.addPhone( phone1 );
+person.addPhone( phone2 );
+entityManager.persist( person );
+entityManager.flush();
+
+person.removePhone( phone1 );</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-sql" data-lang="sql">INSERT INTO Phone
+       ( number, person_id, id )
+VALUES ( '123-456-7890', NULL, 2 )
+
+INSERT INTO Phone
+       ( number, person_id, id )
+VALUES ( '321-654-0987', NULL, 3 )
+
+DELETE FROM Phone
+WHERE  id = 2</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Unlike the unidirectional <code>@OneToMany</code>, the bidirectional association is much more efficient when managing the collection persistence state.
+Every element removal only requires a single update (in which the foreign key column is set to <code>NULL</code>), and,
+if the child entity lifecycle is bound to its owning parent so that the child cannot exist without its parent,
+then we can annotate the association with the <code>orphan-removal</code> attribute and disassociating the child will trigger a delete statement on the actual child table row as well.</p>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="associations-one-to-one"><code>@OneToOne</code></h4>
+<div class="paragraph">
+<p>The <code>@OneToOne</code> association can either be unidirectional or bidirectional.
+A unidirectional association follows the relational database foreign key semantics, the client-side owning the relationship.
+A bidirectional association features a <code>mappedBy</code> <code>@OneToOne</code> parent side too.</p>
+</div>
+<div class="sect4">
+<h5 id="associations-one-to-one-unidirectional">Unidirectional <code>@OneToOne</code></h5>
+<div id="associations-one-to-one-unidirectional-example" class="exampleblock">
+<div class="title">Example 7. Unidirectional <code>@OneToOne</code></div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">@Entity(name = "Phone")
+public static class Phone {
+
+    @Id
+    @GeneratedValue
+    private Long id;
+
+    @Column(name = "`number`")
+    private String number;
+
+    @OneToOne
+    @JoinColumn(name = "details_id")
+    private PhoneDetails details;
+
+    public Phone() {
+    }
+
+    public Phone(String number) {
+        this.number = number;
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public String getNumber() {
+        return number;
+    }
+
+    public PhoneDetails getDetails() {
+        return details;
+    }
+
+    public void setDetails(PhoneDetails details) {
+        this.details = details;
+    }
+}
+
+@Entity(name = "PhoneDetails")
+public static class PhoneDetails {
+
+    @Id
+    @GeneratedValue
+    private Long id;
+
+    private String provider;
+
+    private String technology;
+
+    public PhoneDetails() {
+    }
+
+    public PhoneDetails(String provider, String technology) {
+        this.provider = provider;
+        this.technology = technology;
+    }
+
+    public String getProvider() {
+        return provider;
+    }
+
+    public String getTechnology() {
+        return technology;
+    }
+
+    public void setTechnology(String technology) {
+        this.technology = technology;
+    }
+}</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-sql" data-lang="sql">CREATE TABLE Phone (
+    id BIGINT NOT NULL ,
+    number VARCHAR(255) ,
+    details_id BIGINT ,
+    PRIMARY KEY ( id )
+)
+
+CREATE TABLE PhoneDetails (
+    id BIGINT NOT NULL ,
+    provider VARCHAR(255) ,
+    technology VARCHAR(255) ,
+    PRIMARY KEY ( id )
+)
+
+ALTER TABLE Phone
+ADD CONSTRAINT FKnoj7cj83ppfqbnvqqa5kolub7
+FOREIGN KEY (details_id) REFERENCES PhoneDetails</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>From a relational database point of view, the underlying schema is identical to the unidirectional <code>@ManyToOne</code> association,
+as the client-side controls the relationship based on the foreign key column.</p>
+</div>
+<div class="paragraph">
+<p>But then, it&#8217;s unusual to consider the <code>Phone</code> as a client-side and the <code>PhoneDetails</code> as the parent-side because the details cannot exist without an actual phone.
+A much more natural mapping would be if the <code>Phone</code> were the parent-side, therefore pushing the foreign key into the <code>PhoneDetails</code> table.
+This mapping requires a bidirectional <code>@OneToOne</code> association as you can see in the following example:</p>
+</div>
+</div>
+<div class="sect4">
+<h5 id="associations-one-to-one-bidirectional">Bidirectional <code>@OneToOne</code></h5>
+<div id="associations-one-to-one-bidirectional-example" class="exampleblock">
+<div class="title">Example 8. Bidirectional <code>@OneToOne</code></div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">@Entity(name = "Phone")
+public static class Phone {
+
+    @Id
+    @GeneratedValue
+    private Long id;
+
+    @Column(name = "`number`")
+    private String number;
+
+    @OneToOne(mappedBy = "phone", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private PhoneDetails details;
+
+    public Phone() {
+    }
+
+    public Phone(String number) {
+        this.number = number;
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public String getNumber() {
+        return number;
+    }
+
+    public PhoneDetails getDetails() {
+        return details;
+    }
+
+    public void addDetails(PhoneDetails details) {
+        details.setPhone( this );
+        this.details = details;
+    }
+
+    public void removeDetails() {
+        if ( details != null ) {
+            details.setPhone( null );
+            this.details = null;
+        }
+    }
+}
+
+@Entity(name = "PhoneDetails")
+public static class PhoneDetails {
+
+    @Id
+    @GeneratedValue
+    private Long id;
+
+    private String provider;
+
+    private String technology;
+
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "phone_id")
+    private Phone phone;
+
+    public PhoneDetails() {
+    }
+
+    public PhoneDetails(String provider, String technology) {
+        this.provider = provider;
+        this.technology = technology;
+    }
+
+    public String getProvider() {
+        return provider;
+    }
+
+    public String getTechnology() {
+        return technology;
+    }
+
+    public void setTechnology(String technology) {
+        this.technology = technology;
+    }
+
+    public Phone getPhone() {
+        return phone;
+    }
+
+    public void setPhone(Phone phone) {
+        this.phone = phone;
+    }
+}</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-sql" data-lang="sql">CREATE TABLE Phone (
+    id BIGINT NOT NULL ,
+    number VARCHAR(255) ,
+    PRIMARY KEY ( id )
+)
+
+CREATE TABLE PhoneDetails (
+    id BIGINT NOT NULL ,
+    provider VARCHAR(255) ,
+    technology VARCHAR(255) ,
+    phone_id BIGINT ,
+    PRIMARY KEY ( id )
+)
+
+ALTER TABLE PhoneDetails
+ADD CONSTRAINT FKeotuev8ja8v0sdh29dynqj05p
+FOREIGN KEY (phone_id) REFERENCES Phone</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>This time, the <code>PhoneDetails</code> owns the association, and, like any bidirectional association, the parent-side can propagate its lifecycle to the child-side through cascading.</p>
+</div>
+<div id="associations-one-to-one-bidirectional-lifecycle-example" class="exampleblock">
+<div class="title">Example 9. Bidirectional <code>@OneToOne</code> lifecycle</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">Phone phone = new Phone( "123-456-7890" );
+PhoneDetails details = new PhoneDetails( "T-Mobile", "GSM" );
+
+phone.addDetails( details );
+entityManager.persist( phone );</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-sql" data-lang="sql">INSERT INTO Phone ( number, id )
+VALUES ( '123 - 456 - 7890', 1 )
+
+INSERT INTO PhoneDetails ( phone_id, provider, technology, id )
+VALUES ( 1, 'T - Mobile, GSM', 2 )</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>When using a bidirectional <code>@OneToOne</code> association, Hibernate enforces the unique constraint upon fetching the child-side.
+If there are more than one children associated with the same parent, Hibernate will throw a constraint violation exception.
+Continuing the previous example, when adding another <code>PhoneDetails</code>, Hibernate validates the uniqueness constraint when reloading the <code>Phone</code> object.</p>
+</div>
+<div id="associations-one-to-one-bidirectional-constraint-example" class="exampleblock">
+<div class="title">Example 10. Bidirectional <code>@OneToOne</code> unique constraint</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">PhoneDetails otherDetails = new PhoneDetails( "T-Mobile", "CDMA" );
+otherDetails.setPhone( phone );
+entityManager.persist( otherDetails );
+entityManager.flush();
+entityManager.clear();
+
+//throws javax.persistence.PersistenceException: org.hibernate.HibernateException: More than one row with the given identifier was found: 1
+phone = entityManager.find( Phone.class, phone.getId() );</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="associations-many-to-many"><code>@ManyToMany</code></h4>
+<div class="paragraph">
+<p>The <code>@ManyToMany</code> association requires a link table that joins two entities.
+Like the <code>@OneToMany</code> association, <code>@ManyToMany</code> can be a either unidirectional or bidirectional.</p>
+</div>
+<div class="sect4">
+<h5 id="associations-many-to-many-unidirectional">Unidirectional <code>@ManyToMany</code></h5>
+<div id="associations-many-to-many-unidirectional-example" class="exampleblock">
+<div class="title">Example 11. Unidirectional <code>@ManyToMany</code></div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">@Entity(name = "Person")
+public static class Person {
+
+    @Id
+    @GeneratedValue
+    private Long id;
+    @ManyToMany(cascade = {CascadeType.PERSIST, CascadeType.MERGE})
+    private List&lt;Address&gt; addresses = new ArrayList&lt;&gt;();
+
+    public Person() {
+    }
+
+    public List&lt;Address&gt; getAddresses() {
+        return addresses;
+    }
+}
+
+@Entity(name = "Address")
+public static class Address {
+
+    @Id
+    @GeneratedValue
+    private Long id;
+
+    private String street;
+
+    @Column(name = "`number`")
+    private String number;
+
+    public Address() {
+    }
+
+    public Address(String street, String number) {
+        this.street = street;
+        this.number = number;
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public String getStreet() {
+        return street;
+    }
+
+    public String getNumber() {
+        return number;
+    }
+}</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-sql" data-lang="sql">CREATE TABLE Address (
+    id BIGINT NOT NULL ,
+    number VARCHAR(255) ,
+    street VARCHAR(255) ,
+    PRIMARY KEY ( id )
+)
+
+CREATE TABLE Person (
+    id BIGINT NOT NULL ,
+    PRIMARY KEY ( id )
+)
+
+CREATE TABLE Person_Address (
+    Person_id BIGINT NOT NULL ,
+    addresses_id BIGINT NOT NULL
+)
+
+ALTER TABLE Person_Address
+ADD CONSTRAINT FKm7j0bnabh2yr0pe99il1d066u
+FOREIGN KEY (addresses_id) REFERENCES Address
+
+ALTER TABLE Person_Address
+ADD CONSTRAINT FKba7rc9qe2vh44u93u0p2auwti
+FOREIGN KEY (Person_id) REFERENCES Person</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Just like with unidirectional <code>@OneToMany</code> associations, the link table is controlled by the owning side.</p>
+</div>
+<div class="paragraph">
+<p>When an entity is removed from the <code>@ManyToMany</code> collection, Hibernate simply deletes the joining record in the link table.
+Unfortunately, this operation requires removing all entries associated with a given parent and recreating the ones that are listed in the current running persistent context.</p>
+</div>
+<div id="associations-many-to-many-unidirectional-lifecycle-example" class="exampleblock">
+<div class="title">Example 12. Unidirectional <code>@ManyToMany</code> lifecycle</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">Person person1 = new Person();
+Person person2 = new Person();
+
+Address address1 = new Address( "12th Avenue", "12A" );
+Address address2 = new Address( "18th Avenue", "18B" );
+
+person1.getAddresses().add( address1 );
+person1.getAddresses().add( address2 );
+
+person2.getAddresses().add( address1 );
+
+entityManager.persist( person1 );
+entityManager.persist( person2 );
+
+entityManager.flush();
+
+person1.getAddresses().remove( address1 );</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-sql" data-lang="sql">INSERT INTO Person ( id )
+VALUES ( 1 )
+
+INSERT INTO Address ( number, street, id )
+VALUES ( '12A', '12th Avenue', 2 )
+
+INSERT INTO Address ( number, street, id )
+VALUES ( '18B', '18th Avenue', 3 )
+
+INSERT INTO Person ( id )
+VALUES ( 4 )
+
+INSERT INTO Person_Address ( Person_id, addresses_id )
+VALUES ( 1, 2 )
+INSERT INTO Person_Address ( Person_id, addresses_id )
+VALUES ( 1, 3 )
+INSERT INTO Person_Address ( Person_id, addresses_id )
+VALUES ( 4, 2 )
+
+DELETE FROM Person_Address
+WHERE  Person_id = 1
+
+INSERT INTO Person_Address ( Person_id, addresses_id )
+VALUES ( 1, 3 )</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>For <code>@ManyToMany</code> associations, the <code>REMOVE</code> entity state transition doesn&#8217;t make sense to be cascaded because it will propagate beyond the link table.
+Since the other side might be referenced by other entities on the parent-side, the automatic removal might end up in a <code>ConstraintViolationException</code>.</p>
+</div>
+<div class="paragraph">
+<p>For example, if <code>@ManyToMany(cascade = CascadeType.ALL)</code> was defined and the first person would be deleted,
+Hibernate would throw an exception because another person is still associated with the address that&#8217;s being deleted.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">Person person1 = entityManager.find(Person.class, personId);
+entityManager.remove(person1);
+
+Caused by: javax.persistence.PersistenceException: org.hibernate.exception.ConstraintViolationException: could not execute statement
+Caused by: org.hibernate.exception.ConstraintViolationException: could not execute statement
+Caused by: java.sql.SQLIntegrityConstraintViolationException: integrity constraint violation: foreign key no action; FKM7J0BNABH2YR0PE99IL1D066U table: PERSON_ADDRESS</code></pre>
+</div>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>By simply removing the parent-side, Hibernate can safely remove the associated link records as you can see in the following example:</p>
+</div>
+<div id="associations-many-to-many-unidirectional-remove-example" class="exampleblock">
+<div class="title">Example 13. Unidirectional <code>@ManyToMany</code> entity removal</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">Person person1 = entityManager.find( Person.class, personId );
+entityManager.remove( person1 );</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-sql" data-lang="sql">DELETE FROM Person_Address
+WHERE  Person_id = 1
+
+DELETE FROM Person
+WHERE  id = 1</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect4">
+<h5 id="associations-many-to-many-bidirectional">Bidirectional <code>@ManyToMany</code></h5>
+<div class="paragraph">
+<p>A bidirectional <code>@ManyToMany</code> association has an owning and a <code>mappedBy</code> side.
+To preserve synchronicity between both sides, it&#8217;s good practice to provide helper methods for adding or removing child entities.</p>
+</div>
+<div id="associations-many-to-many-bidirectional-example" class="exampleblock">
+<div class="title">Example 14. Bidirectional <code>@ManyToMany</code></div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">@Entity(name = "Person")
+public static class Person {
+
+    @Id
+    @GeneratedValue
+    private Long id;
+
+    @NaturalId
+    private String registrationNumber;
+    @ManyToMany(cascade = {CascadeType.PERSIST, CascadeType.MERGE})
+    private List&lt;Address&gt; addresses = new ArrayList&lt;&gt;();
+
+    public Person() {
+    }
+
+    public Person(String registrationNumber) {
+        this.registrationNumber = registrationNumber;
+    }
+
+    public List&lt;Address&gt; getAddresses() {
+        return addresses;
+    }
+
+    public void addAddress(Address address) {
+        addresses.add( address );
+        address.getOwners().add( this );
+    }
+
+    public void removeAddress(Address address) {
+        addresses.remove( address );
+        address.getOwners().remove( this );
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if ( this == o ) {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() ) {
+            return false;
+        }
+        Person person = (Person) o;
+        return Objects.equals( registrationNumber, person.registrationNumber );
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash( registrationNumber );
+    }
+}
+
+@Entity(name = "Address")
+public static class Address {
+
+    @Id
+    @GeneratedValue
+    private Long id;
+
+    private String street;
+
+    @Column(name = "`number`")
+    private String number;
+
+    private String postalCode;
+
+    @ManyToMany(mappedBy = "addresses")
+    private List&lt;Person&gt; owners = new ArrayList&lt;&gt;();
+
+    public Address() {
+    }
+
+    public Address(String street, String number, String postalCode) {
+        this.street = street;
+        this.number = number;
+        this.postalCode = postalCode;
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public String getStreet() {
+        return street;
+    }
+
+    public String getNumber() {
+        return number;
+    }
+
+    public String getPostalCode() {
+        return postalCode;
+    }
+
+    public List&lt;Person&gt; getOwners() {
+        return owners;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if ( this == o ) {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() ) {
+            return false;
+        }
+        Address address = (Address) o;
+        return Objects.equals( street, address.street ) &amp;&amp;
+                Objects.equals( number, address.number ) &amp;&amp;
+                Objects.equals( postalCode, address.postalCode );
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash( street, number, postalCode );
+    }
+}</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-sql" data-lang="sql">CREATE TABLE Address (
+    id BIGINT NOT NULL ,
+    number VARCHAR(255) ,
+    postalCode VARCHAR(255) ,
+    street VARCHAR(255) ,
+    PRIMARY KEY ( id )
+)
+
+CREATE TABLE Person (
+    id BIGINT NOT NULL ,
+    registrationNumber VARCHAR(255) ,
+    PRIMARY KEY ( id )
+)
+
+CREATE TABLE Person_Address (
+    owners_id BIGINT NOT NULL ,
+    addresses_id BIGINT NOT NULL
+)
+
+ALTER TABLE Person
+ADD CONSTRAINT UK_23enodonj49jm8uwec4i7y37f
+UNIQUE (registrationNumber)
+
+ALTER TABLE Person_Address
+ADD CONSTRAINT FKm7j0bnabh2yr0pe99il1d066u
+FOREIGN KEY (addresses_id) REFERENCES Address
+
+ALTER TABLE Person_Address
+ADD CONSTRAINT FKbn86l24gmxdv2vmekayqcsgup
+FOREIGN KEY (owners_id) REFERENCES Person</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>With the helper methods in place, the synchronicity management can be simplified, as you can see in the following example:</p>
+</div>
+<div id="associations-many-to-many-bidirectional-lifecycle-example" class="exampleblock">
+<div class="title">Example 15. Bidirectional <code>@ManyToMany</code> lifecycle</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">Person person1 = new Person( "ABC-123" );
+Person person2 = new Person( "DEF-456" );
+
+Address address1 = new Address( "12th Avenue", "12A", "4005A" );
+Address address2 = new Address( "18th Avenue", "18B", "4007B" );
+
+person1.addAddress( address1 );
+person1.addAddress( address2 );
+
+person2.addAddress( address1 );
+
+entityManager.persist( person1 );
+entityManager.persist( person2 );
+
+entityManager.flush();
+
+person1.removeAddress( address1 );</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-sql" data-lang="sql">INSERT INTO Person ( registrationNumber, id )
+VALUES ( 'ABC-123', 1 )
+
+INSERT INTO Address ( number, postalCode, street, id )
+VALUES ( '12A', '4005A', '12th Avenue', 2 )
+
+INSERT INTO Address ( number, postalCode, street, id )
+VALUES ( '18B', '4007B', '18th Avenue', 3 )
+
+INSERT INTO Person ( registrationNumber, id )
+VALUES ( 'DEF-456', 4 )
+
+INSERT INTO Person_Address ( owners_id, addresses_id )
+VALUES ( 1, 2 )
+
+INSERT INTO Person_Address ( owners_id, addresses_id )
+VALUES ( 1, 3 )
+
+INSERT INTO Person_Address ( owners_id, addresses_id )
+VALUES ( 4, 2 )
+
+DELETE FROM Person_Address
+WHERE  owners_id = 1
+
+INSERT INTO Person_Address ( owners_id, addresses_id )
+VALUES ( 1, 3 )</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>If a bidirectional <code>@OneToMany</code> association performs better when removing or changing the order of child elements,
+the <code>@ManyToMany</code> relationship cannot benefit from such an optimization because the foreign key side is not in control.
+To overcome this limitation, the link table must be directly exposed and the <code>@ManyToMany</code> association split into two bidirectional <code>@OneToMany</code> relationships.</p>
+</div>
+</div>
+<div class="sect4">
+<h5 id="associations-many-to-many-bidirectional-with-link-entity">Bidirectional many-to-many with a link entity</h5>
+<div class="paragraph">
+<p>To most natural <code>@ManyToMany</code> association follows the same logic employed by the database schema,
+and the link table has an associated entity which controls the relationship for both sides that need to be joined.</p>
+</div>
+<div id="associations-many-to-many-bidirectional-with-link-entity-example" class="exampleblock">
+<div class="title">Example 16. Bidirectional many-to-many with link entity</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">@Entity(name = "Person")
+public static class Person implements Serializable {
+
+    @Id
+    @GeneratedValue
+    private Long id;
+
+    @NaturalId
+    private String registrationNumber;
+
+    @OneToMany(mappedBy = "person", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List&lt;PersonAddress&gt; addresses = new ArrayList&lt;&gt;();
+
+    public Person() {
+    }
+
+    public Person(String registrationNumber) {
+        this.registrationNumber = registrationNumber;
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public List&lt;PersonAddress&gt; getAddresses() {
+        return addresses;
+    }
+
+    public void addAddress(Address address) {
+        PersonAddress personAddress = new PersonAddress( this, address );
+        addresses.add( personAddress );
+        address.getOwners().add( personAddress );
+    }
+
+    public void removeAddress(Address address) {
+        PersonAddress personAddress = new PersonAddress( this, address );
+        address.getOwners().remove( personAddress );
+        addresses.remove( personAddress );
+        personAddress.setPerson( null );
+        personAddress.setAddress( null );
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if ( this == o ) {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() ) {
+            return false;
+        }
+        Person person = (Person) o;
+        return Objects.equals( registrationNumber, person.registrationNumber );
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash( registrationNumber );
+    }
+}
+
+@Entity(name = "PersonAddress")
+public static class PersonAddress implements Serializable {
+
+    @Id
+    @ManyToOne
+    private Person person;
+
+    @Id
+    @ManyToOne
+    private Address address;
+
+    public PersonAddress() {
+    }
+
+    public PersonAddress(Person person, Address address) {
+        this.person = person;
+        this.address = address;
+    }
+
+    public Person getPerson() {
+        return person;
+    }
+
+    public void setPerson(Person person) {
+        this.person = person;
+    }
+
+    public Address getAddress() {
+        return address;
+    }
+
+    public void setAddress(Address address) {
+        this.address = address;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if ( this == o ) {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() ) {
+            return false;
+        }
+        PersonAddress that = (PersonAddress) o;
+        return Objects.equals( person, that.person ) &amp;&amp;
+                Objects.equals( address, that.address );
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash( person, address );
+    }
+}
+
+@Entity(name = "Address")
+public static class Address implements Serializable {
+
+    @Id
+    @GeneratedValue
+    private Long id;
+
+    private String street;
+
+    @Column(name = "`number`")
+    private String number;
+
+    private String postalCode;
+
+    @OneToMany(mappedBy = "address", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List&lt;PersonAddress&gt; owners = new ArrayList&lt;&gt;();
+
+    public Address() {
+    }
+
+    public Address(String street, String number, String postalCode) {
+        this.street = street;
+        this.number = number;
+        this.postalCode = postalCode;
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public String getStreet() {
+        return street;
+    }
+
+    public String getNumber() {
+        return number;
+    }
+
+    public String getPostalCode() {
+        return postalCode;
+    }
+
+    public List&lt;PersonAddress&gt; getOwners() {
+        return owners;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if ( this == o ) {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() ) {
+            return false;
+        }
+        Address address = (Address) o;
+        return Objects.equals( street, address.street ) &amp;&amp;
+                Objects.equals( number, address.number ) &amp;&amp;
+                Objects.equals( postalCode, address.postalCode );
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash( street, number, postalCode );
+    }
+}</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-sql" data-lang="sql">CREATE TABLE Address (
+    id BIGINT NOT NULL ,
+    number VARCHAR(255) ,
+    postalCode VARCHAR(255) ,
+    street VARCHAR(255) ,
+    PRIMARY KEY ( id )
+)
+
+CREATE TABLE Person (
+    id BIGINT NOT NULL ,
+    registrationNumber VARCHAR(255) ,
+    PRIMARY KEY ( id )
+)
+
+CREATE TABLE PersonAddress (
+    person_id BIGINT NOT NULL ,
+    address_id BIGINT NOT NULL ,
+    PRIMARY KEY ( person_id, address_id )
+)
+
+ALTER TABLE Person
+ADD CONSTRAINT UK_23enodonj49jm8uwec4i7y37f
+UNIQUE (registrationNumber)
+
+ALTER TABLE PersonAddress
+ADD CONSTRAINT FK8b3lru5fyej1aarjflamwghqq
+FOREIGN KEY (person_id) REFERENCES Person
+
+ALTER TABLE PersonAddress
+ADD CONSTRAINT FK7p69mgialumhegyl4byrh65jk
+FOREIGN KEY (address_id) REFERENCES Address</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Both the <code>Person</code> and the <code>Address</code> have a` mappedBy` <code>@OneToMany</code> side, while the <code>PersonAddress</code> owns the <code>person</code> and the <code>address</code> <code>@ManyToOne</code> associations.
+Because this mapping is formed out of two bidirectional associations, the helper methods are even more relevant.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>The aforementioned example uses a Hibernate specific mapping for the link entity since JPA doesn&#8217;t allow building a composite identifier out of multiple <code>@ManyToOne</code> associations.
+For more details, see the <a href="chapters/domain/identifiers.html#identifiers-composite-associations">Composite identifiers - associations</a> section.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>The entity state transitions are better managed than in the previous bidirectional <code>@ManyToMany</code> case.</p>
+</div>
+<div id="associations-many-to-many-bidirectional-with-link-entity-lifecycle-example" class="exampleblock">
+<div class="title">Example 17. Bidirectional many-to-many with link entity lifecycle</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">Person person1 = new Person( "ABC-123" );
+Person person2 = new Person( "DEF-456" );
+
+Address address1 = new Address( "12th Avenue", "12A", "4005A" );
+Address address2 = new Address( "18th Avenue", "18B", "4007B" );
+
+entityManager.persist( person1 );
+entityManager.persist( person2 );
+
+entityManager.persist( address1 );
+entityManager.persist( address2 );
+
+person1.addAddress( address1 );
+person1.addAddress( address2 );
+
+person2.addAddress( address1 );
+
+entityManager.flush();
+
+log.info( "Removing address" );
+person1.removeAddress( address1 );</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-sql" data-lang="sql">INSERT  INTO Person ( registrationNumber, id )
+VALUES  ( 'ABC-123', 1 )
+
+INSERT  INTO Person ( registrationNumber, id )
+VALUES  ( 'DEF-456', 2 )
+
+INSERT  INTO Address ( number, postalCode, street, id )
+VALUES  ( '12A', '4005A', '12th Avenue', 3 )
+
+INSERT  INTO Address ( number, postalCode, street, id )
+VALUES  ( '18B', '4007B', '18th Avenue', 4 )
+
+INSERT  INTO PersonAddress ( person_id, address_id )
+VALUES  ( 1, 3 )
+
+INSERT  INTO PersonAddress ( person_id, address_id )
+VALUES  ( 1, 4 )
+
+INSERT  INTO PersonAddress ( person_id, address_id )
+VALUES  ( 2, 3 )
+
+DELETE  FROM PersonAddress
+WHERE   person_id = 1 AND address_id = 3</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>There is only one delete statement executed because, this time, the association is controlled by the <code>@ManyToOne</code> side which only has to monitor the state of the underlying foreign key relationship to trigger the right DML statement.</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div id="footer">
+<div id="footer-text">
+Last updated 2016-10-05 09:27:39 +01:00
+</div>
+</div>
+</body>
+</html>

@@ -1,0 +1,1278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<!--[if IE]><meta http-equiv="X-UA-Compatible" content="IE=edge"><![endif]-->
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="generator" content="Asciidoctor 1.5.2">
+<title>Inheritance</title>
+<link rel="stylesheet" href="./css/hibernate.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.2.0/css/font-awesome.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prettify/r298/prettify.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prettify/r298/prettify.min.js"></script>
+<script>document.addEventListener('DOMContentLoaded', prettyPrint)</script>
+</head>
+<body class="article">
+<div id="header">
+</div>
+<div id="content">
+<div class="sect2">
+<h3 id="entity-inheritance">Inheritance</h3>
+<div class="paragraph">
+<p>Although relational database systems don&#8217;t provide support for inheritance, Hibernate provides several strategies to leverage this object-oriented trait onto domain model entities:</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">MappedSuperclass</dt>
+<dd>
+<p>Inheritance is implemented in domain model only without reflecting it in the database schema. See <a href="#entity-inheritance-mapped-superclass">MappedSuperclass</a>.</p>
+</dd>
+<dt class="hdlist1">Single table</dt>
+<dd>
+<p>The domain model class hierarchy is materialized into a single table which contains entities belonging to different class types. See <a href="#entity-inheritance-single-table">Single table</a>.</p>
+</dd>
+<dt class="hdlist1">Joined table</dt>
+<dd>
+<p>The base class and all the subclasses have their own database tables and fetching a subclass entity requires a join with the parent table as well. See <a href="#entity-inheritance-joined-table">Joined table</a>.</p>
+</dd>
+<dt class="hdlist1">Table per class</dt>
+<dd>
+<p>Each subclass has its own table containing both the subclass and the base class properties. See <a href="#entity-inheritance-table-per-class">Table per class</a>.</p>
+</dd>
+</dl>
+</div>
+<div class="sect3">
+<h4 id="entity-inheritance-mapped-superclass">MappedSuperclass</h4>
+<div class="paragraph">
+<p>In the following domain model class hierarchy, a 'DebitAccount' and a 'CreditAccount' share the same 'Account' base class.</p>
+</div>
+<div class="paragraph">
+<p><span class="image"><img src="images/domain/inheritance/inheritance_class_diagram.svg" alt="Inheritance class diagram"></span></p>
+</div>
+<div class="paragraph">
+<p>When using <code>MappedSuperclass</code>, the inheritance is visible in the domain model only and each database table contains both the base class and the subclass properties.</p>
+</div>
+<div id="entity-inheritance-mapped-superclass-example" class="exampleblock">
+<div class="title">Example 1. <code>@MappedSuperclass</code> inheritance</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">@MappedSuperclass
+public static class Account {
+
+    @Id
+    private Long id;
+
+    private String owner;
+
+    private BigDecimal balance;
+
+    private BigDecimal interestRate;
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public String getOwner() {
+        return owner;
+    }
+
+    public void setOwner(String owner) {
+        this.owner = owner;
+    }
+
+    public BigDecimal getBalance() {
+        return balance;
+    }
+
+    public void setBalance(BigDecimal balance) {
+        this.balance = balance;
+    }
+
+    public BigDecimal getInterestRate() {
+        return interestRate;
+    }
+
+    public void setInterestRate(BigDecimal interestRate) {
+        this.interestRate = interestRate;
+    }
+}
+
+@Entity(name = "DebitAccount")
+public static class DebitAccount extends Account {
+
+    private BigDecimal overdraftFee;
+
+    public BigDecimal getOverdraftFee() {
+        return overdraftFee;
+    }
+
+    public void setOverdraftFee(BigDecimal overdraftFee) {
+        this.overdraftFee = overdraftFee;
+    }
+}
+
+@Entity(name = "CreditAccount")
+public static class CreditAccount extends Account {
+
+    private BigDecimal creditLimit;
+
+    public BigDecimal getCreditLimit() {
+        return creditLimit;
+    }
+
+    public void setCreditLimit(BigDecimal creditLimit) {
+        this.creditLimit = creditLimit;
+    }
+}</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-sql" data-lang="sql">CREATE TABLE DebitAccount (
+    id BIGINT NOT NULL ,
+    balance NUMERIC(19, 2) ,
+    interestRate NUMERIC(19, 2) ,
+    owner VARCHAR(255) ,
+    overdraftFee NUMERIC(19, 2) ,
+    PRIMARY KEY ( id )
+)
+
+CREATE TABLE CreditAccount (
+    id BIGINT NOT NULL ,
+    balance NUMERIC(19, 2) ,
+    interestRate NUMERIC(19, 2) ,
+    owner VARCHAR(255) ,
+    creditLimit NUMERIC(19, 2) ,
+    PRIMARY KEY ( id )
+)</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Because the <code>@MappedSuperclass</code> inheritance model is not mirrored at database level,
+it&#8217;s not possible to use polymorphic queries (fetching subclasses by their base class).</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect3">
+<h4 id="entity-inheritance-single-table">Single table</h4>
+<div class="paragraph">
+<p>The single table inheritance strategy maps all subclasses to only one database table.
+Each subclass declares its own persistent properties.
+Version and id properties are assumed to be inherited from the root class.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>When omitting an explicit inheritance strategy (e.g. <code>@Inheritance</code>), JPA will choose the <code>SINGLE_TABLE</code> strategy by default.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div id="entity-inheritance-single-table-example" class="exampleblock">
+<div class="title">Example 2. Single Table inheritance</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">@Entity(name = "Account")
+@Inheritance(strategy = InheritanceType.SINGLE_TABLE)
+public static class Account {
+
+    @Id
+    private Long id;
+
+    private String owner;
+
+    private BigDecimal balance;
+
+    private BigDecimal interestRate;
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public String getOwner() {
+        return owner;
+    }
+
+    public void setOwner(String owner) {
+        this.owner = owner;
+    }
+
+    public BigDecimal getBalance() {
+        return balance;
+    }
+
+    public void setBalance(BigDecimal balance) {
+        this.balance = balance;
+    }
+
+    public BigDecimal getInterestRate() {
+        return interestRate;
+    }
+
+    public void setInterestRate(BigDecimal interestRate) {
+        this.interestRate = interestRate;
+    }
+}
+
+@Entity(name = "DebitAccount")
+public static class DebitAccount extends Account {
+
+    private BigDecimal overdraftFee;
+
+    public BigDecimal getOverdraftFee() {
+        return overdraftFee;
+    }
+
+    public void setOverdraftFee(BigDecimal overdraftFee) {
+        this.overdraftFee = overdraftFee;
+    }
+}
+
+@Entity(name = "CreditAccount")
+public static class CreditAccount extends Account {
+
+    private BigDecimal creditLimit;
+
+    public BigDecimal getCreditLimit() {
+        return creditLimit;
+    }
+
+    public void setCreditLimit(BigDecimal creditLimit) {
+        this.creditLimit = creditLimit;
+    }
+}</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-sql" data-lang="sql">CREATE TABLE Account (
+    DTYPE VARCHAR(31) NOT NULL ,
+    id BIGINT NOT NULL ,
+    balance NUMERIC(19, 2) ,
+    interestRate NUMERIC(19, 2) ,
+    owner VARCHAR(255) ,
+    overdraftFee NUMERIC(19, 2) ,
+    creditLimit NUMERIC(19, 2) ,
+    PRIMARY KEY ( id )
+)</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Each subclass in a hierarchy must define a unique discriminator value, which is used to differentiate between rows belonging to separate subclass types.
+If this is not specified, the <code>DTYPE</code> column is used as a discriminator, storing the associated subclass name.</p>
+</div>
+<div id="entity-inheritance-single-table-persist-example" class="exampleblock">
+<div class="title">Example 3. Single Table inheritance discriminator column</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">DebitAccount debitAccount = new DebitAccount();
+debitAccount.setId( 1L );
+debitAccount.setOwner( "John Doe" );
+debitAccount.setBalance( BigDecimal.valueOf( 100 ) );
+debitAccount.setInterestRate( BigDecimal.valueOf( 1.5d ) );
+debitAccount.setOverdraftFee( BigDecimal.valueOf( 25 ) );
+
+CreditAccount creditAccount = new CreditAccount();
+creditAccount.setId( 2L );
+creditAccount.setOwner( "John Doe" );
+creditAccount.setBalance( BigDecimal.valueOf( 1000 ) );
+creditAccount.setInterestRate( BigDecimal.valueOf( 1.9d ) );
+creditAccount.setCreditLimit( BigDecimal.valueOf( 5000 ) );
+
+entityManager.persist( debitAccount );
+entityManager.persist( creditAccount );</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-sql" data-lang="sql">INSERT INTO Account (balance, interestRate, owner, overdraftFee, DTYPE, id)
+VALUES (100, 1.5, 'John Doe', 25, 'DebitAccount', 1)
+
+INSERT INTO Account (balance, interestRate, owner, creditLimit, DTYPE, id)
+VALUES (1000, 1.9, 'John Doe', 5000, 'CreditAccount', 2)</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>When using polymorphic queries, only a single table is required to be scanned to fetch all associated subclass instances.</p>
+</div>
+<div id="entity-inheritance-single-table-query-example" class="exampleblock">
+<div class="title">Example 4. Single Table polymorphic query</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">List&lt;Account&gt; accounts = entityManager
+    .createQuery( "select a from Account a" )
+    .getResultList();</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-sql" data-lang="sql">SELECT  singletabl0_.id AS id2_0_ ,
+        singletabl0_.balance AS balance3_0_ ,
+        singletabl0_.interestRate AS interest4_0_ ,
+        singletabl0_.owner AS owner5_0_ ,
+        singletabl0_.overdraftFee AS overdraf6_0_ ,
+        singletabl0_.creditLimit AS creditLi7_0_ ,
+        singletabl0_.DTYPE AS DTYPE1_0_
+FROM    Account singletabl0_</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Among all other inheritance alternatives, the single table strategy performs the best since it requires access to one table only.
+Because all subclass columns are stored in a single table, it&#8217;s not possible to use NOT NULL constraints anymore, so integrity checks must be moved either into the data access layer or enforced through <code>CHECK</code> or <code>TRIGGER</code> constraints.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="sect4">
+<h5 id="entity-inheritance-discriminator">Discriminator</h5>
+<div class="paragraph">
+<p>The discriminator column contains marker values that tell the persistence layer what subclass to instantiate for a particular row.
+Hibernate Core supports the following restricted set of types as discriminator column: <code>String</code>, <code>char</code>, <code>int</code>, <code>byte</code>, <code>short</code>, <code>boolean</code>(including <code>yes_no</code>, <code>true_false</code>).</p>
+</div>
+<div class="paragraph">
+<p>Use the <code>@DiscriminatorColumn</code> to define the discriminator column as well as the discriminator type.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>The enum <code>DiscriminatorType</code> used in <code>javax.persistence.DiscriminatorColumn</code> only contains the values <code>STRING</code>, <code>CHAR</code> and <code>INTEGER</code> which means that not all Hibernate supported types are available via the <code>@DiscriminatorColumn</code> annotation.
+You can also use <code>@DiscriminatorFormula</code> to express in SQL a virtual discriminator column.
+This is particularly useful when the discriminator value can be extracted from one or more columns of the table.
+Both <code>@DiscriminatorColumn</code> and <code>@DiscriminatorFormula</code> are to be set on the root entity (once per persisted hierarchy).</p>
+</div>
+<div class="paragraph">
+<p><code>@org.hibernate.annotations.DiscriminatorOptions</code> allows to optionally specify Hibernate specific discriminator options which are not standardized in JPA.
+The available options are <code>force</code> and <code>insert</code>.</p>
+</div>
+<div class="paragraph">
+<p>The <code>force</code> attribute is useful if the table contains rows with <em>extra</em> discriminator values that are not mapped to a persistent class.
+This could for example occur when working with a legacy database.
+If <code>force</code> is set to true Hibernate will specify the allowed discriminator values in the SELECT query, even when retrieving all instances of the root class.</p>
+</div>
+<div class="paragraph">
+<p>The second option, <code>insert</code>, tells Hibernate whether or not to include the discriminator column in SQL INSERTs.
+Usually, the column should be part of the INSERT statement, but if your discriminator column is also part of a mapped composite identifier you have to set this option to false.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>There used to be <code>@org.hibernate.annotations.ForceDiscriminator</code> annotation which was deprecated in version 3.6 and later removed. Use <code>@DiscriminatorOptions</code> instead.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="sect5">
+<h6 id="entity-inheritance-discriminator-formula">Discriminator formula</h6>
+<div class="paragraph">
+<p>Assuming a legacy database schema where the discriminator is based on inspecting a certain column,
+we can take advantage of the Hibernate specific <code>@DiscriminatorFormula</code> annotation and map the inheritance model as follows:</p>
+</div>
+<div id="entity-inheritance-single-table-discriminator-formula-example" class="exampleblock">
+<div class="title">Example 5. Single Table discriminator formula</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">@Entity(name = "Account")
+@Inheritance(strategy = InheritanceType.SINGLE_TABLE)
+@DiscriminatorFormula(
+    "case when debitKey is not null " +
+    "then 'Debit' " +
+    "else ( " +
+    "   case when creditKey is not null " +
+    "   then 'Credit' " +
+    "   else 'Unknown' " +
+    "   end ) " +
+    "end "
+)
+public static class Account {
+
+    @Id
+    private Long id;
+
+    private String owner;
+
+    private BigDecimal balance;
+
+    private BigDecimal interestRate;
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public String getOwner() {
+        return owner;
+    }
+
+    public void setOwner(String owner) {
+        this.owner = owner;
+    }
+
+    public BigDecimal getBalance() {
+        return balance;
+    }
+
+    public void setBalance(BigDecimal balance) {
+        this.balance = balance;
+    }
+
+    public BigDecimal getInterestRate() {
+        return interestRate;
+    }
+
+    public void setInterestRate(BigDecimal interestRate) {
+        this.interestRate = interestRate;
+    }
+}
+
+@Entity(name = "DebitAccount")
+@DiscriminatorValue(value = "Debit")
+public static class DebitAccount extends Account {
+
+    private String debitKey;
+
+    private BigDecimal overdraftFee;
+
+    private DebitAccount() {
+    }
+
+    public DebitAccount(String debitKey) {
+        this.debitKey = debitKey;
+    }
+
+    public String getDebitKey() {
+        return debitKey;
+    }
+
+    public BigDecimal getOverdraftFee() {
+        return overdraftFee;
+    }
+
+    public void setOverdraftFee(BigDecimal overdraftFee) {
+        this.overdraftFee = overdraftFee;
+    }
+}
+
+@Entity(name = "CreditAccount")
+@DiscriminatorValue(value = "Credit")
+public static class CreditAccount extends Account {
+
+    private String creditKey;
+
+    private BigDecimal creditLimit;
+
+    private CreditAccount() {
+    }
+
+    public CreditAccount(String creditKey) {
+        this.creditKey = creditKey;
+    }
+
+    public String getCreditKey() {
+        return creditKey;
+    }
+
+    public BigDecimal getCreditLimit() {
+        return creditLimit;
+    }
+
+    public void setCreditLimit(BigDecimal creditLimit) {
+        this.creditLimit = creditLimit;
+    }
+}</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-sql" data-lang="sql">CREATE TABLE Account (
+    id int8 NOT NULL ,
+    balance NUMERIC(19, 2) ,
+    interestRate NUMERIC(19, 2) ,
+    owner VARCHAR(255) ,
+    debitKey VARCHAR(255) ,
+    overdraftFee NUMERIC(19, 2) ,
+    creditKey VARCHAR(255) ,
+    creditLimit NUMERIC(19, 2) ,
+    PRIMARY KEY ( id )
+)</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>The <code>@DiscriminatorFormula</code> defines a custom SQL clause that can be used to identify a certain subclass type.
+The <code>@DiscriminatorValue</code> defines the mapping between the result of the <code>@DiscriminatorFormula</code> and the inheritance subclass type.</p>
+</div>
+</div>
+<div class="sect5">
+<h6 id="entity-inheritance-discriminator-implicit">Implicit discriminator values</h6>
+<div class="paragraph">
+<p>Aside from the usual discriminator values assigned to each individual subclass type, the <code>@DiscriminatorValue</code> can take two additional values:</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><code>null</code></dt>
+<dd>
+<p>If the underlying discriminator column is null, the <code>null</code> discriminator mapping is going to be used.</p>
+</dd>
+<dt class="hdlist1"><code>not null</code></dt>
+<dd>
+<p>If the underlying discriminator column has a not-null value that is not explicitly mapped to any entity, the <code>not-null</code> discriminator mapping used.</p>
+</dd>
+</dl>
+</div>
+<div class="paragraph">
+<p>To understand how these two values work, consider the following entity mapping:</p>
+</div>
+<div id="entity-inheritance-single-table-discriminator-value-example" class="exampleblock">
+<div class="title">Example 6. @DiscriminatorValue <code>null</code> and <code>not-null</code> entity mapping</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">@Entity(name = "Account")
+@Inheritance(strategy = InheritanceType.SINGLE_TABLE)
+@DiscriminatorValue( "null" )
+public static class Account {
+
+    @Id
+    private Long id;
+
+    private String owner;
+
+    private BigDecimal balance;
+
+    private BigDecimal interestRate;
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public String getOwner() {
+        return owner;
+    }
+
+    public void setOwner(String owner) {
+        this.owner = owner;
+    }
+
+    public BigDecimal getBalance() {
+        return balance;
+    }
+
+    public void setBalance(BigDecimal balance) {
+        this.balance = balance;
+    }
+
+    public BigDecimal getInterestRate() {
+        return interestRate;
+    }
+
+    public void setInterestRate(BigDecimal interestRate) {
+        this.interestRate = interestRate;
+    }
+}
+
+@Entity(name = "DebitAccount")
+@DiscriminatorValue( "Debit" )
+public static class DebitAccount extends Account {
+
+    private BigDecimal overdraftFee;
+
+    public BigDecimal getOverdraftFee() {
+        return overdraftFee;
+    }
+
+    public void setOverdraftFee(BigDecimal overdraftFee) {
+        this.overdraftFee = overdraftFee;
+    }
+}
+
+@Entity(name = "CreditAccount")
+@DiscriminatorValue( "Credit" )
+public static class CreditAccount extends Account {
+
+    private BigDecimal creditLimit;
+
+    public BigDecimal getCreditLimit() {
+        return creditLimit;
+    }
+
+    public void setCreditLimit(BigDecimal creditLimit) {
+        this.creditLimit = creditLimit;
+    }
+}
+
+@Entity(name = "OtherAccount")
+@DiscriminatorValue( "not null" )
+public static class OtherAccount extends Account {
+
+    private boolean active;
+
+    public boolean isActive() {
+        return active;
+    }
+
+    public void setActive(boolean active) {
+        this.active = active;
+    }
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>The <code>Account</code> class has a <code>@DiscriminatorValue( "null" )</code> mapping, meaning that any <code>account</code> row which does not contain any discriminator value will be mapped to an <code>Account</code> base class entity.
+The <code>DebitAccount</code> and <code>CreditAccount</code> entities use explicit discriminator values.
+The <code>OtherAccount</code> entity is used as a generic account type because it maps any database row whose discriminator column is not explicitly assigned to any other entity in the current inheritance tree.</p>
+</div>
+<div class="paragraph">
+<p>To visualize how it works, consider the following example:</p>
+</div>
+<div id="entity-inheritance-single-table-discriminator-value-persist-example" class="exampleblock">
+<div class="title">Example 7. @DiscriminatorValue <code>null</code> and <code>not-null</code> entity persistence</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">DebitAccount debitAccount = new DebitAccount();
+debitAccount.setId( 1L );
+debitAccount.setOwner( "John Doe" );
+debitAccount.setBalance( BigDecimal.valueOf( 100 ) );
+debitAccount.setInterestRate( BigDecimal.valueOf( 1.5d ) );
+debitAccount.setOverdraftFee( BigDecimal.valueOf( 25 ) );
+
+CreditAccount creditAccount = new CreditAccount();
+creditAccount.setId( 2L );
+creditAccount.setOwner( "John Doe" );
+creditAccount.setBalance( BigDecimal.valueOf( 1000 ) );
+creditAccount.setInterestRate( BigDecimal.valueOf( 1.9d ) );
+creditAccount.setCreditLimit( BigDecimal.valueOf( 5000 ) );
+
+Account account = new Account();
+account.setId( 3L );
+account.setOwner( "John Doe" );
+account.setBalance( BigDecimal.valueOf( 1000 ) );
+account.setInterestRate( BigDecimal.valueOf( 1.9d ) );
+
+entityManager.persist( debitAccount );
+entityManager.persist( creditAccount );
+entityManager.persist( account );
+
+entityManager.unwrap( Session.class ).doWork( connection -&gt; {
+    try(Statement statement = connection.createStatement()) {
+        statement.executeUpdate(
+            "insert into Account (DTYPE, active, balance, interestRate, owner, id) " +
+            "values ('Other', true, 25, 0.5, 'Vlad', 4)"
+        );
+    }
+} );
+
+Map&lt;Long, Account&gt; accounts = entityManager.createQuery(
+    "select a from Account a", Account.class )
+.getResultList()
+.stream()
+.collect( Collectors.toMap( Account::getId, Function.identity()));
+
+assertEquals(4, accounts.size());
+assertEquals( DebitAccount.class, accounts.get( 1L ).getClass() );
+assertEquals( CreditAccount.class, accounts.get( 2L ).getClass() );
+assertEquals( Account.class, accounts.get( 3L ).getClass() );
+assertEquals( OtherAccount.class, accounts.get( 4L ).getClass() );</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-sql" data-lang="sql">INSERT INTO Account (balance, interestRate, owner, overdraftFee, DTYPE, id)
+VALUES (100, 1.5, 'John Doe', 25, 'Debit', 1)
+
+INSERT INTO Account (balance, interestRate, owner, overdraftFee, DTYPE, id)
+VALUES (1000, 1.9, 'John Doe', 5000, 'Credit', 2)
+
+INSERT INTO Account (balance, interestRate, owner, id)
+VALUES (1000, 1.9, 'John Doe', 3)
+
+INSERT INTO Account (DTYPE, active, balance, interestRate, owner, id)
+VALUES ('Other', true, 25, 0.5, 'Vlad', 4)
+
+SELECT a.id as id2_0_,
+       a.balance as balance3_0_,
+       a.interestRate as interest4_0_,
+       a.owner as owner5_0_,
+       a.overdraftFee as overdraf6_0_,
+       a.creditLimit as creditLi7_0_,
+       a.active as active8_0_,
+       a.DTYPE as DTYPE1_0_
+FROM   Account a</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>As you can see, the <code>Account</code> entity row has a value of <code>NULL</code> in the <code>DTYPE</code> discriminator column,
+while the <code>OtherAccount</code> entity was saved with a <code>DTYPE</code> column value of <code>other</code> which has not explicit mapping.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="entity-inheritance-joined-table">Joined table</h4>
+<div class="paragraph">
+<p>Each subclass can also be mapped to its own table.
+This is also called <em>table-per-subclass</em> mapping strategy.
+An inherited state is retrieved by joining with the table of the superclass.</p>
+</div>
+<div class="paragraph">
+<p>A discriminator column is not required for this mapping strategy.
+Each subclass must, however, declare a table column holding the object identifier.</p>
+</div>
+<div id="entity-inheritance-joined-table-example" class="exampleblock">
+<div class="title">Example 8. Join Table</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">@Entity(name = "Account")
+@Inheritance(strategy = InheritanceType.JOINED)
+public static class Account {
+
+    @Id
+    private Long id;
+
+    private String owner;
+
+    private BigDecimal balance;
+
+    private BigDecimal interestRate;
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public String getOwner() {
+        return owner;
+    }
+
+    public void setOwner(String owner) {
+        this.owner = owner;
+    }
+
+    public BigDecimal getBalance() {
+        return balance;
+    }
+
+    public void setBalance(BigDecimal balance) {
+        this.balance = balance;
+    }
+
+    public BigDecimal getInterestRate() {
+        return interestRate;
+    }
+
+    public void setInterestRate(BigDecimal interestRate) {
+        this.interestRate = interestRate;
+    }
+}
+
+@Entity(name = "DebitAccount")
+public static class DebitAccount extends Account {
+
+    private BigDecimal overdraftFee;
+
+    public BigDecimal getOverdraftFee() {
+        return overdraftFee;
+    }
+
+    public void setOverdraftFee(BigDecimal overdraftFee) {
+        this.overdraftFee = overdraftFee;
+    }
+}
+
+@Entity(name = "CreditAccount")
+public static class CreditAccount extends Account {
+
+    private BigDecimal creditLimit;
+
+    public BigDecimal getCreditLimit() {
+        return creditLimit;
+    }
+
+    public void setCreditLimit(BigDecimal creditLimit) {
+        this.creditLimit = creditLimit;
+    }
+}</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-sql" data-lang="sql">CREATE TABLE Account (
+    id BIGINT NOT NULL ,
+    balance NUMERIC(19, 2) ,
+    interestRate NUMERIC(19, 2) ,
+    owner VARCHAR(255) ,
+    PRIMARY KEY ( id )
+)
+
+CREATE TABLE CreditAccount (
+    creditLimit NUMERIC(19, 2) ,
+    id BIGINT NOT NULL ,
+    PRIMARY KEY ( id )
+)
+
+CREATE TABLE DebitAccount (
+    overdraftFee NUMERIC(19, 2) ,
+    id BIGINT NOT NULL ,
+    PRIMARY KEY ( id )
+)
+
+ALTER TABLE CreditAccount
+ADD CONSTRAINT FKihw8h3j1k0w31cnyu7jcl7n7n
+FOREIGN KEY (id) REFERENCES Account
+
+ALTER TABLE DebitAccount
+ADD CONSTRAINT FKia914478noepymc468kiaivqm
+FOREIGN KEY (id) REFERENCES Account</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>The primary key of this table is also a foreign key to the superclass table and described by the <code>@PrimaryKeyJoinColumns</code>.</p>
+</div>
+<div class="paragraph">
+<p>The table name still defaults to the non-qualified class name.
+Also, if <code>@PrimaryKeyJoinColumn</code> is not set, the primary key / foreign key columns are assumed to have the same names as the primary key columns of the primary table of the superclass.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div id="entity-inheritance-joined-table-primary-key-join-column-example" class="exampleblock">
+<div class="title">Example 9. Join Table with <code>@PrimaryKeyJoinColumn</code></div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">@Entity(name = "Account")
+@Inheritance(strategy = InheritanceType.JOINED)
+public static class Account {
+
+    @Id
+    private Long id;
+
+    private String owner;
+
+    private BigDecimal balance;
+
+    private BigDecimal interestRate;
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public String getOwner() {
+        return owner;
+    }
+
+    public void setOwner(String owner) {
+        this.owner = owner;
+    }
+
+    public BigDecimal getBalance() {
+        return balance;
+    }
+
+    public void setBalance(BigDecimal balance) {
+        this.balance = balance;
+    }
+
+    public BigDecimal getInterestRate() {
+        return interestRate;
+    }
+
+    public void setInterestRate(BigDecimal interestRate) {
+        this.interestRate = interestRate;
+    }
+}
+
+@Entity(name = "DebitAccount")
+@PrimaryKeyJoinColumn(name = "account_id")
+public static class DebitAccount extends Account {
+
+    private BigDecimal overdraftFee;
+
+    public BigDecimal getOverdraftFee() {
+        return overdraftFee;
+    }
+
+    public void setOverdraftFee(BigDecimal overdraftFee) {
+        this.overdraftFee = overdraftFee;
+    }
+}
+
+@Entity(name = "CreditAccount")
+@PrimaryKeyJoinColumn(name = "account_id")
+public static class CreditAccount extends Account {
+
+    private BigDecimal creditLimit;
+
+    public BigDecimal getCreditLimit() {
+        return creditLimit;
+    }
+
+    public void setCreditLimit(BigDecimal creditLimit) {
+        this.creditLimit = creditLimit;
+    }
+}</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-sql" data-lang="sql">CREATE TABLE CreditAccount (
+    creditLimit NUMERIC(19, 2) ,
+    account_id BIGINT NOT NULL ,
+    PRIMARY KEY ( account_id )
+)
+
+CREATE TABLE DebitAccount (
+    overdraftFee NUMERIC(19, 2) ,
+    account_id BIGINT NOT NULL ,
+    PRIMARY KEY ( account_id )
+)
+
+ALTER TABLE CreditAccount
+ADD CONSTRAINT FK8ulmk1wgs5x7igo370jt0q005
+FOREIGN KEY (account_id) REFERENCES Account
+
+ALTER TABLE DebitAccount
+ADD CONSTRAINT FK7wjufa570onoidv4omkkru06j
+FOREIGN KEY (account_id) REFERENCES Account</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>When using polymorphic queries, the base class table must be joined with all subclass tables to fetch every associated subclass instance.</p>
+</div>
+<div id="entity-inheritance-joined-table-query-example" class="exampleblock">
+<div class="title">Example 10. Join Table polymorphic query</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">List&lt;Account&gt; accounts = entityManager
+    .createQuery( "select a from Account a" )
+    .getResultList();</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-sql" data-lang="sql">SELECT jointablet0_.id AS id1_0_ ,
+       jointablet0_.balance AS balance2_0_ ,
+       jointablet0_.interestRate AS interest3_0_ ,
+       jointablet0_.owner AS owner4_0_ ,
+       jointablet0_1_.overdraftFee AS overdraf1_2_ ,
+       jointablet0_2_.creditLimit AS creditLi1_1_ ,
+       CASE WHEN jointablet0_1_.id IS NOT NULL THEN 1
+            WHEN jointablet0_2_.id IS NOT NULL THEN 2
+            WHEN jointablet0_.id IS NOT NULL THEN 0
+       END AS clazz_
+FROM   Account jointablet0_
+       LEFT OUTER JOIN DebitAccount jointablet0_1_ ON jointablet0_.id = jointablet0_1_.id
+       LEFT OUTER JOIN CreditAccount jointablet0_2_ ON jointablet0_.id = jointablet0_2_.id</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>The joined table inheritance polymorphic queries can use several JOINS which might affect performance when fetching a large number of entities.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect3">
+<h4 id="entity-inheritance-table-per-class">Table per class</h4>
+<div class="paragraph">
+<p>A third option is to map only the concrete classes of an inheritance hierarchy to tables.
+This is called the table-per-concrete-class strategy.
+Each table defines all persistent states of the class, including the inherited state.</p>
+</div>
+<div class="paragraph">
+<p>In Hibernate, it is not necessary to explicitly map such inheritance hierarchies.
+You can map each class as a separate entity root.
+However, if you wish use polymorphic associations (e.g. an association to the superclass of your hierarchy), you need to use the union subclass mapping.</p>
+</div>
+<div id="entity-inheritance-table-per-class-example" class="exampleblock">
+<div class="title">Example 11. Table per class</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">@Entity(name = "Account")
+@Inheritance(strategy = InheritanceType.TABLE_PER_CLASS)
+public static class Account {
+
+    @Id
+    private Long id;
+
+    private String owner;
+
+    private BigDecimal balance;
+
+    private BigDecimal interestRate;
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public String getOwner() {
+        return owner;
+    }
+
+    public void setOwner(String owner) {
+        this.owner = owner;
+    }
+
+    public BigDecimal getBalance() {
+        return balance;
+    }
+
+    public void setBalance(BigDecimal balance) {
+        this.balance = balance;
+    }
+
+    public BigDecimal getInterestRate() {
+        return interestRate;
+    }
+
+    public void setInterestRate(BigDecimal interestRate) {
+        this.interestRate = interestRate;
+    }
+}
+
+@Entity(name = "DebitAccount")
+public static class DebitAccount extends Account {
+
+    private BigDecimal overdraftFee;
+
+    public BigDecimal getOverdraftFee() {
+        return overdraftFee;
+    }
+
+    public void setOverdraftFee(BigDecimal overdraftFee) {
+        this.overdraftFee = overdraftFee;
+    }
+}
+
+@Entity(name = "CreditAccount")
+public static class CreditAccount extends Account {
+
+    private BigDecimal creditLimit;
+
+    public BigDecimal getCreditLimit() {
+        return creditLimit;
+    }
+
+    public void setCreditLimit(BigDecimal creditLimit) {
+        this.creditLimit = creditLimit;
+    }
+}</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-sql" data-lang="sql">CREATE TABLE Account (
+    id BIGINT NOT NULL ,
+    balance NUMERIC(19, 2) ,
+    interestRate NUMERIC(19, 2) ,
+    owner VARCHAR(255) ,
+    PRIMARY KEY ( id )
+)
+
+CREATE TABLE CreditAccount (
+    id BIGINT NOT NULL ,
+    balance NUMERIC(19, 2) ,
+    interestRate NUMERIC(19, 2) ,
+    owner VARCHAR(255) ,
+    creditLimit NUMERIC(19, 2) ,
+    PRIMARY KEY ( id )
+)
+
+CREATE TABLE DebitAccount (
+    id BIGINT NOT NULL ,
+    balance NUMERIC(19, 2) ,
+    interestRate NUMERIC(19, 2) ,
+    owner VARCHAR(255) ,
+    overdraftFee NUMERIC(19, 2) ,
+    PRIMARY KEY ( id )
+)</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>When using polymorphic queries, a UNION is required to fetch the base class table along with all subclass tables as well.</p>
+</div>
+<div class="exampleblock">
+<div class="title">Example 12. Table per class polymorphic query</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">List&lt;Account&gt; accounts = entityManager
+    .createQuery( "select a from Account a" )
+    .getResultList();</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-sql" data-lang="sql">SELECT tablepercl0_.id AS id1_0_ ,
+       tablepercl0_.balance AS balance2_0_ ,
+       tablepercl0_.interestRate AS interest3_0_ ,
+       tablepercl0_.owner AS owner4_0_ ,
+       tablepercl0_.overdraftFee AS overdraf1_2_ ,
+       tablepercl0_.creditLimit AS creditLi1_1_ ,
+       tablepercl0_.clazz_ AS clazz_
+FROM (
+    SELECT    id ,
+             balance ,
+             interestRate ,
+             owner ,
+             CAST(NULL AS INT) AS overdraftFee ,
+             CAST(NULL AS INT) AS creditLimit ,
+             0 AS clazz_
+    FROM     Account
+    UNION ALL
+    SELECT   id ,
+             balance ,
+             interestRate ,
+             owner ,
+             overdraftFee ,
+             CAST(NULL AS INT) AS creditLimit ,
+             1 AS clazz_
+    FROM     DebitAccount
+    UNION ALL
+    SELECT   id ,
+             balance ,
+             interestRate ,
+             owner ,
+             CAST(NULL AS INT) AS overdraftFee ,
+             creditLimit ,
+             2 AS clazz_
+    FROM     CreditAccount
+) tablepercl0_</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Polymorphic queries require multiple UNION queries, so be aware of the performance implications of a large class hierarchy.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+</div>
+<div id="footer">
+<div id="footer-text">
+Last updated 2016-10-26 14:44:36 +01:00
+</div>
+</div>
+</body>
+</html>

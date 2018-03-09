@@ -1,0 +1,1674 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<!--[if IE]><meta http-equiv="X-UA-Compatible" content="IE=edge"><![endif]-->
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="generator" content="Asciidoctor 1.5.2">
+<title>Mapping annotations</title>
+<link rel="stylesheet" href="./css/hibernate.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.2.0/css/font-awesome.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prettify/r298/prettify.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prettify/r298/prettify.min.js"></script>
+<script>document.addEventListener('DOMContentLoaded', prettyPrint)</script>
+</head>
+<body class="article">
+<div id="header">
+</div>
+<div id="content">
+<div class="sect1">
+<h2 id="annotations">Mapping annotations</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="annotations-jpa">JPA annotations</h3>
+<div class="sect3">
+<h4 id="annotations-jpa-access"><code>@Access</code></h4>
+<div class="paragraph">
+<p>The <a href="http://docs.oracle.com/javaee/7/api/javax/persistence/Access.html"><code>@Access</code></a> annotation is used to specify the access type of the associated entity class, mapped superclass, or embeddable class, or entity attribute.</p>
+</div>
+<div class="paragraph">
+<p>See the <a href="chapters/domain/access.html#access">Access type</a> section for more info.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-jpa-associationoverride"><code>@AssociationOverride</code></h4>
+<div class="paragraph">
+<p>The <a href="http://docs.oracle.com/javaee/7/api/javax/persistence/AssociationOverride.html"><code>@AssociationOverride</code></a> annotation is used to override an association mapping (e.g. <code>@ManyToOne</code>, <code>@OneToOne</code>, <code>@OneToMany</code>, <code>@ManyToMany</code>) inherited from a mapped superclass or an embeddable.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-jpa-associationoverrides"><code>@AssociationOverrides</code></h4>
+<div class="paragraph">
+<p>The <a href="http://docs.oracle.com/javaee/7/api/javax/persistence/AssociationOverrides.html"><code>@AssociationOverrides</code></a> is used to group several <a href="#annotations-jpa-associationoverride"><code>@AssociationOverride</code></a> annotations.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-jpa-attributeoverride"><code>@AttributeOverride</code></h4>
+<div class="paragraph">
+<p>The <a href="http://docs.oracle.com/javaee/7/api/javax/persistence/AttributeOverride.html"><code>@AttributeOverride</code></a> annotation is used to override an attribute mapping inherited from a mapped superclass or an embeddable.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-jpa-attributeoverrides"><code>@AttributeOverrides</code></h4>
+<div class="paragraph">
+<p>The <a href="http://docs.oracle.com/javaee/7/api/javax/persistence/AttributeOverrides.html"><code>@AttributeOverrides</code></a> is used to group several <a href="#annotations-jpa-attributeoverride"><code>@AttributeOverride</code></a> annotations.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-jpa-basic"><code>@Basic</code></h4>
+<div class="paragraph">
+<p>The <a href="http://docs.oracle.com/javaee/7/api/javax/persistence/Basic.html"><code>@Basic</code></a> annotation is used to map a basic attribute type to a database column.</p>
+</div>
+<div class="paragraph">
+<p>See the <a href="chapters/domain/basic_types.html#basic">Basic types</a> chapter for more info.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-jpa-cacheable"><code>@Cacheable</code></h4>
+<div class="paragraph">
+<p>The <a href="http://docs.oracle.com/javaee/7/api/javax/persistence/Cacheable.html"><code>@Cacheable</code></a> annotation is used to specify whether an entity should be stored in the second-level cache.</p>
+</div>
+<div class="paragraph">
+<p>If the <code>persistence.xml</code> <code>shared-cache-mode</code> XML attribute is set to <code>ENABLE_SELECTIVE</code>, then only the entities annotated with the <code>@Cacheable</code> are going to be stored in the second-level cache.</p>
+</div>
+<div class="paragraph">
+<p>If <code>shared-cache-mode</code> XML attribute value is <code>DISABLE_SELECTIVE</code>, then the entities marked with the <code>@Cacheable</code> annotation are not going to be stored in the second-level cache, while all the other entities are stored in the cache.</p>
+</div>
+<div class="paragraph">
+<p>See the <a href="chapters/caching/Caching.html#caching">Caching</a> chapter for more info.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-jpa-collectiontable"><code>@CollectionTable</code></h4>
+<div class="paragraph">
+<p>The <a href="http://docs.oracle.com/javaee/7/api/javax/persistence/CollectionTable.html"><code>@CollectionTable</code></a> annotation is used to specify the database table that stores the values of a basic or an embeddable type collection.</p>
+</div>
+<div class="paragraph">
+<p>See the <a href="chapters/domain/embeddables.html#embeddable-collections">Collections of embeddable types</a> section for more info.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-jpa-column"><code>@Column</code></h4>
+<div class="paragraph">
+<p>The <a href="http://docs.oracle.com/javaee/7/api/javax/persistence/Column.html"><code>@Column</code></a> annotation is used to specify the mapping between a basic entity attribute and the database table column.</p>
+</div>
+<div class="paragraph">
+<p>See the <a href="chapters/domain/basic_types.html#basic-column-annotation"><code>@Column</code> annotation</a> section for more info.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-jpa-columnresult"><code>@ColumnResult</code></h4>
+<div class="paragraph">
+<p>The <a href="http://docs.oracle.com/javaee/7/api/javax/persistence/ColumnResult.html"><code>@ColumnResult</code></a> annotation is used in conjunction with the <a href="#annotations-jpa-sqlresultsetmapping"><code>@SqlResultSetMapping</code></a> or <a href="#annotations-jpa-constructorresult"><code>@ConstructorResult</code></a> annotations to map a SQL column for a given SELECT query.</p>
+</div>
+<div class="paragraph">
+<p>See the <a href="chapters/query/native/Native.html#sql-composite-key-entity-associations_named-query-example">Entity associations with named native queries</a> section for more info.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-jpa-constructorresult"><code>@ConstructorResult</code></h4>
+<div class="paragraph">
+<p>The <a href="http://docs.oracle.com/javaee/7/api/javax/persistence/ConstructorResult.html"><code>@ConstructorResult</code></a> annotation is used in conjunction with the <a href="#annotations-jpa-sqlresultsetmapping"><code>@SqlResultSetMapping</code></a> annotations to map columns of a given SELECT query to a certain object constructor.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-jpa-convert"><code>@Convert</code></h4>
+<div class="paragraph">
+<p>The <a href="http://docs.oracle.com/javaee/7/api/javax/persistence/Convert.html"><code>@Convert</code></a> annotation is used to specify the <a href="http://docs.oracle.com/javaee/7/api/javax/persistence/AttributeConverter.html"><code>AttributeConverter</code></a> implementation used to convert the current annotated basic attribute.</p>
+</div>
+<div class="paragraph">
+<p>If the <code>AttributeConverter</code> uses <a href="http://docs.oracle.com/javaee/7/api/javax/persistence/Converter.html#autoApply--"><code>autoApply</code></a>, then all entity attributes with the same target type are going to be converted automatically.</p>
+</div>
+<div class="paragraph">
+<p>See the <a href="chapters/domain/basic_types.html#basic-enums-attribute-converter"><code>AttributeConverter</code></a> section for more info.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-jpa-converter"><code>@Converter</code></h4>
+<div class="paragraph">
+<p>The <a href="http://docs.oracle.com/javaee/7/api/javax/persistence/Converter.html"><code>@Converter</code></a> annotation is used to specify that the current annotate <a href="http://docs.oracle.com/javaee/7/api/javax/persistence/AttributeConverter.html"><code>AttributeConverter</code></a> implementation can be used as a JPA basic attribute converter.</p>
+</div>
+<div class="paragraph">
+<p>If the <a href="http://docs.oracle.com/javaee/7/api/javax/persistence/Converter.html#autoApply--"><code>autoApply</code></a> attribute is set to <code>true</code>, then the JPA provider will automatically convert all basic attributes with the same Java type as defined by the current converter.</p>
+</div>
+<div class="paragraph">
+<p>See the <a href="chapters/domain/basic_types.html#basic-enums-attribute-converter"><code>AttributeConverter</code></a> section for more info.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-jpa-converts"><code>@Converts</code></h4>
+<div class="paragraph">
+<p>The <a href="http://docs.oracle.com/javaee/7/api/javax/persistence/Converts.html"><code>@Converts</code></a> annotation is used to group multiple <a href="#annotations-jpa-convert"><code>@Convert</code></a> annotations.</p>
+</div>
+<div class="paragraph">
+<p>See the <a href="chapters/domain/basic_types.html#basic-enums-attribute-converter"><code>AttributeConverter</code></a> section for more info.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-jpa-discriminatorcolumn"><code>@DiscriminatorColumn</code></h4>
+<div class="paragraph">
+<p>The <a href="http://docs.oracle.com/javaee/7/api/javax/persistence/DiscriminatorColumn.html"><code>@DiscriminatorColumn</code></a> annotation is used to specify the discriminator column name and the <a href="http://docs.oracle.com/javaee/7/api/javax/persistence/DiscriminatorColumn.html#discriminatorType--">discriminator type</a> for the <code>SINGLE_TABLE</code> and <code>JOINED</code> Inheritance strategies.</p>
+</div>
+<div class="paragraph">
+<p>See the <a href="chapters/domain/inheritance.html#entity-inheritance-discriminator">Discriminator</a> section for more info.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-jpa-discriminatorvalue"><code>@DiscriminatorValue</code></h4>
+<div class="paragraph">
+<p>The <a href="http://docs.oracle.com/javaee/7/api/javax/persistence/DiscriminatorValue.html"><code>@DiscriminatorValue</code></a> annotation is used to specify what value of the discriminator column is used for mapping the current annotated entity.</p>
+</div>
+<div class="paragraph">
+<p>See the <a href="chapters/domain/inheritance.html#entity-inheritance-discriminator">Discriminator</a> section for more info.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-jpa-elementcollection"><code>@ElementCollection</code></h4>
+<div class="paragraph">
+<p>The <a href="http://docs.oracle.com/javaee/7/api/javax/persistence/ElementCollection.html"><code>@ElementCollection</code></a> annotation is used to specify a collection of a basic or embeddable types.</p>
+</div>
+<div class="paragraph">
+<p>See the <a href="chapters/domain/collections.html#collections">Collections</a> section for more info.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-jpa-embeddable"><code>@Embeddable</code></h4>
+<div class="paragraph">
+<p>The <a href="http://docs.oracle.com/javaee/7/api/javax/persistence/Embeddable.html"><code>@Embeddable</code></a> annotation is used to specify embeddable types. Like basic types, embeddable types do not have any identity, being managed by their owning entity.</p>
+</div>
+<div class="paragraph">
+<p>See the <a href="chapters/domain/embeddables.html#embeddables">Embeddables</a> section for more info.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-jpa-embedded"><code>@Embedded</code></h4>
+<div class="paragraph">
+<p>The <a href="http://docs.oracle.com/javaee/7/api/javax/persistence/Embedded.html"><code>@Embedded</code></a> annotation is used to specify that a given entity attribute represents an embeddable type.</p>
+</div>
+<div class="paragraph">
+<p>See the <a href="chapters/domain/embeddables.html#embeddables">Embeddables</a> section for more info.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-jpa-embeddedid"><code>@EmbeddedId</code></h4>
+<div class="paragraph">
+<p>The <a href="http://docs.oracle.com/javaee/7/api/javax/persistence/EmbeddedId.html"><code>@EmbeddedId</code></a> annotation is used to specify the entity identifier is an embeddable type.</p>
+</div>
+<div class="paragraph">
+<p>See the <a href="chapters/domain/identifiers.html#identifiers-composite-aggregated">Composite identifiers with <code>@EmbeddedId</code></a> section for more info.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-jpa-entity"><code>@Entity</code></h4>
+<div class="paragraph">
+<p>The <a href="http://docs.oracle.com/javaee/7/api/javax/persistence/Entity.html"><code>@Entity</code></a> annotation is used to specify that the currently annotate class represents an entity type.
+Unlike basic and embeddable types, entity types have an identity and their state is managed by the underlying Persistence Context.</p>
+</div>
+<div class="paragraph">
+<p>See the <a href="chapters/domain/entity.html#entity">Entity</a> section for more info.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-jpa-entitylisteners"><code>@EntityListeners</code></h4>
+<div class="paragraph">
+<p>The <a href="http://docs.oracle.com/javaee/7/api/javax/persistence/EntityListeners.html"><code>@EntityListeners</code></a> annotation is used to specify an array of callback listener classes that are used by the current annotated entity.</p>
+</div>
+<div class="paragraph">
+<p>See the <a href="chapters/events/Events.html#events-jpa-callbacks-example">JPA callbacks</a> section for more info.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-jpa-entityresult"><code>@EntityResult</code></h4>
+<div class="paragraph">
+<p>The <a href="http://docs.oracle.com/javaee/7/api/javax/persistence/EntityResult.html"><code>@EntityResult</code></a> annotation is used with the <a href="#annotations-jpa-sqlresultsetmapping"><code>@SqlResultSetMapping</code></a> annotation to map the selected columns to an entity.</p>
+</div>
+<div class="paragraph">
+<p>See the <a href="chapters/query/native/Native.html#sql-composite-key-entity-associations_named-query-example">Entity associations with named native queries</a> section for more info.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-jpa-enumerated"><code>@Enumerated</code></h4>
+<div class="paragraph">
+<p>The <a href="http://docs.oracle.com/javaee/7/api/javax/persistence/Enumerated.html"><code>@Enumerated</code></a> annotation is used to specify that an entity attribute represents an enumerated type.</p>
+</div>
+<div class="paragraph">
+<p>See the <a href="chapters/domain/basic_types.html#basic-enums-Enumerated"><code>@Enumerated</code> basic type</a> section for more info.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-jpa-excludedefaultlisteners"><code>@ExcludeDefaultListeners</code></h4>
+<div class="paragraph">
+<p>The <a href="http://docs.oracle.com/javaee/7/api/javax/persistence/ExcludeDefaultListeners.html"><code>@ExcludeDefaultListeners</code></a> annotation is used to specify that the current annotated entity skips the invocation of any default listener.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-jpa-excludesuperclasslisteners"><code>@ExcludeSuperclassListeners</code></h4>
+<div class="paragraph">
+<p>The <a href="http://docs.oracle.com/javaee/7/api/javax/persistence/ExcludeSuperclassListeners.html"><code>@ExcludeSuperclassListeners</code></a>  annotation is used to specify that the current annotated entity skips the invocation of listeners declared by its superclass.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-jpa-fieldresult"><code>@FieldResult</code></h4>
+<div class="paragraph">
+<p>The <a href="http://docs.oracle.com/javaee/7/api/javax/persistence/FieldResult.html"><code>@FieldResult</code></a> annotation is used with the <a href="#annotations-jpa-entityresult"><code>@EntityResult</code></a> annotation to map the selected columns to the fields of some specific entity.</p>
+</div>
+<div class="paragraph">
+<p>See the <a href="chapters/query/native/Native.html#sql-composite-key-entity-associations_named-query-example">Entity associations with named native queries</a> section for more info.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-jpa-foreignkey"><code>@ForeignKey</code></h4>
+<div class="paragraph">
+<p>The <a href="http://docs.oracle.com/javaee/7/api/javax/persistence/ForeignKey.html"><code>@ForeignKey</code></a> annotation is used to specify the associated foreign key of a <a href="#annotations-jpa-joincolumn"><code>@JoinColumn</code></a> mapping.
+The <code>@ForeignKey</code> annotation is only used if the automated schema generation tool is enabled, in which case, it allows you to customize the underlying foreign key definition.</p>
+</div>
+<div class="paragraph">
+<p>See the <a href="chapters/domain/associations.html#associations-many-to-one-example"><code>@ManyToOne</code> with <code>@ForeignKey</code></a> section for more info.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-jpa-generatedvalue"><code>@GeneratedValue</code></h4>
+<div class="paragraph">
+<p>The <a href="http://docs.oracle.com/javaee/7/api/javax/persistence/GeneratedValue.html"><code>@GeneratedValue</code></a> annotation specifies that the entity identifier value is automatically generated using an identity column, a database sequence, or a table generator.
+Hibernate supports the <code>@GeneratedValue</code> mapping even for <code>UUID</code> identifiers.</p>
+</div>
+<div class="paragraph">
+<p>See the <a href="chapters/domain/identifiers.html#identifiers-simple-generated">Automatically-generated identifiers</a> section for more info.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-jpa-id"><code>@Id</code></h4>
+<div class="paragraph">
+<p>The <a href="http://docs.oracle.com/javaee/7/api/javax/persistence/Id.html"><code>@Id</code></a> annotation specifies the entity identifier.
+An entity must always have an identifier attribute which is used when loading the entity in a given Persistence Context.</p>
+</div>
+<div class="paragraph">
+<p>See the <a href="chapters/domain/identifiers.html#identifiers">Identifiers</a> section for more info.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-jpa-idclass"><code>@IdClass</code></h4>
+<div class="paragraph">
+<p>The <a href="http://docs.oracle.com/javaee/7/api/javax/persistence/IdClass.html"><code>@IdClass</code></a> annotation is used if the current entity defined a composite identifier.
+A separate class encapsulates all the identifier attributes, which are mirrored by the current entity mapping.</p>
+</div>
+<div class="paragraph">
+<p>See the <a href="chapters/domain/identifiers.html#identifiers-composite-nonaggregated">Composite identifiers with <code>@IdClass</code></a> section for more info.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-jpa-index"><code>@Index</code></h4>
+<div class="paragraph">
+<p>The <a href="http://docs.oracle.com/javaee/7/api/javax/persistence/Index.html"><code>@Index</code></a> annotation is used by the automated schema generation tool to create a database index.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-jpa-inheritance"><code>@Inheritance</code></h4>
+<div class="paragraph">
+<p>The <a href="http://docs.oracle.com/javaee/7/api/javax/persistence/Inheritance.html"><code>@Inheritance</code></a> annotation is used to specify the inheritance strategy of a given entity class hierarchy.</p>
+</div>
+<div class="paragraph">
+<p>See the <a href="chapters/domain/inheritance.html#entity-inheritance">Inheritance</a> section for more info.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-jpa-joincolumn"><code>@JoinColumn</code></h4>
+<div class="paragraph">
+<p>The <a href="http://docs.oracle.com/javaee/7/api/javax/persistence/JoinColumn.html"><code>@JoinColumn</code></a> annotation is used to specify the FOREIGN KEY column used when joining an entity association or an embeddable collection.</p>
+</div>
+<div class="paragraph">
+<p>See the <a href="chapters/domain/associations.html#associations-many-to-one-example"><code>@ManyToOne</code> with <code>@JoinColumn</code></a> section for more info.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-jpa-joincolumns"><code>@JoinColumns</code></h4>
+<div class="paragraph">
+<p>The <a href="http://docs.oracle.com/javaee/7/api/javax/persistence/JoinColumns.html"><code>@JoinColumns</code></a> annotation is used to group multiple <a href="#annotations-jpa-joincolumn"><code>@JoinColumn</code></a> annotations, which are used when mapping entity association or an embeddable collection using a composite identifier</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-jpa-jointable"><code>@JoinTable</code></h4>
+<div class="paragraph">
+<p>The <a href="http://docs.oracle.com/javaee/7/api/javax/persistence/JoinTable.html"><code>@JoinTable</code></a> annotation is used to specify the link table between two other database tables.</p>
+</div>
+<div class="paragraph">
+<p>See the <a href="chapters/domain/collections.html#collections-map-unidirectional-example"><code>@JoinTable</code> mapping</a> section for more info.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-jpa-lob"><code>@Lob</code></h4>
+<div class="paragraph">
+<p>The <a href="http://docs.oracle.com/javaee/7/api/javax/persistence/Lob.html"><code>@Lob</code></a> annotation is used to specify that the current annotated entity attribute represents a large object type.</p>
+</div>
+<div class="paragraph">
+<p>See the <a href="chapters/domain/basic_types.html#basic-blob-example"><code>BLOB</code> mapping</a> section for more info.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-jpa-manytomany"><code>@ManyToMany</code></h4>
+<div class="paragraph">
+<p>The <a href="http://docs.oracle.com/javaee/7/api/javax/persistence/ManyToMany.html"><code>@ManyToMany</code></a> annotation is used to specify a many-to-many database relationship.</p>
+</div>
+<div class="paragraph">
+<p>See the <a href="chapters/domain/associations.html#associations-many-to-many"><code>@ManyToMany</code> mapping</a> section for more info.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-jpa-manytoone"><code>@ManyToOne</code></h4>
+<div class="paragraph">
+<p>The <a href="http://docs.oracle.com/javaee/7/api/javax/persistence/ManyToOne.html"><code>@ManyToOne</code></a> annotation is used to specify a many-to-one database relationship.</p>
+</div>
+<div class="paragraph">
+<p>See the <a href="chapters/domain/associations.html#associations-many-to-one"><code>@ManyToOne</code> mapping</a> section for more info.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-jpa-mapkey"><code>@MapKey</code></h4>
+<div class="paragraph">
+<p>The <a href="http://docs.oracle.com/javaee/7/api/javax/persistence/MapKey.html"><code>@MapKey</code></a> annotation is used to specify the key of a <code>java.util.Map</code> association for which the key type is either the primary key or an attribute of the entity which represents the value of the map.</p>
+</div>
+<div class="paragraph">
+<p>See the <a href="chapters/domain/collections.html#collections-map-unidirectional-example"><code>@MapKey</code> mapping</a> section for more info.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-jpa-mapkeyclass"><code>@MapKeyClass</code></h4>
+<div class="paragraph">
+<p>The <a href="http://docs.oracle.com/javaee/7/api/javax/persistence/MapKeyClass.html"><code>@MapKeyClass</code></a> annotation is used to specify the type of the map key of a <code>java.util.Map</code> associations.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-jpa-mapkeycolumn"><code>@MapKeyColumn</code></h4>
+<div class="paragraph">
+<p>The <a href="http://docs.oracle.com/javaee/7/api/javax/persistence/MapKeyColumn.html"><code>@MapKeyColumn</code></a> annotation is used to specify the database column which stores the key of a <code>java.util.Map</code> association for which the map key is a basic type.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-jpa-mapkeyenumerated"><code>@MapKeyEnumerated</code></h4>
+<div class="paragraph">
+<p>The <a href="http://docs.oracle.com/javaee/7/api/javax/persistence/MapKeyEnumerated.html"><code>@MapKeyEnumerated</code></a> annotation is used to specify that the key of <code>java.util.Map</code> association is a Java Enum.</p>
+</div>
+<div class="paragraph">
+<p>See the <a href="chapters/domain/collections.html#collections-map-bidirectional-example"><code>@MapKeyEnumerated</code> mapping</a> section for more info.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-jpa-mapkeyjoincolumn"><code>@MapKeyJoinColumn</code></h4>
+<div class="paragraph">
+<p>The <a href="http://docs.oracle.com/javaee/7/api/javax/persistence/MapKeyJoinColumn.html"><code>@MapKeyJoinColumn</code></a> annotation is used to specify that the key of <code>java.util.Map</code> association is an entity association.
+The map key column is a FOREIGN KEY in a link table that also joins the <code>Map</code> owner&#8217;s table with the table where the <code>Map</code> value resides.</p>
+</div>
+<div class="paragraph">
+<p>See the <a href="chapters/domain/collections.html#collections-map-value-type-entity-key-example"><code>@MapKeyJoinColumn</code> mapping</a> section for more info.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-jpa-mapkeyjoincolumns"><code>@MapKeyJoinColumns</code></h4>
+<div class="paragraph">
+<p>The <a href="http://docs.oracle.com/javaee/7/api/javax/persistence/MapKeyJoinColumns.html"><code>@MapKeyJoinColumns</code></a> annotation is used to group several <a href="#annotations-jpa-mapkeyjoincolumn"><code>@MapKeyJoinColumn</code></a> mappings when the <code>java.util.Map</code> association key uses a composite identifier.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-jpa-mapkeytemporal"><code>@MapKeyTemporal</code></h4>
+<div class="paragraph">
+<p>The <a href="http://docs.oracle.com/javaee/7/api/javax/persistence/MapKeyTemporal.html"><code>@MapKeyTemporal</code></a> annotation is used to specify that the key of <code>java.util.Map</code> association is a <a href="http://docs.oracle.com/javaee/7/api/javax/persistence/TemporalType.html"><code>@TemporalType</code></a> (e.g. <code>DATE</code>, <code>TIME</code>, <code>TIMESTAMP</code>).</p>
+</div>
+<div class="paragraph">
+<p>See the <a href="chapters/domain/collections.html#collections-map-unidirectional-example"><code>@MapKeyTemporal</code> mapping</a> section for more info.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-jpa-mappedsuperclass"><code>@MappedSuperclass</code></h4>
+<div class="paragraph">
+<p>The <a href="http://docs.oracle.com/javaee/7/api/javax/persistence/MappedSuperclass.html"><code>@MappedSuperclass</code></a> annotation is used to specify that the current annotated type attributes are inherited by any subclass entity.</p>
+</div>
+<div class="paragraph">
+<p>See the <a href="chapters/domain/inheritance.html#entity-inheritance-mapped-superclass"><code>@MappedSuperclass</code></a> section for more info.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-jpa-mapsid"><code>@MapsId</code></h4>
+<div class="paragraph">
+<p>The <a href="http://docs.oracle.com/javaee/7/api/javax/persistence/MapsId.html"><code>@MapsId</code></a> annotation is used to specify that the entity identifier is mapped by the current annotated <code>@ManyToOne</code> or <code>@OneToOne</code> association.</p>
+</div>
+<div class="paragraph">
+<p>See the <a href="chapters/domain/identifiers.html#identifiers-derived-mapsid"><code>@MapsId</code> mapping</a> section for more info.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-jpa-namedattributenode"><code>@NamedAttributeNode</code></h4>
+<div class="paragraph">
+<p>The <a href="http://docs.oracle.com/javaee/7/api/javax/persistence/NamedAttributeNode.html"><code>@NamedAttributeNode</code></a> annotation is used to specify each individual attribute node that needs to be fetched by an Entity Graph.</p>
+</div>
+<div class="paragraph">
+<p>See the <a href="chapters/fetching/Fetching.html#fetching-strategies-dynamic-fetching-entity-graph-example">Fetch graph</a> section for more info.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-jpa-namedentitygraph"><code>@NamedEntityGraph</code></h4>
+<div class="paragraph">
+<p>The <a href="http://docs.oracle.com/javaee/7/api/javax/persistence/NamedEntityGraph.html"><code>@NamedEntityGraph</code></a> annotation is used to specify an Entity Graph that can be used by an entity query to override the default fetch plan.</p>
+</div>
+<div class="paragraph">
+<p>See the <a href="chapters/fetching/Fetching.html#fetching-strategies-dynamic-fetching-entity-graph-example">Fetch graph</a> section for more info.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-jpa-namedentitygraphs"><code>@NamedEntityGraphs</code></h4>
+<div class="paragraph">
+<p>The <a href="http://docs.oracle.com/javaee/7/api/javax/persistence/NamedEntityGraphs.html"><code>@NamedEntityGraphs</code></a> annotation is used to group multiple <a href="#annotations-jpa-namedentitygraph"><code>@NamedEntityGraph</code></a> annotations.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-jpa-namednativequeries"><code>@NamedNativeQueries</code></h4>
+<div class="paragraph">
+<p>The <a href="http://docs.oracle.com/javaee/7/api/javax/persistence/NamedNativeQueries.html"><code>@NamedNativeQueries</code></a> annotation is used to group multiple <a href="#annotations-jpa-namednativequery"><code>@NamedNativeQuery</code></a> annotations.</p>
+</div>
+<div class="paragraph">
+<p>See the <a href="chapters/query/native/Native.html#sql-custom-crud-example">Custom CRUD mapping</a> section for more info.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-jpa-namednativequery"><code>@NamedNativeQuery</code></h4>
+<div class="paragraph">
+<p>The <a href="http://docs.oracle.com/javaee/7/api/javax/persistence/NamedNativeQuery.html"><code>@NamedNativeQuery</code></a> annotation is used to specify a native SQL query that can be retrieved later by its name.</p>
+</div>
+<div class="paragraph">
+<p>See the <a href="chapters/query/native/Native.html#sql-custom-crud-example">Custom CRUD mapping</a> section for more info.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-jpa-namedqueries"><code>@NamedQueries</code></h4>
+<div class="paragraph">
+<p>The <a href="http://docs.oracle.com/javaee/7/api/javax/persistence/NamedQueries.html"><code>@NamedQueries</code></a> annotation is used to group multiple <a href="#annotations-jpa-namedquery"><code>@NamedQuery</code></a> annotations.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-jpa-namedquery"><code>@NamedQuery</code></h4>
+<div class="paragraph">
+<p>The <a href="http://docs.oracle.com/javaee/7/api/javax/persistence/NamedQuery.html"><code>@NamedQuery</code></a> annotation is used to specify a JPQL query that can be retrieved later by its name.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-jpa-namedstoredprocedurequeries"><code>@NamedStoredProcedureQueries</code></h4>
+<div class="paragraph">
+<p>The <a href="http://docs.oracle.com/javaee/7/api/javax/persistence/NamedStoredProcedureQueries.html"><code>@NamedStoredProcedureQueries</code></a> annotation is used to group multiple <a href="#annotations-jpa-namedstoredprocedurequery"><code>@NamedStoredProcedureQuery</code></a> annotations.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-jpa-namedstoredprocedurequery"><code>@NamedStoredProcedureQuery</code></h4>
+<div class="paragraph">
+<p>The <a href="http://docs.oracle.com/javaee/7/api/javax/persistence/NamedStoredProcedureQuery.html"><code>@NamedStoredProcedureQuery</code></a> annotation is used to specify a stored procedure query that can be retrieved later by its name.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-jpa-namedsubgraph"><code>@NamedSubgraph</code></h4>
+<div class="paragraph">
+<p>The <a href="http://docs.oracle.com/javaee/7/api/javax/persistence/NamedSubgraph.html"><code>@NamedSubgraph</code></a> annotation used to specify a subgraph in an Entity Graph.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-jpa-onetomany"><code>@OneToMany</code></h4>
+<div class="paragraph">
+<p>The <a href="http://docs.oracle.com/javaee/7/api/javax/persistence/OneToMany.html"><code>@OneToMany</code></a> annotation is used to specify a one-to-many database relationship.</p>
+</div>
+<div class="paragraph">
+<p>See the <a href="chapters/domain/associations.html#associations-one-to-many"><code>@OneToMany</code> mapping</a> section for more info.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-jpa-onetoone"><code>@OneToOne</code></h4>
+<div class="paragraph">
+<p>The <a href="http://docs.oracle.com/javaee/7/api/javax/persistence/OneToOne.html"><code>@OneToOne</code></a> annotation is used to specify a one-to-one database relationship.</p>
+</div>
+<div class="paragraph">
+<p>See the <a href="chapters/domain/associations.html#associations-one-to-one"><code>@OneToOne</code> mapping</a> section for more info.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-jpa-orderby"><code>@OrderBy</code></h4>
+<div class="paragraph">
+<p>The <a href="http://docs.oracle.com/javaee/7/api/javax/persistence/OrderBy.html"><code>@OrderBy</code></a> annotation is used to specify the entity attributes used for sorting when fetching the current annotated collection.</p>
+</div>
+<div class="paragraph">
+<p>See the <a href="chapters/domain/collections.html#collections-unidirectional-ordered-list"><code>@OrderBy</code> mapping</a> section for more info.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-jpa-ordercolumn"><code>@OrderColumn</code></h4>
+<div class="paragraph">
+<p>The <a href="http://docs.oracle.com/javaee/7/api/javax/persistence/OrderColumn.html"><code>@OrderColumn</code></a> annotation is used to specify that the current annotation collection order should be materialized in the database.</p>
+</div>
+<div class="paragraph">
+<p>See the <a href="chapters/domain/collections.html#collections-unidirectional-ordered-list-order-column-example"><code>@OrderColumn</code> mapping</a> section for more info.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-jpa-persistencecontext"><code>@PersistenceContext</code></h4>
+<div class="paragraph">
+<p>The <a href="http://docs.oracle.com/javaee/7/api/javax/persistence/PersistenceContext.html"><code>@PersistenceContext</code></a> annotation is used to specify the <code>EntityManager</code> that needs to be injected as a dependency.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-jpa-persistencecontexts"><code>@PersistenceContexts</code></h4>
+<div class="paragraph">
+<p>The <a href="http://docs.oracle.com/javaee/7/api/javax/persistence/PersistenceContexts.html"><code>@PersistenceContexts</code></a> annotation is used to group multiple <a href="#annotations-jpa-persistencecontext"><code>@PersistenceContext</code></a> annotations.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-jpa-persistenceproperty"><code>@PersistenceProperty</code></h4>
+<div class="paragraph">
+<p>The <a href="http://docs.oracle.com/javaee/7/api/javax/persistence/PersistenceProperty.html"><code>@PersistenceProperty</code></a> annotation is used by the <a href="#annotations-jpa-persistencecontext"><code>@PersistenceContext</code></a> annotation to declare JPA provider properties that are passed to the underlying container when the <code>EntityManager</code> instance is created.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-jpa-persistenceunit"><code>@PersistenceUnit</code></h4>
+<div class="paragraph">
+<p>The <a href="http://docs.oracle.com/javaee/7/api/javax/persistence/PersistenceUnit.html"><code>@PersistenceUnit</code></a> annotation is used to specify the <code>EntityManagerFactory</code> that needs to be injected as a dependency.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-jpa-persistenceunits"><code>@PersistenceUnits</code></h4>
+<div class="paragraph">
+<p>The <a href="http://docs.oracle.com/javaee/7/api/javax/persistence/PersistenceUnits.html"><code>@PersistenceUnits</code></a> annotation is used to group multiple <a href="#annotations-jpa-persistenceunit"><code>@PersistenceUnit</code></a> annotations.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-jpa-postload"><code>@PostLoad</code></h4>
+<div class="paragraph">
+<p>The <a href="http://docs.oracle.com/javaee/7/api/javax/persistence/PostLoad.html"><code>@PostLoad</code></a> annotation is used to specify a callback method that fires after an entity is loaded.</p>
+</div>
+<div class="paragraph">
+<p>See the <a href="chapters/events/Events.html#events-jpa-callbacks-example">JPA callbacks</a> section for more info.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-jpa-postpersist"><code>@PostPersist</code></h4>
+<div class="paragraph">
+<p>The <a href="http://docs.oracle.com/javaee/7/api/javax/persistence/PostPersist.html"><code>@PostPersist</code></a> annotation is used to specify a callback method that fires after an entity is persisted.</p>
+</div>
+<div class="paragraph">
+<p>See the <a href="chapters/events/Events.html#events-jpa-callbacks-example">JPA callbacks</a> section for more info.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-jpa-postremove"><code>@PostRemove</code></h4>
+<div class="paragraph">
+<p>The <a href="http://docs.oracle.com/javaee/7/api/javax/persistence/PostRemove.html"><code>@PostRemove</code></a> annotation is used to specify a callback method that fires after an entity is removed.</p>
+</div>
+<div class="paragraph">
+<p>See the <a href="chapters/events/Events.html#events-jpa-callbacks-example">JPA callbacks</a> section for more info.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-jpa-postupdate"><code>@PostUpdate</code></h4>
+<div class="paragraph">
+<p>The <a href="http://docs.oracle.com/javaee/7/api/javax/persistence/PostUpdate.html"><code>@PostUpdate</code></a> annotation is used to specify a callback method that fires after an entity is updated.</p>
+</div>
+<div class="paragraph">
+<p>See the <a href="chapters/events/Events.html#events-jpa-callbacks-example">JPA callbacks</a> section for more info.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-jpa-prepersist"><code>@PrePersist</code></h4>
+<div class="paragraph">
+<p>The <a href="http://docs.oracle.com/javaee/7/api/javax/persistence/PrePersist.html"><code>@PrePersist</code></a> annotation is used to specify a callback method that fires before an entity is persisted.</p>
+</div>
+<div class="paragraph">
+<p>See the <a href="chapters/events/Events.html#events-jpa-callbacks-example">JPA callbacks</a> section for more info.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-jpa-preremove"><code>@PreRemove</code></h4>
+<div class="paragraph">
+<p>The <a href="http://docs.oracle.com/javaee/7/api/javax/persistence/PreRemove.html"><code>@PreRemove</code></a> annotation is used to specify a callback method that fires before an entity is removed.</p>
+</div>
+<div class="paragraph">
+<p>See the <a href="chapters/events/Events.html#events-jpa-callbacks-example">JPA callbacks</a> section for more info.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-jpa-preupdate"><code>@PreUpdate</code></h4>
+<div class="paragraph">
+<p>The <a href="http://docs.oracle.com/javaee/7/api/javax/persistence/PreUpdate.html"><code>@PreUpdate</code></a> annotation is used to specify a callback method that fires before an entity is updated.</p>
+</div>
+<div class="paragraph">
+<p>See the <a href="chapters/events/Events.html#events-jpa-callbacks-example">JPA callbacks</a> section for more info.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-jpa-primarykeyjoincolumn"><code>@PrimaryKeyJoinColumn</code></h4>
+<div class="paragraph">
+<p>The <a href="http://docs.oracle.com/javaee/7/api/javax/persistence/PrimaryKeyJoinColumn.html"><code>@PrimaryKeyJoinColumn</code></a> annotation is used to specify that the primary key column of the current annotated entity is also a foreign key to some other entity
+(e.g. a base class table in a <code>JOINED</code> inheritance strategy, the primary table in a secondary table mapping, or the parent table in a <code>@OneToOne</code> relationship).</p>
+</div>
+<div class="paragraph">
+<p>See the <a href="chapters/domain/identifiers.html#identifiers-derived-primarykeyjoincolumn"><code>@PrimaryKeyJoinColumn</code> mapping</a> section for more info.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-jpa-primarykeyjoincolumns"><code>@PrimaryKeyJoinColumns</code></h4>
+<div class="paragraph">
+<p>The <a href="http://docs.oracle.com/javaee/7/api/javax/persistence/PrimaryKeyJoinColumns.html"><code>@PrimaryKeyJoinColumns</code></a> annotation is used to group multiple <a href="#annotations-jpa-primarykeyjoincolumn"><code>@PrimaryKeyJoinColumn</code></a> annotations.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-jpa-queryhint"><code>@QueryHint</code></h4>
+<div class="paragraph">
+<p>The <a href="http://docs.oracle.com/javaee/7/api/javax/persistence/QueryHint.html"><code>@QueryHint</code></a> annotation is used to specify a JPA provider hint used by a <code>@NamedQuery</code> or a <code>@NamedNativeQuery</code> annotation.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-jpa-secondarytable"><code>@SecondaryTable</code></h4>
+<div class="paragraph">
+<p>The <a href="http://docs.oracle.com/javaee/7/api/javax/persistence/SecondaryTable.html"><code>@SecondaryTable</code></a> annotation is used to specify a secondary table for the current annotated entity.</p>
+</div>
+<div class="paragraph">
+<p>See the <a href="chapters/query/native/Native.html#sql-custom-crud-secondary-table-example"><code>@SecondaryTable</code> mapping</a> section for more info.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-jpa-secondarytables"><code>@SecondaryTables</code></h4>
+<div class="paragraph">
+<p>The <a href="http://docs.oracle.com/javaee/7/api/javax/persistence/SecondaryTables.html"><code>@SecondaryTables</code></a> annotation is used to group multiple <a href="#annotations-jpa-secondarytable"><code>@SecondaryTable</code></a> annotations.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-jpa-sequencegenerator"><code>@SequenceGenerator</code></h4>
+<div class="paragraph">
+<p>The <a href="http://docs.oracle.com/javaee/7/api/javax/persistence/SequenceGenerator.html"><code>@SequenceGenerator</code></a> annotation is used to specify the database sequence used by the identifier generator of the current annotated entity.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-jpa-sqlresultsetmapping"><code>@SqlResultSetMapping</code></h4>
+<div class="paragraph">
+<p>The <a href="http://docs.oracle.com/javaee/7/api/javax/persistence/SqlResultSetMapping.html"><code>@SqlResultSetMapping</code></a> annotation is used to specify the <code>ResultSet</code> mapping of a native SQL query or stored procedure.</p>
+</div>
+<div class="paragraph">
+<p>See the <a href="chapters/query/native/Native.html#sql-composite-key-entity-associations_named-query-example"><code>SqlResultSetMapping</code> mapping</a> section for more info.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-jpa-sqlresultsetmappings"><code>@SqlResultSetMappings</code></h4>
+<div class="paragraph">
+<p>The <a href="http://docs.oracle.com/javaee/7/api/javax/persistence/SqlResultSetMappings.html"><code>@SqlResultSetMappings</code></a> annotation is group multiple <a href="#annotations-jpa-sqlresultsetmapping"><code>@SqlResultSetMapping</code></a> annotations.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-jpa-storedprocedureparameter"><code>@StoredProcedureParameter</code></h4>
+<div class="paragraph">
+<p>The <a href="http://docs.oracle.com/javaee/7/api/javax/persistence/StoredProcedureParameter.html"><code>@StoredProcedureParameter</code></a> annotation is used to specify a parameter of a <a href="#annotations-jpa-namedstoredprocedurequery"><code>@NamedStoredProcedureQuery</code></a>.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-jpa-table"><code>@Table</code></h4>
+<div class="paragraph">
+<p>The <a href="http://docs.oracle.com/javaee/7/api/javax/persistence/Table.html"><code>@Table</code></a> annotation is used to specify the primary table of the current annotated entity.</p>
+</div>
+<div class="paragraph">
+<p>See the <a href="chapters/query/native/Native.html#sql-custom-crud-secondary-table-example"><code>@Table</code> mapping</a> section for more info.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-jpa-tablegenerator"><code>@TableGenerator</code></h4>
+<div class="paragraph">
+<p>The <a href="http://docs.oracle.com/javaee/7/api/javax/persistence/TableGenerator.html"><code>@TableGenerator</code></a> annotation is used to specify the database table used by the identity generator of the current annotated entity.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-jpa-temporal"><code>@Temporal</code></h4>
+<div class="paragraph">
+<p>The <a href="http://docs.oracle.com/javaee/7/api/javax/persistence/Temporal.html"><code>@Temporal</code></a> annotation is used to specify the <code>TemporalType</code> of the current annotated <code>java.util.Date</code> or <code>java.util.Calendar</code> entity attribute.</p>
+</div>
+<div class="paragraph">
+<p>See the <a href="chapters/domain/basic_types.html#basic-datetime">Basic temporal types</a> chapter for more info.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-jpa-transient"><code>@Transient</code></h4>
+<div class="paragraph">
+<p>The <a href="http://docs.oracle.com/javaee/7/api/javax/persistence/Transient.html"><code>@Transient</code></a> annotation is used to specify that a given entity attribute should not be persisted.</p>
+</div>
+<div class="paragraph">
+<p>See the <a href="chapters/events/Events.html#events-jpa-callbacks-example"><code>@Transient</code> mapping</a> section for more info.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-jpa-uniqueconstraint"><code>@UniqueConstraint</code></h4>
+<div class="paragraph">
+<p>The <a href="http://docs.oracle.com/javaee/7/api/javax/persistence/UniqueConstraint.html"><code>@UniqueConstraint</code></a> annotation is used to specify a unique constraint to be included by the automated schema generator for the primary or secondary table associated with the current annotated entity.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-jpa-version"><code>@Version</code></h4>
+<div class="paragraph">
+<p>The <a href="http://docs.oracle.com/javaee/7/api/javax/persistence/Version.html"><code>@Version</code></a> annotation is used to specify the version attribute used for optimistic locking.</p>
+</div>
+<div class="paragraph">
+<p>See the <a href="chapters/domain/entity.html#entity-pojo-optlock">Optimistic locking mapping</a> section for more info.</p>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="annotations-hibernate">Hibernate annotations</h3>
+<div class="sect3">
+<h4 id="annotations-hibernate-accesstype"><span class="line-through"><code>@AccessType</code></span></h4>
+<div class="paragraph">
+<p>The <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/annotations/AccessType.html"><span class="line-through"><code>@AccessType</code></span></a> annotation is deprecated.
+You should use either the JPA <a href="#annotations-jpa-access"><code>@Access</code></a> or the Hibernate native <a href="#annotations-hibernate-attributeaccessor"><code>@AttributeAccessor</code></a> annotation.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-hibernate-any"><code>@Any</code></h4>
+<div class="paragraph">
+<p>The <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/annotations/Any.html"><code>@Any</code></a> annotation is used to define the <strong>any-to-one</strong> association
+which can point to one one of several entity types.</p>
+</div>
+<div class="paragraph">
+<p>See the <a href="chapters/domain/basic_types.html#mapping-column-any"><code>@Any</code> mapping</a> section for more info.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-hibernate-anymetadef"><code>@AnyMetaDef</code></h4>
+<div class="paragraph">
+<p>The <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/annotations/AnyMetaDef.html"><code>@AnyMetaDef</code></a> annotation is used to provide metadata about an <code>@Any</code> or <code>@ManyToAny</code> mapping.</p>
+</div>
+<div class="paragraph">
+<p>See the <a href="chapters/domain/basic_types.html#mapping-column-any"><code>@Any</code> mapping</a> section for more info.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-hibernate-anymetadefs"><code>@AnyMetaDefs</code></h4>
+<div class="paragraph">
+<p>The <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/annotations/AnyMetaDefs.html"><code>@AnyMetaDefs</code></a> annotation is used to group multiple <a href="#annotations-hibernate-anymetadef"><code>@AnyMetaDef</code></a> annotations.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-hibernate-attributeaccessor"><code>@AttributeAccessor</code></h4>
+<div class="paragraph">
+<p>The <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/annotations/AttributeAccessor.html"><code>@AttributeAccessor</code></a> annotation is used to specify a custom <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/property/access/spi/PropertyAccessStrategy.html"><code>PropertyAccessStrategy</code></a>.</p>
+</div>
+<div class="paragraph">
+<p>Should only be used to name a custom <code>PropertyAccessStrategy</code>.
+For property/field access type, the JPA <a href="#annotations-jpa-access"><code>@Access</code></a> annotation should be preferred.</p>
+</div>
+<div class="paragraph">
+<p>However, if this annotation is used with either value="property" or value="field", it will act just as the corresponding usage of the JPA <a href="#annotations-jpa-access"><code>@Access</code></a> annotation.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-hibernate-batchsize"><code>@BatchSize</code></h4>
+<div class="paragraph">
+<p>The <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/annotations/BatchSize.html"><code>@BatchSize</code></a> annotation is used to specify the size for batch loading the entries of a lazy collection.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-hibernate-cache"><code>@Cache</code></h4>
+<div class="paragraph">
+<p>The <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/annotations/Cache.html"><code>@Cache</code></a> annotation is used to specify the <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/annotations/CacheConcurrencyStrategy.html"><code>CacheConcurrencyStrategy</code></a> of a root entity or a collection.</p>
+</div>
+<div class="paragraph">
+<p>See the <a href="chapters/caching/Caching.html#caching">Caching</a> chapter for more info.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-hibernate-cascade"><code>@Cascade</code></h4>
+<div class="paragraph">
+<p>The <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/annotations/Cascade.html"><code>@Cascade</code></a> annotation is used to apply the Hibernate specific <a href="http://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/annotations/CascadeType.html"><code>CascadeType</code></a> strategies (e.g. <code>CascadeType.LOCK</code>, <code>CascadeType.SAVE_UPDATE</code>, <code>CascadeType.REPLICATE</code>) on a given association.</p>
+</div>
+<div class="paragraph">
+<p>For JPA cascading, prefer using the <a href="http://docs.oracle.com/javaee/7/api/javax/persistence/CascadeType.html"><code>javax.persistence.CascadeType</code></a> instead.</p>
+</div>
+<div class="paragraph">
+<p>When combining both JPA and Hibernate <code>CascadeType</code> strategies, Hibernate will merge both sets of cascades.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-hibernate-check"><code>@Check</code></h4>
+<div class="paragraph">
+<p>The <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/annotations/Check.html"><code>@Check</code></a> annotation is used to specify an arbitrary SQL CHECK constraint which can be defined at the class, property or collection level.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-hibernate-collectionid"><code>@CollectionId</code></h4>
+<div class="paragraph">
+<p>The <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/annotations/CollectionId.html"><code>@CollectionId</code></a> annotation is used to specify an identifier column for an idbag collection.</p>
+</div>
+<div class="paragraph">
+<p>You might want to use the JPA <a href="#annotations-jpa-ordercolumn"><code>@OrderColumn</code></a> instead.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-hibernate-collectiontype"><code>@CollectionType</code></h4>
+<div class="paragraph">
+<p>The <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/annotations/CollectionType.html"><code>@CollectionType</code></a> annotation is used to specify a custom collection type.</p>
+</div>
+<div class="paragraph">
+<p>The collection can also name a <a href="#annotations-hibernate-type"><code>@Type</code></a>, which defines the Hibernate Type of the collection elements.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-hibernate-columndefault"><code>@ColumnDefault</code></h4>
+<div class="paragraph">
+<p>The <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/annotations/ColumnDefault.html"><code>@ColumnDefault</code></a> annotation is used to specify the <code>DEFAULT</code> DDL value to apply when using the automated schema generator.</p>
+</div>
+<div class="paragraph">
+<p>The same behavior can be achieved using the <code>definition</code> attribute of the JPA <a href="#annotations-jpa-column"><code>@Column</code></a> annotation.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-hibernate-columns"><code>@Columns</code></h4>
+<div class="paragraph">
+<p>The <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/annotations/Columns.html"><code>@Columns</code></a> annotation is used to group multiple JPA <a href="#annotations-jpa-column"><code>@Column</code></a> annotations.</p>
+</div>
+<div class="paragraph">
+<p>See the <a href="chapters/domain/basic_types.html#mapping-column-read-and-write-composite-type-example"><code>@Columns</code> mapping</a> section for more info.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-hibernate-columntransformer"><code>@ColumnTransformer</code></h4>
+<div class="paragraph">
+<p>The <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/annotations/ColumnTransformer.html"><code>@ColumnTransformer</code></a> annotation is used to customize how a given column value is read from or write into the database.</p>
+</div>
+<div class="paragraph">
+<p>See the <a href="chapters/domain/basic_types.html#mapping-column-read-and-write-example"><code>@ColumnTransformer</code> mapping</a> section for more info.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-hibernate-columntransformers"><code>@ColumnTransformers</code></h4>
+<div class="paragraph">
+<p>The <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/annotations/ColumnTransformers.html"><code>@ColumnTransformers</code></a> annotation iis used to group multiple <a href="#annotations-hibernate-columntransformer"><code>@ColumnTransformer</code></a> annotations.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-hibernate-creationtimestamp"><code>@CreationTimestamp</code></h4>
+<div class="paragraph">
+<p>The <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/annotations/CreationTimestamp.html"><code>@CreationTimestamp</code></a> annotation is used to specify that the current annotated temporal type must be initialized with the current JVM timestamp value.</p>
+</div>
+<div class="paragraph">
+<p>Supported attribute types:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>java.util.Date</code></p>
+</li>
+<li>
+<p><code>java.util.Calendar</code></p>
+</li>
+<li>
+<p><code>java.sql.Date</code></p>
+</li>
+<li>
+<p><code>java.sql.Time</code></p>
+</li>
+<li>
+<p><code>java.sql.Timestamp</code></p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-hibernate-discriminatorformula"><code>@DiscriminatorFormula</code></h4>
+<div class="paragraph">
+<p>The <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/annotations/DiscriminatorFormula.html"><code>@DiscriminatorFormula</code></a> annotation is used to specify a Hibernate <a href="#annotations-hibernate-formula"><code>@Formula</code></a> to resolve the inheritance discriminator value.</p>
+</div>
+<div class="paragraph">
+<p>See the <a href="chapters/domain/inheritance.html#entity-inheritance-single-table-discriminator-formula-example"><code>@DiscriminatorFormula</code></a> section for more info.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-hibernate-discriminatoroptions"><code>@DiscriminatorOptions</code></h4>
+<div class="paragraph">
+<p>The <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/annotations/DiscriminatorOptions.html"><code>@DiscriminatorOptions</code></a> annotation is used to provide the <code>force</code> and <code>insert</code> Discriminator properties.</p>
+</div>
+<div class="paragraph">
+<p>See the <a href="chapters/domain/inheritance.html#entity-inheritance-discriminator">Discriminator</a> section for more info.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-hibernate-dynamicinsert"><code>@DynamicInsert</code></h4>
+<div class="paragraph">
+<p>The <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/annotations/DynamicInsert.html"><code>@DynamicInsert</code></a> annotation is used to specify that the <code>INSERT</code> SQL statement should be generated whenever an entity is to be persisted.</p>
+</div>
+<div class="paragraph">
+<p>By default, Hibernate uses a cached <code>INSERT</code> statement that sets all table columns.
+When the entity is annotated with the <code>@DynamicInsert</code> annotation, the <code>PreparedStatement</code> is going to include only the non-null columns.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-hibernate-dynamicupdate"><code>@DynamicUpdate</code></h4>
+<div class="paragraph">
+<p>The <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/annotations/DynamicUpdate.html"><code>@DynamicUpdate</code></a> annotation is used to specify that the <code>UPDATE</code> SQL statement should be generated whenever an entity is modified.</p>
+</div>
+<div class="paragraph">
+<p>By default, Hibernate uses a cached <code>UPDATE</code> statement that sets all table columns.
+When the entity is annotated with the <code>@DynamicUpdate</code> annotation, the <code>PreparedStatement</code> is going to include only the columns whose values have been changed.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>For reattachment of detached entities, the dynamic update is not possible without having the <a href="#annotations-hibernate-selectbeforeupdate"><code>@SelectBeforeUpdate</code></a> annotation as well.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-hibernate-entity"><span class="line-through"><code>@Entity</code></span></h4>
+<div class="paragraph">
+<p>The <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/annotations/Entity.html"><span class="line-through"><code>@Entity</code></span></a> annotation is deprecated. Use the JPA <a href="#annotations-jpa-entity"><code>@Entity</code></a> annotation instead.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-hibernate-fetch"><code>@Fetch</code></h4>
+<div class="paragraph">
+<p>The <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/annotations/Fetch.html"><code>@Fetch</code></a> annotation is used to specify the Hibernate specific <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/annotations/FetchMode.html"><code>FetchMode</code></a> (e.g. <code>JOIN</code>, <code>SELECT</code>, <code>SUBSELECT</code>) used for the current annotated association:</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-hibernate-fetchprofile"><code>@FetchProfile</code></h4>
+<div class="paragraph">
+<p>The <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/annotations/FetchProfile.html"><code>@FetchProfile</code></a> annotation is used to specify a custom fetching profile, similar to a JPA Entity Graph.</p>
+</div>
+<div class="paragraph">
+<p>See the <a href="chapters/fetching/Fetching.html#fetching-strategies-dynamic-fetching-profile-example">Fetch mapping</a> section for more info.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-hibernate-fetchprofile-fetchoverride"><code>@FetchProfile.FetchOverride</code></h4>
+<div class="paragraph">
+<p>The <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/annotations/FetchProfile.FetchOverride.html"><code>@FetchProfile.FetchOverride</code></a> annotation is used in conjunction with the <a href="#annotations-hibernate-fetchprofile"><code>@FetchProfile</code></a> annotation,
+and it&#8217;s used for overriding the fetching strategy of a particular entity association.</p>
+</div>
+<div class="paragraph">
+<p>See the <a href="chapters/fetching/Fetching.html#fetching-strategies-dynamic-fetching-profile-example">Fetch profile</a> section for more info.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-hibernate-fetchprofiles"><code>@FetchProfiles</code></h4>
+<div class="paragraph">
+<p>The <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/annotations/FetchProfiles.html"><code>@FetchProfiles</code></a> annotation is used to group multiple <a href="#annotations-hibernate-fetchprofile"><code>@FetchProfile</code></a> annotations.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-hibernate-filter"><code>@Filter</code></h4>
+<div class="paragraph">
+<p>The <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/annotations/Filter.html"><code>@Filter</code></a> annotation is used to add filters to an entity or the target entity of a collection.</p>
+</div>
+<div class="paragraph">
+<p>See the <a href="chapters/domain/basic_types.html#mapping-filter-example">Filter mapping</a> section for more info.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-hibernate-filterdef"><code>@FilterDef</code></h4>
+<div class="paragraph">
+<p>The <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/annotations/FilterDef.html"><code>@FilterDef</code></a> annotation is used to specify a <code>@Filter</code> definition (name, default condition and parameter types, if any).</p>
+</div>
+<div class="paragraph">
+<p>See the <a href="chapters/domain/basic_types.html#mapping-filter-example">Filter mapping</a> section for more info.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-hibernate-filterdefs"><code>@FilterDefs</code></h4>
+<div class="paragraph">
+<p>The <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/annotations/FilterDefs.html"><code>@FilterDefs</code></a> annotation is used to group multiple <a href="#annotations-hibernate-filterdef"><code>@FilterDef</code></a> annotations.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-hibernate-filterjointable"><code>@FilterJoinTable</code></h4>
+<div class="paragraph">
+<p>The <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/annotations/FilterJoinTable.html"><code>@FilterJoinTable</code></a> annotation is used to add <code>@Filter</code> capabilities to a join table collection.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-hibernate-filterjointables"><code>@FilterJoinTables</code></h4>
+<div class="paragraph">
+<p>The <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/annotations/FilterJoinTables.html"><code>@FilterJoinTables</code></a> annotation is used to group multiple <a href="#annotations-hibernate-filterjointable"><code>@FilterJoinTable</code></a> annotations.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-hibernate-filters"><code>@Filters</code></h4>
+<div class="paragraph">
+<p>The <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/annotations/Filters.html"><code>@Filters</code></a> annotation is used to group multiple <a href="#annotations-hibernate-filter"><code>@Filter</code></a> annotations.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="__span_class_line_through_code_foreignkey_code_span"><span class="line-through"><code>@ForeignKey</code></span></h4>
+<div class="paragraph">
+<p>The <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/annotations/ForeignKey.html"><span class="line-through"><code>@ForeignKey</code></span></a> annotation is deprecated. Use the JPA 2.1 <a href="#annotations-jpa-foreignkey"><code>@ForeignKey</code></a> annotation instead.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-hibernate-formula"><code>@Formula</code></h4>
+<div class="paragraph">
+<p>The <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/annotations/Formula.html"><code>@Formula</code></a> annotation is used to specify an SQL fragment that is executed in order to populate a given entity attribute.</p>
+</div>
+<div class="paragraph">
+<p>See the <a href="chapters/domain/basic_types.html#mapping-column-formula-example"><code>@Formula</code> mapping</a> section for more info.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-hibernate-generated"><code>@Generated</code></h4>
+<div class="paragraph">
+<p>The <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/annotations/Generated.html"><code>@Generated</code></a> annotation is used to specify that the current annotated entity attribute is generated by the database.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-hibernate-generatortype"><code>@GeneratorType</code></h4>
+<div class="paragraph">
+<p>The <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/annotations/GeneratorType.html"><code>@GeneratorType</code></a> annotation is used to provide a <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/tuple/ValueGenerator.html"><code>ValueGenerator</code></a>
+and a <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/annotations/GenerationTime.html"><code>GenerationTime</code></a> for the current annotated generated attribute.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-hibernate-genericgenerator"><code>@GenericGenerator</code></h4>
+<div class="paragraph">
+<p>The <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/annotations/GenericGenerator.html"><code>@GenericGenerator</code></a> annotation can be used to configure any Hibernate identifier generator.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-hibernate-genericgenerators"><code>@GenericGenerators</code></h4>
+<div class="paragraph">
+<p>The <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/annotations/GenericGenerators.html"><code>@GenericGenerators</code></a> annotation is used to group multiple <a href="#annotations-hibernate-genericgenerator"><code>@GenericGenerator</code></a> annotations.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-hibernate-immutable"><code>@Immutable</code></h4>
+<div class="paragraph">
+<p>The <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/annotations/Immutable.html"><code>@Immutable</code></a> annotation is used to specify that the annotated entity, attribute, or collection is immutable.</p>
+</div>
+<div class="paragraph">
+<p>See the <a href="chapters/domain/immutability.html#entity-immutability"><code>@Immutable</code> mapping</a> section for more info.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-hibernate-index"><span class="line-through"><code>@Index</code></span></h4>
+<div class="paragraph">
+<p>The <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/annotations/Index.html"><span class="line-through"><code>@Index</code></span></a> annotation is deprecated. Use the JPA <a href="#annotations-jpa-index"><code>@Index</code></a> annotation instead.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-hibernate-indexcolumn"><span class="line-through"><code>@IndexColumn</code></span></h4>
+<div class="paragraph">
+<p>The <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/annotations/IndexColumn.html"><span class="line-through"><code>@IndexColumn</code></span></a> annotation is deprecated. Use the JPA <a href="#annotations-jpa-ordercolumn"><code>@OrderColumn</code></a> annotation instead.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-hibernate-joincolumnorformula"><code>@JoinColumnOrFormula</code></h4>
+<div class="paragraph">
+<p>The <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/annotations/JoinColumnOrFormula.html"><code>@JoinColumnOrFormula</code></a> annotation is used to specify that the entity association is resolved either through a FOREIGN KEY join (e.g. <a href="#annotations-jpa-joincolumn"><code>@JoinColumn</code></a>) or using the result of a given SQL formula (e.g. <a href="#annotations-hibernate-joinformula"><code>@JoinFormula</code></a>).</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-hibernate-joincolumnsorformulas"><code>@JoinColumnsOrFormulas</code></h4>
+<div class="paragraph">
+<p>The <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/annotations/JoinColumnsOrFormulas.html"><code>@JoinColumnsOrFormulas</code></a> annotation is used to group multiple <a href="#annotations-hibernate-joincolumnorformula"><code>@JoinColumnOrFormula</code></a> annotations.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-hibernate-joinformula"><code>@JoinFormula</code></h4>
+<div class="paragraph">
+<p>The <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/annotations/JoinFormula.html"><code>@JoinFormula</code></a> annotation is used as a replacement for <a href="#annotations-jpa-joincolumn"><code>@JoinColumn</code></a> when the association does not have a dedicated FOREIGN KEY column.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-hibernate-lazycollection"><code>@LazyCollection</code></h4>
+<div class="paragraph">
+<p>The <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/annotations/LazyCollection.html"><code>@LazyCollection</code></a> annotation is used to specify the lazy fetching behavior of a given collection.
+The possible values are given by the <code><a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/annotations/LazyCollectionOption.html">LazyCollectionOption</a></code> enumeration:</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><code>TRUE</code></dt>
+<dd>
+<p>Load it when the state is requested.</p>
+</dd>
+<dt class="hdlist1"><code>FALSE</code></dt>
+<dd>
+<p>Eagerly load it.</p>
+</dd>
+<dt class="hdlist1"><code>EXTRA</code></dt>
+<dd>
+<p>Prefer extra queries over full collection loading.</p>
+</dd>
+</dl>
+</div>
+<div class="paragraph">
+<p>The <code>TRUE</code> and <code>FALSE</code> values are deprecated since you should be using the JPA <a href="http://docs.oracle.com/javaee/7/api/javax/persistence/FetchType.html"><code>FetchType</code></a> attribute of the <a href="#annotations-jpa-elementcollection"><code>@ElementCollection</code></a>, <a href="#annotations-jpa-onetomany"><code>@OneToMany</code></a>, or <a href="#annotations-jpa-manytomany"><code>@ManyToMany</code></a> collection.</p>
+</div>
+<div class="paragraph">
+<p>The <code>EXTRA</code> value has no equivalent in the JPA specification, and it&#8217;s used to avoid loading the entire collection even when the collection is accessed for the first time.
+Each element is fetched individually using a secondary query.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-hibernate-lazygroup"><code>@LazyGroup</code></h4>
+<div class="paragraph">
+<p>The <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/annotations/LazyGroup.html"><code>@LazyGroup</code></a> annotation is used to specify that an entity attribute should be fetched along with all the other attributes belonging to the same group.</p>
+</div>
+<div class="paragraph">
+<p>To load entity attributes lazily, bytecode enhancement is needed.
+By default, all non-collection attributes are loaded in one group named "DEFAULT".</p>
+</div>
+<div class="paragraph">
+<p>This annotation allows defining different groups of attributes to be initialized together when access one attribute in the group.</p>
+</div>
+<div class="paragraph">
+<p>See the <a href="chapters/pc/BytecodeEnhancement.html#BytecodeEnhancement-lazy-loading-example"><code>@LazyGroup</code> mapping</a> section for more info.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-hibernate-lazytoone"><code>@LazyToOne</code></h4>
+<div class="paragraph">
+<p>The <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/annotations/LazyToOne.html"><code>@LazyToOne</code></a> annotation is used to specify the laziness options, represented by <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/annotations/LazyToOneOption.html"><code>LazyToOneOption</code></a>, available for a <code>@OneToOne</code> or <code>@ManyToOne</code> association.</p>
+</div>
+<div class="paragraph">
+<p><code>LazyToOneOption</code> defines the following alternatives:</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">FALSE</dt>
+<dd>
+<p>Eagerly load the association. This one is not needed since the JPA <code>FetchType.EAGER</code> offers the same behavior.</p>
+</dd>
+<dt class="hdlist1">NO_PROXY</dt>
+<dd>
+<p>This option will fetch the association lazily while returning real entity object.</p>
+</dd>
+<dt class="hdlist1">PROXY</dt>
+<dd>
+<p>This option will fetch the association lazily while returning a proxy instead.</p>
+</dd>
+</dl>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-hibernate-listindexbase"><code>@ListIndexBase</code></h4>
+<div class="paragraph">
+<p>The <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/annotations/ListIndexBase.html"><code>@ListIndexBase</code></a> annotation is used to specify the start value for a list index, as stored in the database.</p>
+</div>
+<div class="paragraph">
+<p>By default, <code>List</code> indexes are stored starting at zero. Generally used in conjunction with <a href="#annotations-jpa-ordercolumn"><code>@OrderColumn</code></a>.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-hibernate-loader"><code>@Loader</code></h4>
+<div class="paragraph">
+<p>The <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/annotations/Loader.html"><code>@Loader</code></a> annotation is used to override the default <code>SELECT</code> query used for loading an entity loading.</p>
+</div>
+<div class="paragraph">
+<p>See the <a href="chapters/query/native/Native.html#sql-custom-crud-example">Custom CRUD mapping</a> section for more info.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-hibernate-manytoany"><code>@ManyToAny</code></h4>
+<div class="paragraph">
+<p>The <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/annotations/ManyToAny.html"><code>@ManyToAny</code></a> annotation is used to specify a many-to-one association when the target type is dynamically resolved.</p>
+</div>
+<div class="paragraph">
+<p>See the <a href="chapters/domain/basic_types.html#mapping-column-many-to-any"><code>@ManyToAny</code> mapping</a> section for more info.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-hibernate-mapkeytype"><code>@MapKeyType</code></h4>
+<div class="paragraph">
+<p>The <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/annotations/MapKeyType.html"><code>@MapKeyType</code></a> annotation is used to specify the map key type.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-hibernate-metavalue"><code>@MetaValue</code></h4>
+<div class="paragraph">
+<p>The <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/annotations/MetaValue.html"><code>@MetaValue</code></a> annotation is used by the <a href="#annotations-hibernate-anymetadef"><code>@AnyMetaDef</code></a> annotation to specify the association between a given discriminator value and an entity type.</p>
+</div>
+<div class="paragraph">
+<p>See the <a href="chapters/domain/basic_types.html#mapping-column-any"><code>@Any</code> mapping</a> section for more info.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-hibernate-namednativequeries"><code>@NamedNativeQueries</code></h4>
+<div class="paragraph">
+<p>The <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/annotations/NamedNativeQueries.html"><code>@NamedNativeQueries</code></a> annotation is used to group multiple <a href="#annotations-hibernate-namednativequery"><code>@NamedNativeQuery</code></a> annotations.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-hibernate-namednativequery"><code>@NamedNativeQuery</code></h4>
+<div class="paragraph">
+<p>The <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/annotations/NamedNativeQuery.html"><code>@NamedNativeQuery</code></a> annotation extends the JPA <a href="#annotations-jpa-namednativequery"><code>@NamedNativeQuery</code></a> with Hibernate specific features.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-hibernate-namedqueries"><code>@NamedQueries</code></h4>
+<div class="paragraph">
+<p>The <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/annotations/NamedQueries.html"><code>@NamedQueries</code></a> annotation is used to group multiple <a href="#annotations-hibernate-namedquery"><code>@NamedQuery</code></a> annotations.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-hibernate-namedquery"><code>@NamedQuery</code></h4>
+<div class="paragraph">
+<p>The <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/annotations/NamedQuery.html"><code>@NamedQuery</code></a> annotation extends the JPA <a href="#annotations-jpa-namedquery"><code>@NamedQuery</code></a> with Hibernate specific features.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-hibernate-nationalized"><code>@Nationalized</code></h4>
+<div class="paragraph">
+<p>The <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/annotations/Nationalized.html"><code>@Nationalized</code></a> annotation is used to specify that the current annotated attribute is a character type (e.g. <code>String</code>, <code>Character</code>, <code>Clob</code>) that is stored in a nationalized column type (<code>NVARCHAR</code>, <code>NCHAR</code>, <code>NCLOB</code>).</p>
+</div>
+<div class="paragraph">
+<p>See the <a href="chapters/domain/basic_types.html#basic-nationalized-example"><code>@Nationalized</code> mapping</a> section for more info.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-hibernate-naturalid"><code>@NaturalId</code></h4>
+<div class="paragraph">
+<p>The <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/annotations/NaturalId.html"><code>@NaturalId</code></a> annotation is used to specify that the current annotated attribute is part of the natural id of the entity.</p>
+</div>
+<div class="paragraph">
+<p>See the <a href="chapters/domain/natural_id.html#naturalid">Natural Ids</a> section for more info.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-hibernate-naturalidcache"><code>@NaturalIdCache</code></h4>
+<div class="paragraph">
+<p>The <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/annotations/NaturalIdCache.html"><code>@NaturalIdCache</code></a> annotation is used to specify that the natural id values associated with the annotated entity should be stored in the second-level cache.</p>
+</div>
+<div class="paragraph">
+<p>See the <a href="chapters/domain/natural_id.html#naturalid-caching"><code>@NaturalIdCache</code> mapping</a> section for more info.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-hibernate-notfound"><code>@NotFound</code></h4>
+<div class="paragraph">
+<p>The <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/annotations/NotFound.html"><code>@NotFound</code></a> annotation is used to specify the <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/annotations/NotFoundAction.html"><code>NotFoundAction</code></a> strategy for when an element is not found in a given association.</p>
+</div>
+<div class="paragraph">
+<p>The <code>NotFoundAction</code> defines with two possibilities:</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><code>EXCEPTION</code></dt>
+<dd>
+<p>An exception is thrown when an element is not found (default and recommended).</p>
+</dd>
+<dt class="hdlist1"><code>IGNORE</code></dt>
+<dd>
+<p>Ignore the element when not found in the database.</p>
+</dd>
+</dl>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-hibernate-ondelete"><code>@OnDelete</code></h4>
+<div class="paragraph">
+<p>The <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/annotations/OnDelete.html"><code>@OnDelete</code></a> annotation is used to specify the delete strategy employed by the current annotated collection, array or joined subclasses.
+This annotation is used by the automated schema generation tool to generated the appropriate FOREIGN KEY DDL cascade directive.</p>
+</div>
+<div class="paragraph">
+<p>The two possible strategies are defined by the <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/annotations/OnDeleteAction.html"><code>OnDeleteAction</code></a> enumeration:</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">CASCADE</dt>
+<dd>
+<p>Use the database FOREIGN KEY cascade capabilities.</p>
+</dd>
+<dt class="hdlist1">NO_ACTION</dt>
+<dd>
+<p>Take no action.</p>
+</dd>
+</dl>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-hibernate-optimisticlock"><code>@OptimisticLock</code></h4>
+<div class="paragraph">
+<p>The <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/annotations/OptimisticLock.html"><code>@OptimisticLock</code></a> annotation is used to specify if the current annotated attribute will trigger an entity version increment upon being modified.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-hibernate-optimisticlocking"><code>@OptimisticLocking</code></h4>
+<div class="paragraph">
+<p>The <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/annotations/OptimisticLocking.html"><code>@OptimisticLocking</code></a> annotation is used to specify the current annotated an entity optimistic locking strategy.</p>
+</div>
+<div class="paragraph">
+<p>The four possible strategies are defined by the <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/annotations/OptimisticLockType.html"><code>OptimisticLockType</code></a> enumeration:</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">NONE</dt>
+<dd>
+<p>The implicit optimistic locking mechanism is disabled.</p>
+</dd>
+<dt class="hdlist1">VERSION</dt>
+<dd>
+<p>The implicit optimistic locking mechanism is using a dedicated version column.</p>
+</dd>
+<dt class="hdlist1">ALL</dt>
+<dd>
+<p>The implicit optimistic locking mechanism is using <strong>all</strong> attributes as part of an expanded WHERE clause restriction for the <code>UPDATE</code> and <code>DELETE</code> SQL statements.</p>
+</dd>
+<dt class="hdlist1">DIRTY</dt>
+<dd>
+<p>The implicit optimistic locking mechanism is using the <strong>dirty</strong> attributes (the attributes that were modified) as part of an expanded WHERE clause restriction for the <code>UPDATE</code> and <code>DELETE</code> SQL statements.</p>
+</dd>
+</dl>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-hibernate-orderby"><code>@OrderBy</code></h4>
+<div class="paragraph">
+<p>The <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/annotations/OrderBy.html"><code>@OrderBy</code></a> annotation is used to specify a <strong>SQL</strong> ordering directive for sorting the current annotated collection.</p>
+</div>
+<div class="paragraph">
+<p>It differs from the JPA <a href="#annotations-jpa-orderby"><code>@OrderBy</code></a> annotation because the JPA annotation expects a JPQL order-by fragment, not an SQL directive.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-hibernate-paramdef"><code>@ParamDef</code></h4>
+<div class="paragraph">
+<p>The <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/annotations/ParamDef.html"><code>@ParamDef</code></a> annotation is used in conjunction with <a href="#annotations-hibernate-filterdef"><code>@FilterDef</code></a> so that the Hibernate Filter can be customized with runtime-provided parameter values.</p>
+</div>
+<div class="paragraph">
+<p>See the <a href="chapters/domain/basic_types.html#mapping-filter-example">Filter mapping</a> section for more info.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-hibernate-parameter"><code>@Parameter</code></h4>
+<div class="paragraph">
+<p>The <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/annotations/Parameter.html"><code>@Parameter</code></a> annotation is generic parameter (basically a key/value combination) tused to parametrize other annotations,
+like <a href="#annotations-hibernate-collectiontype"><code>@CollectionType</code></a>, <a href="#annotations-hibernate-genericgenerator"><code>@GenericGenerator</code></a>, and <a href="#annotations-hibernate-type"><code>@Type</code></a>, <a href="#annotations-hibernate-typedef"><code>@TypeDef</code></a>.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-hibernate-parent"><code>@Parent</code></h4>
+<div class="paragraph">
+<p>The <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/annotations/Parent.html"><code>@Parent</code></a> annotation is used to specify that the current annotated embeddable attribute references back the owning entity.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-hibernate-persister"><code>@Persister</code></h4>
+<div class="paragraph">
+<p>The <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/annotations/Persister.html"><code>@Persister</code></a> annotation is used to specify a custom entity or collection persister.</p>
+</div>
+<div class="paragraph">
+<p>For entities, the custom persister must implement the <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/persister/entity/EntityPersister.html"><code>EntityPersister</code></a> interface.</p>
+</div>
+<div class="paragraph">
+<p>For collections, the custom persister must implement the <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/persister/collection/CollectionPersister.html"><code>CollectionPersister</code></a> interface.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-hibernate-polymorphism"><code>@Polymorphism</code></h4>
+<div class="paragraph">
+<p>The <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/annotations/Polymorphism.html"><code>@Polymorphism</code></a> annotation is used to define the <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/annotations/PolymorphismType.html"><code>PolymorphismType</code></a> Hibernate will apply to entity hierarchies.</p>
+</div>
+<div class="paragraph">
+<p>There are two possible <code>PolymorphismType</code> options:</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">EXPLICIT</dt>
+<dd>
+<p>The current annotated entity is retrieved only if explicitly asked.</p>
+</dd>
+<dt class="hdlist1">IMPLICIT</dt>
+<dd>
+<p>The current annotated entity is retrieved if any of its super entity are retrieved. This is the default option.</p>
+</dd>
+</dl>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-hibernate-proxy"><code>@Proxy</code></h4>
+<div class="paragraph">
+<p>The <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/annotations/Proxy.html"><code>@Proxy</code></a> annotation is used to specify a custom Proxy implementation for the current annotated entity.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-hibernate-rowid"><code>@RowId</code></h4>
+<div class="paragraph">
+<p>The <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/annotations/RowId.html"><code>@RowId</code></a> annotation is used to specify the database column used as a <code>ROWID</code> pseudocolumn.
+For instance, Oracle defines the <a href="https://docs.oracle.com/cd/B19306_01/server.102/b14200/pseudocolumns008.htm"><code>ROWID</code> pseudocolumn</a> which provides the address of every table row.</p>
+</div>
+<div class="paragraph">
+<p>According to Oracle documentation, <code>ROWID</code> is the fastest way to access a single row from a table.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-hibernate-selectbeforeupdate"><code>@SelectBeforeUpdate</code></h4>
+<div class="paragraph">
+<p>The <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/annotations/SelectBeforeUpdate.html"><code>@SelectBeforeUpdate</code></a> annotation is used to specify that the current annotated entity state be selected from the database when determining whether to perform an update when the detached entity is reattached.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-hibernate-sort"><span class="line-through"><code>@Sort</code></span></h4>
+<div class="paragraph">
+<p>The <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/annotations/Sort.html"><span class="line-through"><code>@Sort</code></span></a> annotation is deprecated. Use the Hibernate specific <a href="#annotations-hibernate-sortcomparator"><code>@SortComparator</code></a> or <a href="#annotations-hibernate-sortnatural"><code>@SortNatural</code></a> annotations instead.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-hibernate-sortcomparator"><code>@SortComparator</code></h4>
+<div class="paragraph">
+<p>The <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/annotations/SortComparator.html"><code>@SortComparator</code></a> annotation is used to specify a <code>Comparator</code> for sorting the <code>Set</code>/<code>Map</code> in-memory.</p>
+</div>
+<div class="paragraph">
+<p>See the <a href="chapters/domain/collections.html#collections-unidirectional-sorted-set-custom-comparator-example"><code>@SortComparator</code> mapping</a> section for more info.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-hibernate-sortnatural"><code>@SortNatural</code></h4>
+<div class="paragraph">
+<p>The <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/annotations/SortNatural.html"><code>@SortNatural</code></a> annotation is used to specify that the <code>Set</code>/<code>Map</code> should be sorted using natural sorting.</p>
+</div>
+<div class="paragraph">
+<p>See the <a href="chapters/domain/collections.html#collections-bidirectional-sorted-set-example"><code>@SortNatural</code> mapping</a> section for more info.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-hibernate-source"><code>@Source</code></h4>
+<div class="paragraph">
+<p>The <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/annotations/Source.html"><code>@Source</code></a> annotation is used in conjunction with a <code>@Version</code> timestamp entity attribute indicating
+the <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/annotations/SourceType.html"><code>SourceType</code></a> of the timestamp value.</p>
+</div>
+<div class="paragraph">
+<p>The <code>SourceType</code> offers two options:</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">DB</dt>
+<dd>
+<p>Get the timestamp from the database.</p>
+</dd>
+<dt class="hdlist1">VM</dt>
+<dd>
+<p>Get the timestamp from the current JVM.</p>
+</dd>
+</dl>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-hibernate-sqldelete"><code>@SQLDelete</code></h4>
+<div class="paragraph">
+<p>The <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/annotations/SQLDelete.html"><code>@SQLDelete</code></a> annotation is used to specify a custom SQL <code>DELETE</code> statement for the current annotated entity or collection.</p>
+</div>
+<div class="paragraph">
+<p>See the <a href="chapters/query/native/Native.html#sql-custom-crud-example">Custom CRUD mapping</a> section for more info.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-hibernate-sqldeleteall"><code>@SQLDeleteAll</code></h4>
+<div class="paragraph">
+<p>The <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/annotations/SQLDeleteAll.html"><code>@SQLDeleteAll</code></a> annotation is used to specify a custom SQL <code>DELETE</code> statement when removing all elements of the current annotated collection.</p>
+</div>
+<div class="paragraph">
+<p>See the <a href="chapters/query/native/Native.html#sql-custom-crud-example">Custom CRUD mapping</a> section for more info.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-hibernate-sqlfragmentalias"><code>@SqlFragmentAlias</code></h4>
+<div class="paragraph">
+<p>The <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/annotations/SqlFragmentAlias.html"><code>@SqlFragmentAlias</code></a> annotation is used to specify an alias for a Hibernate <a href="#annotations-hibernate-filter"><code>@Filter</code></a>.</p>
+</div>
+<div class="paragraph">
+<p>The alias (e.g. <code>myAlias</code>) can then be used in the <code>@Filter</code> <code>condition</code> clause using the <code>{alias}</code> (e.g. <code>{myAlias}</code>) placeholder.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-hibernate-sqlinsert"><code>@SQLInsert</code></h4>
+<div class="paragraph">
+<p>The <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/annotations/SQLInsert.html"><code>@SQLInsert</code></a> annotation is used to specify a custom SQL <code>INSERT</code> statement for the current annotated entity or collection.</p>
+</div>
+<div class="paragraph">
+<p>See the <a href="chapters/query/native/Native.html#sql-custom-crud-example">Custom CRUD mapping</a> section for more info.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-hibernate-sqlupdate"><code>@SQLUpdate</code></h4>
+<div class="paragraph">
+<p>The <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/annotations/SQLUpdate.html"><code>@SQLUpdate</code></a> annotation is used to specify a custom SQL <code>UPDATE</code> statement for the current annotated entity or collection.</p>
+</div>
+<div class="paragraph">
+<p>See the <a href="chapters/query/native/Native.html#sql-custom-crud-example">Custom CRUD mapping</a> section for more info.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-hibernate-subselect"><code>@Subselect</code></h4>
+<div class="paragraph">
+<p>The <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/annotations/Subselect.html"><code>@Subselect</code></a> annotation is used to specify an immutable and read-only entity using a custom SQL <code>SELECT</code> statement.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-hibernate-synchronize"><code>@Synchronize</code></h4>
+<div class="paragraph">
+<p>The <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/annotations/Synchronize.html"><code>@Synchronize</code></a> annotation is usually used in conjunction with the <a href="#annotations-hibernate-subselect"><code>@Subselect</code></a> annotation to specify the list of database tables used by the <code>@Subselect</code> SQL query.</p>
+</div>
+<div class="paragraph">
+<p>With this information in place, Hibernate will properly trigger an entity flush whenever a query targeting the <code>@Subselect</code> entity is to be executed while the Persistence Context has scheduled some insert/update/delete actions against the database tables used by the <code>@Subselect</code> SQL query.</p>
+</div>
+<div class="paragraph">
+<p>Therefore, the <code>@Synchronize</code> annotation prevents the derived entity from returning stale data when executing entity queries against the <code>@Subselect</code> entity.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-hibernate-table"><code>@Table</code></h4>
+<div class="paragraph">
+<p>The <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/annotations/Table.html"><code>@Table</code></a> annotation is used to specify additional information to a JPA <a href="#annotations-hibernate-table"><code>@Table</code></a> annotation, like custom <code>INSERT</code>, <code>UPDATE</code> or <code>DELETE</code> statements or a specific <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/FetchMode.html"><code>FetchMode</code></a>.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-hibernate-tables"><code>@Tables</code></h4>
+<div class="paragraph">
+<p>The <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/annotations/Tables.html"><code>@Tables</code></a> annotation is used to group multiple <a href="#annotations-hibernate-table"><code>@Table</code></a> annotations.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-hibernate-target"><code>@Target</code></h4>
+<div class="paragraph">
+<p>The <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/annotations/Target.html"><code>@Target</code></a> annotation is used to specify an explicit target implementation when the current annotated association is using an interface type.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-hibernate-tuplizer"><code>@Tuplizer</code></h4>
+<div class="paragraph">
+<p>The <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/annotations/Tuplizer.html"><code>@Tuplizer</code></a> annotation is used to specify a custom tuplizer for the current annotated entity or embeddable.</p>
+</div>
+<div class="paragraph">
+<p>For entities, the tupelizer must implement the <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/tuple/entity/EntityTuplizer.html"><code>EntityTuplizer</code></a> interface.</p>
+</div>
+<div class="paragraph">
+<p>For embeddables, the tupelizer must implement the <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/tuple/component/ComponentTuplizer.html"><code>ComponentTuplizer</code></a> interface.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-hibernate-tuplizers"><code>@Tuplizers</code></h4>
+<div class="paragraph">
+<p>The <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/annotations/Tuplizers.html"><code>@Tuplizers</code></a> annotation is used to group multiple <a href="#annotations-hibernate-tuplizer"><code>@Tuplizer</code></a> annotations.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-hibernate-type"><code>@Type</code></h4>
+<div class="paragraph">
+<p>The <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/annotations/Type.html"><code>@Type</code></a> annotation is used to specify the Hibernate <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/type/Type.html"><code>@Type</code></a> used by the current annotated basic attribute.</p>
+</div>
+<div class="paragraph">
+<p>See the <a href="chapters/domain/basic_types.html#collections-comma-delimited-collection-example"><code>@Type</code> mapping</a> section for more info.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-hibernate-typedef"><code>@TypeDef</code></h4>
+<div class="paragraph">
+<p>The <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/annotations/TypeDef.html"><code>@TypeDef</code></a> annotation is used to specify a <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/type/Type.html"><code>@Type</code></a> definition which can later be reused for multiple basic attribute mappings.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-hibernate-typedefs"><code>@TypeDefs</code></h4>
+<div class="paragraph">
+<p>The <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/annotations/TypeDefs.html"><code>@TypeDefs</code></a> annotation is used to group multiple <a href="#annotations-hibernate-typedef"><code>@TypeDef</code></a> annotations.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-hibernate-updatetimestamp"><code>@UpdateTimestamp</code></h4>
+<div class="paragraph">
+<p>The <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/annotations/UpdateTimestamp.html"><code>@UpdateTimestamp</code></a> annotation is used to specify that the current annotated timestamp attribute should be updated with the current JVM timestamp whenever the owning entity gets modified.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>java.util.Date</code></p>
+</li>
+<li>
+<p><code>java.util.Calendar</code></p>
+</li>
+<li>
+<p><code>java.sql.Date</code></p>
+</li>
+<li>
+<p><code>java.sql.Time</code></p>
+</li>
+<li>
+<p><code>java.sql.Timestamp</code></p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-hibernate-valuegenerationtype"><code>@ValueGenerationType</code></h4>
+<div class="paragraph">
+<p>The <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/annotations/ValueGenerationType.html"><code>@ValueGenerationType</code></a> annotation is used to specify that the current annotation type should be used as a generator annotation type.</p>
+</div>
+<div class="paragraph">
+<p>See the <a href="chapters/domain/basic_types.html#mapping-database-generated-value-example"><code>@ValueGenerationType</code> mapping</a> section for more info.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-hibernate-where"><code>@Where</code></h4>
+<div class="paragraph">
+<p>The <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/annotations/Where.html"><code>@Where</code></a> annotation is used to specify a custom SQL <code>WHERE</code> clause used when fetching an entity or a collection.</p>
+</div>
+<div class="paragraph">
+<p>See the <a href="chapters/domain/basic_types.html#mapping-where-example"><code>@Where</code> mapping</a> section for more info.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="annotations-hibernate-wherejointable"><code>@WhereJoinTable</code></h4>
+<div class="paragraph">
+<p>The <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/annotations/WhereJoinTable.html"><code>@WhereJoinTable</code></a> annotation is used to specify a custom SQL <code>WHERE</code> clause used when fetching a join collection table.</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div id="footer">
+<div id="footer-text">
+Last updated 2016-10-26 14:44:36 +01:00
+</div>
+</div>
+</body>
+</html>

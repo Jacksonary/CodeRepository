@@ -1,0 +1,1277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<!--[if IE]><meta http-equiv="X-UA-Compatible" content="IE=edge"><![endif]-->
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="generator" content="Asciidoctor 1.5.2">
+<title>Persistence Contexts</title>
+<link rel="stylesheet" href="./css/hibernate.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.2.0/css/font-awesome.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prettify/r298/prettify.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prettify/r298/prettify.min.js"></script>
+<script>document.addEventListener('DOMContentLoaded', prettyPrint)</script>
+</head>
+<body class="article">
+<div id="header">
+</div>
+<div id="content">
+<div class="sect1">
+<h2 id="pc">Persistence Contexts</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Both the <code>org.hibernate.Session</code> API and <code>javax.persistence.EntityManager</code> API represent a context for dealing with persistent data.
+This concept is called a <code>persistence context</code>.
+Persistent data has a state in relation to both a persistence context and the underlying database.</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><code>transient</code></dt>
+<dd>
+<p>the entity has just been instantiated and is not associated with a persistence context.
+It has no persistent representation in the database and typically no identifier value has been assigned (unless the <em>assigned</em> generator was used).</p>
+</dd>
+<dt class="hdlist1"><code>managed</code>, or <code>persistent</code></dt>
+<dd>
+<p>the entity has an associated identifier and is associated with a persistence context.
+It may or may not physically exist in the database yet.</p>
+</dd>
+<dt class="hdlist1"><code>detached</code></dt>
+<dd>
+<p>the entity has an associated identifier, but is no longer associated with a persistence context (usually because the persistence context was closed or the instance was evicted from the context)</p>
+</dd>
+<dt class="hdlist1"><code>removed</code></dt>
+<dd>
+<p>the entity has an associated identifier and is associated with a persistence context, however it is scheduled for removal from the database.</p>
+</dd>
+</dl>
+</div>
+<div class="paragraph">
+<p>Much of the <code>org.hibernate.Session</code> and <code>javax.persistence.EntityManager</code> methods deal with moving entities between these states.</p>
+</div>
+<div class="sect2">
+<h3 id="pc-unwrap">Accessing Hibernate APIs from JPA</h3>
+<div class="paragraph">
+<p>JPA defines an incredibly useful method to allow applications access to the APIs of the underlying provider.</p>
+</div>
+<div id="pc-unwrap-example" class="exampleblock">
+<div class="title">Example 1. Accessing Hibernate APIs from JPA</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">Session session = entityManager.unwrap( Session.class );
+SessionImplementor sessionImplementor = entityManager.unwrap( SessionImplementor.class );
+
+SessionFactory sessionFactory = entityManager.getEntityManagerFactory().unwrap( SessionFactory.class );</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="BytecodeEnhancement">Bytecode Enhancement</h3>
+<div class="paragraph">
+<p>Hibernate "grew up" not supporting bytecode enhancement at all.
+At that time, Hibernate only supported proxy-based for lazy loading and always used diff-based dirty calculation.
+Hibernate 3.x saw the first attempts at bytecode enhancement support in Hibernate.
+We consider those initial attempts (up until 5.0) completely as an incubation.
+The support for bytecode enhancement in 5.0 onward is what we are discussing here.</p>
+</div>
+<div class="sect3">
+<h4 id="BytecodeEnhancement-capabilities">Capabilities</h4>
+<div class="paragraph">
+<p>Hibernate supports the enhancement of an application Java domain model for the purpose of adding various persistence-related capabilities directly into the class.</p>
+</div>
+<div class="sect4">
+<h5 id="BytecodeEnhancement-lazy-loading">Lazy attribute loading</h5>
+<div class="paragraph">
+<p>Think of this as partial loading support.
+Essentially you can tell Hibernate that only part(s) of an entity should be loaded upon fetching from the database and when the other part(s) should be loaded as well.
+Note that this is very much different from proxy-based idea of lazy loading which is entity-centric where the entity&#8217;s state is loaded at once as needed.
+With bytecode enhancement, individual attributes or groups of attributes are loaded as needed.</p>
+</div>
+<div class="paragraph">
+<p>Lazy attributes can be designated to be loaded together and this is called a "lazy group".
+By default, all singular attributes are part of a single group, meaning that when one lazy singular attribute is accessed all lazy singular attributes are loaded.
+Lazy plural attributes, by default, are each a lazy group by themselves.
+This behavior is explicitly controllable through the <code>@org.hibernate.annotations.LazyGroup</code> annotation.</p>
+</div>
+<div id="BytecodeEnhancement-lazy-loading-example" class="exampleblock">
+<div class="title">Example 2. <code>@LazyGroup</code> example</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">@Entity
+public class Customer {
+
+    @Id
+    private Integer id;
+
+    private String name;
+
+    @Basic( fetch = FetchType.LAZY )
+    private UUID accountsPayableXrefId;
+
+    @Lob
+    @Basic( fetch = FetchType.LAZY )
+    @LazyGroup( "lobs" )
+    private Blob image;
+
+    public Integer getId() {
+        return id;
+    }
+
+    public void setId(Integer id) {
+        this.id = id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public UUID getAccountsPayableXrefId() {
+        return accountsPayableXrefId;
+    }
+
+    public void setAccountsPayableXrefId(UUID accountsPayableXrefId) {
+        this.accountsPayableXrefId = accountsPayableXrefId;
+    }
+
+    public Blob getImage() {
+        return image;
+    }
+
+    public void setImage(Blob image) {
+        this.image = image;
+    }
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>In the above example we have 2 lazy attributes: <code>accountsPayableXrefId</code> and <code>image</code>.
+Each is part of a different fetch group (accountsPayableXrefId is part of the default fetch group),
+which means that accessing <code>accountsPayableXrefId</code> will not force the loading of image, and vice-versa.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>As a hopefully temporary legacy hold-over, it is currently required that all lazy singular associations (many-to-one and one-to-one) also include <code>@LazyToOne(LazyToOneOption.NO_PROXY)</code>.
+The plan is to relax that requirement later.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect4">
+<h5 id="BytecodeEnhancement-dirty-tracking">In-line dirty tracking</h5>
+<div class="paragraph">
+<p>Historically Hibernate only supported diff-based dirty calculation for determining which entities in a persistence context have changed.
+This essentially means that Hibernate would keep track of the last known state of an entity in regards to the database (typically the last read or write).
+Then, as part of flushing the persistence context, Hibernate would walk every entity associated with the persistence context and check its current state against that "last known database state".
+This is by far the most thorough approach to dirty checking because it accounts for data-types that can change their internal state (<code>java.util.Date</code> is the prime example of this).
+However, in a persistence context with a large number of associated entities it can also be a performance-inhibiting approach.</p>
+</div>
+<div class="paragraph">
+<p>If your application does not need to care about "internal state changing data-type" use cases, bytecode-enhanced dirty tracking might be a worthwhile alternative to consider, especially in terms of performance.
+In this approach Hibernate will manipulate the bytecode of your classes to add "dirty tracking" directly to the entity, allowing the entity itself to keep track of which of its attributes have changed.
+During flush time, Hibernate simply asks your entity what has changed rather that having to perform the state-diff calculations.</p>
+</div>
+</div>
+<div class="sect4">
+<h5 id="BytecodeEnhancement-dirty-tracking-bidirectional">Bidirectional association management</h5>
+<div class="paragraph">
+<p>Hibernate strives to keep your application as close to "normal Java usage" (idiomatic Java) as possible.
+Consider a domain model with a normal <code>Person</code>/<code>Book</code> bidirectional association:</p>
+</div>
+<div id="BytecodeEnhancement-dirty-tracking-bidirectional-example" class="exampleblock">
+<div class="title">Example 3. Bidirectional association</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">@Entity(name = "Person")
+public static class Person {
+
+    @Id
+    private Long id;
+
+    private String name;
+
+    @OneToMany(mappedBy = "author")
+    private List&lt;Book&gt; books = new ArrayList&lt;&gt;(  );
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public List&lt;Book&gt; getBooks() {
+        return books;
+    }
+}
+
+@Entity(name = "Book")
+public static class Book {
+
+    @Id
+    private Long id;
+
+    private String title;
+
+    @NaturalId
+    private String isbn;
+
+    @ManyToOne
+    private Person author;
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
+    public void setTitle(String title) {
+        this.title = title;
+    }
+
+    public Person getAuthor() {
+        return author;
+    }
+
+    public void setAuthor(Person author) {
+        this.author = author;
+    }
+
+    public String getIsbn() {
+        return isbn;
+    }
+
+    public void setIsbn(String isbn) {
+        this.isbn = isbn;
+    }
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div id="BytecodeEnhancement-dirty-tracking-bidirectional-incorrect-usage-example" class="exampleblock">
+<div class="title">Example 4. Incorrect normal Java usage</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">Person person = new Person();
+person.setName( "John Doe" );
+
+Book book = new Book();
+person.getBooks().add( book );
+try {
+    book.getAuthor().getName();
+}
+catch (NullPointerException expected) {
+    // This blows up ( NPE ) in normal Java usage
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>This blows up in normal Java usage. The correct normal Java usage is:</p>
+</div>
+<div id="BytecodeEnhancement-dirty-tracking-bidirectional-correct-usage-example" class="exampleblock">
+<div class="title">Example 5. Correct normal Java usage</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">Person person = new Person();
+person.setName( "John Doe" );
+
+Book book = new Book();
+person.getBooks().add( book );
+book.setAuthor( person );
+
+book.getAuthor().getName();</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Bytecode-enhanced bi-directional association management makes that first example work by managing the "other side" of a bi-directional association whenever one side is manipulated.</p>
+</div>
+</div>
+<div class="sect4">
+<h5 id="BytecodeEnhancement-dirty-tracking-optimizations">Internal performance optimizations</h5>
+<div class="paragraph">
+<p>Additionally, we use the enhancement process to add some additional code that allows us to optimized certain performance characteristics of the persistence context.
+These are hard to discuss without diving into a discussion of Hibernate internals.</p>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="BytecodeEnhancement-enhancement">Performing enhancement</h4>
+<div class="sect4">
+<h5 id="BytecodeEnhancement-enhancement-runtime">Run-time enhancement</h5>
+<div class="paragraph">
+<p>Currently, run-time enhancement of the domain model is only supported in managed JPA environments following the JPA-defined SPI for performing class transformations.
+Even then, this support is disabled by default.
+To enable run-time enhancement, specify <code>hibernate.ejb.use_class_enhancer</code>=<code>true</code> as a persistent unit property.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Also, at the moment, only annotated classes are supported for run-time enhancement.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect4">
+<h5 id="BytecodeEnhancement-enhancement-gradle">Gradle plugin</h5>
+<div class="paragraph">
+<p>Hibernate provides a Gradle plugin that is capable of providing build-time enhancement of the domain model as they are compiled as part of a Gradle build.
+To use the plugin a project would first need to apply it:</p>
+</div>
+<div class="exampleblock">
+<div class="title">Example 6. Apply the Gradle plugin</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-gradle" data-lang="gradle">ext {
+    hibernateVersion = 'hibernate-version-you-want'
+}
+
+buildscript {
+    dependencies {
+        classpath "org.hibernate:hibernate-gradle-plugin:$hibernateVersion"
+    }
+}
+
+hibernate {
+    enhance {
+        // any configuration goes here
+    }
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>The configuration that is available is exposed through a registered Gradle DSL extension:</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">enableLazyInitialization</dt>
+<dd>
+<p>Whether enhancement for lazy attribute loading should be done.</p>
+</dd>
+<dt class="hdlist1">enableDirtyTracking</dt>
+<dd>
+<p>Whether enhancement for self-dirty tracking should be done.</p>
+</dd>
+<dt class="hdlist1">enableAssociationManagement</dt>
+<dd>
+<p>Whether enhancement for bi-directional association management should be done.</p>
+</dd>
+</dl>
+</div>
+<div class="paragraph">
+<p>The default value for all 3 configuration settings is <code>true</code></p>
+</div>
+<div class="paragraph">
+<p>The <code>enhance { }</code> block is required in order for enhancement to occur.
+Enhancement is disabled by default in preparation for additions capabilities (hbm2ddl, etc) in the plugin.</p>
+</div>
+</div>
+<div class="sect4">
+<h5 id="BytecodeEnhancement-enhancement-maven">Maven plugin</h5>
+<div class="paragraph">
+<p>Hibernate provides a Maven plugin capable of providing build-time enhancement of the domain model as they are compiled as part of a Maven build.
+See the section on the <a href="#BytecodeEnhancement-enhancement-gradle">Gradle plugin</a> for details on the configuration settings. Again, the default for those 3 is <code>true</code>.</p>
+</div>
+<div class="paragraph">
+<p>The Maven plugin supports one additional configuration settings: failOnError, which controls what happens in case of error.
+Default behavior is to fail the build, but it can be set so that only a warning is issued.</p>
+</div>
+<div class="exampleblock">
+<div class="title">Example 7. Apply the Maven plugin</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-xml" data-lang="xml">&lt;build&gt;
+    &lt;plugins&gt;
+        [...]
+        &lt;plugin&gt;
+            &lt;groupId&gt;org.hibernate.orm.tooling&lt;/groupId&gt;
+            &lt;artifactId&gt;hibernate-enhance-maven-plugin&lt;/artifactId&gt;
+            &lt;version&gt;$currentHibernateVersion&lt;/version&gt;
+            &lt;executions&gt;
+                &lt;execution&gt;
+                    &lt;configuration&gt;
+                        &lt;failOnError&gt;true&lt;/failOnError&gt;
+                        &lt;enableLazyInitialization&gt;true&lt;/enableLazyInitialization&gt;
+                        &lt;enableDirtyTracking&gt;true&lt;/enableDirtyTracking&gt;
+                        &lt;enableAssociationManagement&gt;true&lt;/enableAssociationManagement&gt;
+                    &lt;/configuration&gt;
+                    &lt;goals&gt;
+                        &lt;goal&gt;enhance&lt;/goal&gt;
+                    &lt;/goals&gt;
+                &lt;/execution&gt;
+            &lt;/executions&gt;
+        &lt;/plugin&gt;
+        [...]
+    &lt;/plugins&gt;
+&lt;/build&gt;</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="pc-persist">Making entities persistent</h3>
+<div class="paragraph">
+<p>Once you&#8217;ve created a new entity instance (using the standard <code>new</code> operator) it is in <code>new</code> state.
+You can make it persistent by associating it to either a <code>org.hibernate.Session</code> or <code>javax.persistence.EntityManager</code>.</p>
+</div>
+<div id="pc-persist-jpa-example" class="exampleblock">
+<div class="title">Example 8. Making an entity persistent with JPA</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">Person person = new Person();
+person.setId( 1L );
+person.setName("John Doe");
+
+entityManager.persist( person );</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div id="pc-persist-native-example" class="exampleblock">
+<div class="title">Example 9. Making an entity persistent with Hibernate API</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">Person person = new Person();
+person.setId( 1L );
+person.setName("John Doe");
+
+session.save( person );</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p><code>org.hibernate.Session</code> also has a method named persist which follows the exact semantic defined in the JPA specification for the persist method.
+It is this <code>org.hibernate.Session</code> method to which the Hibernate <code>javax.persistence.EntityManager</code> implementation delegates.</p>
+</div>
+<div class="paragraph">
+<p>If the <code>DomesticCat</code> entity type has a generated identifier, the value is associated with the instance when the save or persist is called.
+If the identifier is not automatically generated, the manually assigned (usually natural) key value has to be set on the instance before the save or persist methods are called.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="pc-remove">Deleting (removing) entities</h3>
+<div class="paragraph">
+<p>Entities can also be deleted.</p>
+</div>
+<div id="pc-remove-jpa-example" class="exampleblock">
+<div class="title">Example 10. Deleting an entity with JPA</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">entityManager.remove( person );</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div id="pc-remove-native-example" class="exampleblock">
+<div class="title">Example 11. Deleting an entity with Hibernate API</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">session.delete( person );</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Hibernate itself can handle deleting detached state.
+JPA, however, disallows it.
+The implication here is that the entity instance passed to the <code>org.hibernate.Session</code> delete method can be either in managed or detached state,
+while the entity instance passed to remove on <code>javax.persistence.EntityManager</code> must be in managed state.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="pc-get-reference">Obtain an entity reference without initializing its data</h3>
+<div class="paragraph">
+<p>Sometimes referred to as lazy loading, the ability to obtain a reference to an entity without having to load its data is hugely important.
+The most common case being the need to create an association between an entity and another existing entity.</p>
+</div>
+<div id="pc-get-reference-jpa-example" class="exampleblock">
+<div class="title">Example 12. Obtaining an entity reference without initializing its data with JPA</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">Book book = new Book();
+book.setAuthor( entityManager.getReference( Person.class, personId ) );</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div id="pc-get-reference-native-example" class="exampleblock">
+<div class="title">Example 13. Obtaining an entity reference without initializing its data with Hibernate API</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">Book book = new Book();
+book.setId( 1L );
+book.setIsbn( "123-456-7890" );
+entityManager.persist( book );
+book.setAuthor( session.load( Person.class, personId ) );</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>The above works on the assumption that the entity is defined to allow lazy loading, generally through use of runtime proxies.
+In both cases an exception will be thrown later if the given entity does not refer to actual database state when the application attempts to use the returned proxy in any way that requires access to its data.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="pc-find">Obtain an entity with its data initialized</h3>
+<div class="paragraph">
+<p>It is also quite common to want to obtain an entity along with its data (e.g. like when we need to display it in the UI).</p>
+</div>
+<div id="pc-find-jpa-example" class="exampleblock">
+<div class="title">Example 14. Obtaining an entity reference with its data initialized with JPA</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">Person person = entityManager.find( Person.class, personId );</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div id="pc-find-native-example" class="exampleblock">
+<div class="title">Example 15. Obtaining an entity reference with its data initialized with Hibernate API</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">Person person = session.get( Person.class, personId );</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div id="pc-find-by-id-native-example" class="exampleblock">
+<div class="title">Example 16. Obtaining an entity reference with its data initialized using the <code>byId()</code> Hibernate API</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">Person person = session.byId( Person.class ).load( personId );</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>In both cases null is returned if no matching database row was found.</p>
+</div>
+<div class="paragraph">
+<p>It&#8217;s possible to return a Java 8 <code>Optional</code> as well:</p>
+</div>
+<div id="tag::pc-find-optional-by-id-native-example" class="exampleblock">
+<div class="title">Example 17. Obtaining an Optional entity reference with its data initialized using the <code>byId()</code> Hibernate API</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">Optional&lt;Person&gt; optionalPerson = session.byId( Person.class ).loadOptional( personId );</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="pc-find-natural-id">Obtain an entity by natural-id</h3>
+<div class="paragraph">
+<p>In addition to allowing to load by identifier, Hibernate allows applications to load by declared natural identifier.</p>
+</div>
+<div id="pc-find-by-natural-id-entity-example" class="exampleblock">
+<div class="title">Example 18. Natural-id mapping</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">@Entity(name = "Book")
+public static class Book {
+
+    @Id
+    private Long id;
+
+    private String title;
+
+    @NaturalId
+    private String isbn;
+
+    @ManyToOne
+    private Person author;
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
+    public void setTitle(String title) {
+        this.title = title;
+    }
+
+    public Person getAuthor() {
+        return author;
+    }
+
+    public void setAuthor(Person author) {
+        this.author = author;
+    }
+
+    public String getIsbn() {
+        return isbn;
+    }
+
+    public void setIsbn(String isbn) {
+        this.isbn = isbn;
+    }
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>We can also opt to fetch the entity or just retrieve a reference to it when using the natural identifier loading methods.</p>
+</div>
+<div id="pc-find-by-simple-natural-id-example" class="exampleblock">
+<div class="title">Example 19. Get entity reference by simple natural-id</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">Book book = session.bySimpleNaturalId( Book.class ).getReference( isbn );</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div id="pc-find-by-natural-id-example" class="exampleblock">
+<div class="title">Example 20. Load entity by natural-id</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">Book book = session
+    .byNaturalId( Book.class )
+    .using( "isbn", isbn )
+    .load( );</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>We can also use a Java 8 <code>Optional</code> to load an entity by its natural id:</p>
+</div>
+<div id="pc-find-optional-by-simple-natural-id-example" class="exampleblock">
+<div class="title">Example 21. Load an Optional entity by natural-id</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">Optional&lt;Book&gt; optionalBook = session
+    .byNaturalId( Book.class )
+    .using( "isbn", isbn )
+    .loadOptional( );</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Hibernate offer a consistent API for accessing persistent data by identifier or by the natural-id. Each of these defines the same two data access methods:</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">getReference</dt>
+<dd>
+<p>Should be used in cases where the identifier is assumed to exist, where non-existence would be an actual error.
+Should never be used to test existence.
+That is because this method will prefer to create and return a proxy if the data is not already associated with the Session rather than hit the database.
+The quintessential use-case for using this method is to create foreign-key based associations.</p>
+</dd>
+<dt class="hdlist1">load</dt>
+<dd>
+<p>Will return the persistent data associated with the given identifier value or null if that identifier does not exist.</p>
+</dd>
+</dl>
+</div>
+<div class="paragraph">
+<p>Each of these two methods define an overloading variant accepting a <code>org.hibernate.LockOptions</code> argument.
+Locking is discussed in a separate <a href="chapters/locking/Locking.html#locking">chapter</a>.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="pc-managed-state">Modifying managed/persistent state</h3>
+<div class="paragraph">
+<p>Entities in managed/persistent state may be manipulated by the application and any changes will be automatically detected and persisted when the persistence context is flushed.
+There is no need to call a particular method to make your modifications persistent.</p>
+</div>
+<div id="pc-managed-state-jpa-example" class="exampleblock">
+<div class="title">Example 22. Modifying managed state with JPA</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">Person person = entityManager.find( Person.class, personId );
+person.setName("John Doe");
+entityManager.flush();</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div id="pc-managed-state-native-example" class="exampleblock">
+<div class="title">Example 23. Modifying managed state with Hibernate API</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">Person person = session.byId( Person.class ).load( personId );
+person.setName("John Doe");
+entityManager.flush();</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="pc-refresh">Refresh entity state</h3>
+<div class="paragraph">
+<p>You can reload an entity instance and its collections at any time.</p>
+</div>
+<div id="pc-refresh-jpa-example" class="exampleblock">
+<div class="title">Example 24. Refreshing entity state with JPA</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">Person person = entityManager.find( Person.class, personId );
+
+entityManager.createQuery( "update Person set name = UPPER(name)" ).executeUpdate();
+
+entityManager.refresh( person );
+assertEquals("JOHN DOE", person.getName() );</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div id="pc-refresh-native-example" class="exampleblock">
+<div class="title">Example 25. Refreshing entity state with Hibernate API</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">Person person = session.byId( Person.class ).load( personId );
+
+session.doWork( connection -&gt; {
+    try(Statement statement = connection.createStatement()) {
+        statement.executeUpdate( "UPDATE person SET name = UPPER(name)" );
+    }
+} );
+
+session.refresh( person );
+assertEquals("JOHN DOE", person.getName() );</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>One case where this is useful is when it is known that the database state has changed since the data was read.
+Refreshing allows the current database state to be pulled into the entity instance and the persistence context.</p>
+</div>
+<div class="paragraph">
+<p>Another case where this might be useful is when database triggers are used to initialize some of the properties of the entity.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Only the entity instance and its value type collections are refreshed unless you specify <code>REFRESH</code> as a cascade style of any associations.
+However, please note that Hibernate has the capability to handle this automatically through its notion of generated properties.
+See the discussion of non-identifier <a href="chapters/domain/basic_types.html#mapping-generated">generated attributes</a>.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Traditionally, Hibernate has been allowing detached entities to be refreshed.
+Unfortunately, JPA prohibits this practice and specifies that an <code>IllegalArgumentException</code> should be thrown instead.</p>
+</div>
+<div class="paragraph">
+<p>For this reason, when bootstrapping the Hibernate <code>SessionFactory</code> using the native API, the legacy detached entity refresh behavior is going to be preserved.
+On the other hand, when bootstrapping Hibernate through JPA <code>EntityManagerFactory</code> building process, detached entities are not allowed to be refreshed by default.</p>
+</div>
+<div class="paragraph">
+<p>However, this default behavior can be overwritten through the <code>hibernate.allow_refresh_detached_entity</code> configuration property.
+If this property is explicitly set to <code>true</code>, then you can refresh detached entities even when using the JPA bootstraps mechanism, therefore bypassing the JPA specification restriction.</p>
+</div>
+<div class="paragraph">
+<p>For more about the <code>hibernate.allow_refresh_detached_entity</code> configuration property,
+check out the <a href="appendices/Configurations.html#misc">Configurations</a> section as well.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="pc-detach">Working with detached data</h3>
+<div class="paragraph">
+<p>Detachment is the process of working with data outside the scope of any persistence context.
+Data becomes detached in a number of ways.
+Once the persistence context is closed, all data that was associated with it becomes detached.
+Clearing the persistence context has the same effect.
+Evicting a particular entity from the persistence context makes it detached.
+And finally, serialization will make the deserialized form be detached (the original instance is still managed).</p>
+</div>
+<div class="paragraph">
+<p>Detached data can still be manipulated, however the persistence context will no longer automatically know about these modification and the application will need to intervene to make the changes persistent again.</p>
+</div>
+<div class="sect3">
+<h4 id="pc-detach-reattach">Reattaching detached data</h4>
+<div class="paragraph">
+<p>Reattachment is the process of taking an incoming entity instance that is in detached state and re-associating it with the current persistence context.</p>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>JPA does not provide for this model. This is only available through Hibernate <code>org.hibernate.Session</code>.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div id="pc-detach-reattach-lock-example" class="exampleblock">
+<div class="title">Example 26. Reattaching a detached entity using <code>lock</code></div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">Person person = session.byId( Person.class ).load( personId );
+//Clear the Session so the person entity becomes detached
+session.clear();
+person.setName( "Mr. John Doe" );
+
+session.lock( person, LockMode.NONE );</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div id="pc-detach-reattach-saveOrUpdate-example" class="exampleblock">
+<div class="title">Example 27. Reattaching a detached entity using <code>saveOrUpdate</code></div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">Person person = session.byId( Person.class ).load( personId );
+//Clear the Session so the person entity becomes detached
+session.clear();
+person.setName( "Mr. John Doe" );
+
+session.saveOrUpdate( person );</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>The method name <code>update</code> is a bit misleading here.
+It does not mean that an <code>SQL</code> <code>UPDATE</code> is immediately performed.
+It does, however, mean that an <code>SQL</code> <code>UPDATE</code> will be performed when the persistence context is flushed since Hibernate does not know its previous state against which to compare for changes.
+If the entity is mapped with <code>select-before-update</code>, Hibernate will pull the current state from the database and see if an update is needed.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Provided the entity is detached, <code>update</code> and <code>saveOrUpdate</code> operate exactly the same.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="pc-merge">Merging detached data</h4>
+<div class="paragraph">
+<p>Merging is the process of taking an incoming entity instance that is in detached state and copying its data over onto a new managed instance.</p>
+</div>
+<div class="paragraph">
+<p>Although not exactly per se, the following example is a good visualization of the <code>merge</code> operation internals.</p>
+</div>
+<div id="pc-merge-visualize-example" class="exampleblock">
+<div class="title">Example 28. Visualizing merge</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">public Person merge(Person detached) {
+    Person newReference = session.byId( Person.class ).load( detached.getId() );
+    newReference.setName( detached.getName() );
+    return newReference;
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div id="pc-merge-jpa-example" class="exampleblock">
+<div class="title">Example 29. Merging a detached entity with JPA</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">Person person = entityManager.find( Person.class, personId );
+//Clear the EntityManager so the person entity becomes detached
+entityManager.clear();
+person.setName( "Mr. John Doe" );
+
+person = entityManager.merge( person );</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div id="pc-merge-native-example" class="exampleblock">
+<div class="title">Example 30. Merging a detached entity with Hibernate API</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">Person person = session.byId( Person.class ).load( personId );
+//Clear the Session so the person entity becomes detached
+session.clear();
+person.setName( "Mr. John Doe" );
+
+person = (Person) session.merge( person );</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect4">
+<h5 id="pc-merge-gotchas">Merging gotchas</h5>
+<div class="paragraph">
+<p>For example, Hibernate throws <code>IllegalStateException</code> when merging a parent entity which has references to 2 detached child entities <code>child1</code> and <code>child2</code> (obtained from different sessions), and <code>child1</code> and <code>child2</code> represent the same persistent entity, <code>Child</code>.</p>
+</div>
+<div class="paragraph">
+<p>A new configuration property, <code>hibernate.event.merge.entity_copy_observer</code>, controls how Hibernate will respond when multiple representations of the same persistent entity ("entity copy") is detected while merging.</p>
+</div>
+<div class="paragraph">
+<p>The possible values are:</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">disallow (the default)</dt>
+<dd>
+<p>throws <code>IllegalStateException</code> if an entity copy is detected</p>
+</dd>
+<dt class="hdlist1">allow</dt>
+<dd>
+<p>performs the merge operation on each entity copy that is detected</p>
+</dd>
+<dt class="hdlist1">log</dt>
+<dd>
+<p>(provided for testing only) performs the merge operation on each entity copy that is detected and logs information about the entity copies.
+This setting requires DEBUG logging be enabled for <code>org.hibernate.event.internal.EntityCopyAllowedLoggedObserver</code>.</p>
+</dd>
+</dl>
+</div>
+<div class="paragraph">
+<p>In addition, the application may customize the behavior by providing an implementation of <code>org.hibernate.event.spi.EntityCopyObserver</code> and setting <code>hibernate.event.merge.entity_copy_observer</code> to the class name.
+When this property is set to <code>allow</code> or <code>log</code>, Hibernate will merge each entity copy detected while cascading the merge operation.
+In the process of merging each entity copy, Hibernate will cascade the merge operation from each entity copy to its associations with <code>cascade=CascadeType.MERGE</code> or <code>CascadeType.ALL</code>.
+The entity state resulting from merging an entity copy will be overwritten when another entity copy is merged.</p>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Because cascade order is undefined, the order in which the entity copies are merged is undefined.
+As a result, if property values in the entity copies are not consistent, the resulting entity state will be indeterminate, and data will be lost from all entity copies except for the last one merged.
+Therefore, the <strong>last writer wins</strong>.</p>
+</div>
+<div class="paragraph">
+<p>If an entity copy cascades the merge operation to an association that is (or contains) a new entity, that new entity will be merged (i.e., persisted and the merge operation will be cascaded to its associations according to its mapping),
+even if that same association is ultimately overwritten when Hibernate merges a different representation having a different value for its association.</p>
+</div>
+<div class="paragraph">
+<p>If the association is mapped with <code>orphanRemoval = true</code>, the new entity will not be deleted because the semantics of orphanRemoval do not apply if the entity being orphaned is a new entity.</p>
+</div>
+<div class="paragraph">
+<p>There are known issues when representations of the same persistent entity have different values for a collection.
+See <a href="https://hibernate.atlassian.net/browse/HHH-9239">HHH-9239</a> and <a href="https://hibernate.atlassian.net/browse/HHH-9240">HHH-9240</a> for more details.
+These issues can cause data loss or corruption.</p>
+</div>
+<div class="paragraph">
+<p>By setting <code>hibernate.event.merge.entity_copy_observer</code> configuration property to <code>allow</code> or <code>log</code>,
+Hibernate will allow entity copies of any type of entity to be merged.</p>
+</div>
+<div class="paragraph">
+<p>The only way to exclude particular entity classes or associations that contain critical data is to provide a custom implementation of <code>org.hibernate.event.spi.EntityCopyObserver</code> with the desired behavior,
+and setting <code>hibernate.event.merge.entity_copy_observer</code> to the class name.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Hibernate provides limited DEBUG logging capabilities that can help determine the entity classes for which entity copies were found.
+By setting <code>hibernate.event.merge.entity_copy_observer</code> to <code>log</code> and enabling DEBUG logging for <code>org.hibernate.event.internal.EntityCopyAllowedLoggedObserver</code>,
+the following will be logged each time an application calls <code>EntityManager.merge( entity )</code> or<br>
+<code>Session.merge( entity )</code>:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>number of times multiple representations of the same persistent entity was detected summarized by entity name;</p>
+</li>
+<li>
+<p>details by entity name and ID, including output from calling toString() on each representation being merged as well as the merge result.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>The log should be reviewed to determine if multiple representations of entities containing critical data are detected.
+If so, the application should be modified so there is only one representation, and a custom implementation of <code>org.hibernate.event.spi.EntityCopyObserver</code> should be provided to disallow entity copies for entities with critical data.</p>
+</div>
+<div class="paragraph">
+<p>Using optimistic locking is recommended to detect if different representations are from different versions of the same persistent entity.
+If they are not from the same version, Hibernate will throw either the JPA <code>OptimisticLockException</code> or the native <code>StaleObjectStateException</code> depending on your bootstrapping strategy.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="pc-contains">Checking persistent state</h3>
+<div class="paragraph">
+<p>An application can verify the state of entities and collections in relation to the persistence context.</p>
+</div>
+<div id="pc-contains-jpa-example" class="exampleblock">
+<div class="title">Example 31. Verifying managed state with JPA</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">boolean contained = entityManager.contains( person );</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div id="pc-contains-native-example" class="exampleblock">
+<div class="title">Example 32. Verifying managed state with Hibernate API</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">boolean contained = session.contains( person );</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div id="pc-verify-lazy-jpa-example" class="exampleblock">
+<div class="title">Example 33. Verifying laziness with JPA</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">PersistenceUnitUtil persistenceUnitUtil = entityManager.getEntityManagerFactory().getPersistenceUnitUtil();
+
+boolean personInitialized = persistenceUnitUtil.isLoaded( person );
+
+boolean personBooksInitialized = persistenceUnitUtil.isLoaded( person.getBooks() );
+
+boolean personNameInitialized = persistenceUnitUtil.isLoaded( person, "name" );</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div id="pc-verify-lazy-native-example" class="exampleblock">
+<div class="title">Example 34. Verifying laziness with Hibernate API</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">boolean personInitialized = Hibernate.isInitialized( person );
+
+boolean personBooksInitialized = Hibernate.isInitialized( person.getBooks() );
+
+boolean personNameInitialized = Hibernate.isPropertyInitialized( person, "name" );</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>In JPA there is an alternative means to check laziness using the following <code>javax.persistence.PersistenceUtil</code> pattern (which is recommended wherever possible).</p>
+</div>
+<div id="pc-verify-lazy-jpa-alternative-example" class="exampleblock">
+<div class="title">Example 35. Alternative JPA means to verify laziness</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">PersistenceUtil persistenceUnitUtil = Persistence.getPersistenceUtil();
+
+boolean personInitialized = persistenceUnitUtil.isLoaded( person );
+
+boolean personBooksInitialized = persistenceUnitUtil.isLoaded( person.getBooks() );
+
+boolean personNameInitialized = persistenceUnitUtil.isLoaded( person, "name" );</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_evicting_entities">Evicting entities</h3>
+<div class="paragraph">
+<p>When the <code>flush()</code> method is called, the state of the entity is synchronized with the database.
+If you do not want this synchronization to occur, or if you are processing a huge number of objects and need to manage memory efficiently,
+the <code>evict()</code> method can be used to remove the object and its collections from the first-level cache.</p>
+</div>
+<div id="caching-management-jpa-detach-example" class="exampleblock">
+<div class="title">Example 36. Detaching an entity from the <code>EntityManager</code></div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">for(Person person : entityManager.createQuery("select p from Person p", Person.class)
+        .getResultList()) {
+    dtos.add(toDTO(person));
+    entityManager.detach( person );
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div id="caching-management-native-evict-example" class="exampleblock">
+<div class="title">Example 37. Evicting an entity from the Hibernate <code>Session</code></div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">Session session = entityManager.unwrap( Session.class );
+for(Person person : (List&lt;Person&gt;) session.createQuery("select p from Person p").list()) {
+    dtos.add(toDTO(person));
+    session.evict( person );
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>To detach all entities from the current persistence context, both the <code>EntityManager</code> and the Hibernate <code>Session</code> define a <code>clear()</code> method.</p>
+</div>
+<div id="caching-management-clear-example" class="exampleblock">
+<div class="title">Example 38. Clearing the persistence context</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">entityManager.clear();
+
+session.clear();</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>To verify if an entity instance is currently attached to the running persistence context, both the <code>EntityManager</code> and the Hibernate <code>Session</code> define a <code>contains(Object entity)</code> method.</p>
+</div>
+<div id="caching-management-contains-example" class="exampleblock">
+<div class="title">Example 39. Verify if an entity is contained in a persistence context</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">entityManager.contains( person );
+
+session.contains( person );</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div id="footer">
+<div id="footer-text">
+Last updated 2016-10-26 14:44:36 +01:00
+</div>
+</div>
+</body>
+</html>

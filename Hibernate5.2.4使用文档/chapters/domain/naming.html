@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<!--[if IE]><meta http-equiv="X-UA-Compatible" content="IE=edge"><![endif]-->
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="generator" content="Asciidoctor 1.5.2">
+<title>Naming strategies</title>
+<link rel="stylesheet" href="./css/hibernate.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.2.0/css/font-awesome.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prettify/r298/prettify.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prettify/r298/prettify.min.js"></script>
+<script>document.addEventListener('DOMContentLoaded', prettyPrint)</script>
+</head>
+<body class="article">
+<div id="header">
+</div>
+<div id="content">
+<div class="sect2">
+<h3 id="naming">Naming strategies</h3>
+<div class="paragraph">
+<p>Part of the mapping of an object model to the relational database is
+mapping names from the object model to the corresponding database names.
+Hibernate looks at this as 2 stage process:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>The first stage is determining a proper logical name from the domain model mapping.  A
+logical name can be either explicitly specified by the user (using <code>@Column</code> or
+<code>@Table</code> e.g.) or it can be implicitly determined by Hibernate through an
+<a href="#ImplicitNamingStrategy">ImplicitNamingStrategy</a> contract.</p>
+</li>
+<li>
+<p>Second is the resolving of this logical name to a physical name which is defined
+by the <a href="#PhysicalNamingStrategy">PhysicalNamingStrategy</a> contract.</p>
+</li>
+</ul>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="title">Historical NamingStrategy contract</div>
+<div class="paragraph">
+<p>Historically Hibernate defined just a single <code>org.hibernate.cfg.NamingStrategy</code>.  That singular
+NamingStrategy contract actually combined the separate concerns that are now modeled individually
+as ImplicitNamingStrategy and PhysicalNamingStrategy.</p>
+</div>
+<div class="paragraph">
+<p>Also, the NamingStrategy contract was often not flexible enough to properly apply a given naming
+"rule", either because the API lacked the information to decide or because the API was honestly
+not well defined as it grew.</p>
+</div>
+<div class="paragraph">
+<p>Due to these limitation, <code>org.hibernate.cfg.NamingStrategy</code> has been deprecated and then removed
+in favor of ImplicitNamingStrategy and PhysicalNamingStrategy.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>At the core, the idea behind each naming strategy is to minimize the amount of
+repetitive information a developer must provide for mapping a domain model.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="title">JPA Compatibility</div>
+<div class="paragraph">
+<p>JPA defines inherent rules about implicit logical name determination.  If JPA provider
+portability is a major concern, or if you really just like the JPA-defined implicit
+naming rules, be sure to stick with ImplicitNamingStrategyJpaCompliantImpl (the default)</p>
+</div>
+<div class="paragraph">
+<p>Also, JPA defines no separation between logical and physical name.  Following the JPA
+specification, the logical name <strong>is</strong> the physical name.  If JPA provider portability
+is important, applications should prefer not to specify a PhysicalNamingStrategy.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="sect3">
+<h4 id="ImplicitNamingStrategy">ImplicitNamingStrategy</h4>
+<div class="paragraph">
+<p>When an entity does not explicitly name the database table that it maps to, we need
+to implicitly determine that table name.  Or when a particular attribute does not explicitly name
+the database column that it maps to, we need to implicitly determine that column name.  There are
+examples of the role of the <code>org.hibernate.boot.model.naming.ImplicitNamingStrategy</code> contract to
+determine a logical name when the mapping did not provide an explicit name.</p>
+</div>
+<div class="paragraph">
+<p><span class="image"><img src="images/domain/naming/implicit_naming_strategy_diagram.svg" alt="Implicit Naming Strategy Diagram"></span></p>
+</div>
+<div class="paragraph">
+<p>Hibernate defines multiple ImplicitNamingStrategy implementations out-of-the-box.  Applications
+are also free to plug-in custom implementations.</p>
+</div>
+<div class="paragraph">
+<p>There are multiple ways to specify the ImplicitNamingStrategy to use.  First, applications can specify
+the implementation using the <code>hibernate.implicit_naming_strategy</code> configuration setting which accepts:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>pre-defined "short names" for the out-of-the-box implementations</p>
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><code>default</code></dt>
+<dd>
+<p>for <code>org.hibernate.boot.model.naming.ImplicitNamingStrategyJpaCompliantImpl</code> - an alias for <code>jpa</code></p>
+</dd>
+<dt class="hdlist1"><code>jpa</code></dt>
+<dd>
+<p>for <code>org.hibernate.boot.model.naming.ImplicitNamingStrategyJpaCompliantImpl</code> - the JPA 2.0 compliant naming strategy</p>
+</dd>
+<dt class="hdlist1"><code>legacy-hbm</code></dt>
+<dd>
+<p>for <code>org.hibernate.boot.model.naming.ImplicitNamingStrategyLegacyHbmImpl</code> - compliant with the original Hibernate NamingStrategy</p>
+</dd>
+<dt class="hdlist1"><code>legacy-jpa</code></dt>
+<dd>
+<p>for <code>org.hibernate.boot.model.naming.ImplicitNamingStrategyLegacyJpaImpl</code> - compliant with the legacy NamingStrategy developed for JPA 1.0, which was unfortunately unclear in many respects regarding implicit naming rules.</p>
+</dd>
+<dt class="hdlist1"><code>component-path</code></dt>
+<dd>
+<p>for <code>org.hibernate.boot.model.naming.ImplicitNamingStrategyComponentPathImpl</code> - mostly follows <code>ImplicitNamingStrategyJpaCompliantImpl</code> rules, except that it uses the full composite paths, as opposed to just the ending property part</p>
+</dd>
+</dl>
+</div>
+</li>
+<li>
+<p>reference to a Class that implements the <code>org.hibernate.boot.model.naming.ImplicitNamingStrategy</code> contract</p>
+</li>
+<li>
+<p>FQN of a class that implements the <code>org.hibernate.boot.model.naming.ImplicitNamingStrategy</code> contract</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Secondly, applications and integrations can leverage <code>org.hibernate.boot.MetadataBuilder#applyImplicitNamingStrategy</code>
+to specify the ImplicitNamingStrategy to use.  See
+<a href="chapters/bootstrap/Bootstrap.html#bootstrap">Bootstrap</a> for additional details on bootstrapping.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="PhysicalNamingStrategy">PhysicalNamingStrategy</h4>
+<div class="paragraph">
+<p>Many organizations define rules around the naming of database objects (tables, columns, foreign-keys, etc).
+The idea of a PhysicalNamingStrategy is to help implement such naming rules without having to hard-code them
+into the mapping via explicit names.</p>
+</div>
+<div class="paragraph">
+<p>While the purpose of an ImplicitNamingStrategy is to determine that an attribute named <code>accountNumber</code> maps to
+a logical column name of <code>accountNumber</code> when not explicitly specified, the purpose of a PhysicalNamingStrategy
+would be, for example, to say that the physical column name should instead be abbreviated <code>acct_num</code>.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>It is true that the resolution to <code>acct_num</code> could have been handled in an ImplicitNamingStrategy in this case.
+But the point is separation of concerns.  The PhysicalNamingStrategy will be applied regardless of whether
+the attribute explicitly specified the column name or whether we determined that implicitly.  The
+ImplicitNamingStrategy would only be applied if an explicit name was not given.  So it depends on needs
+and intent.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>The default implementation is to simply use the logical name as the physical name.  However
+applications and integrations can define custom implementations of this PhysicalNamingStrategy
+contract.  Here is an example PhysicalNamingStrategy for a fictitious company named Acme Corp
+whose naming standards are to:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>prefer underscore-delimited words rather than camel-casing</p>
+</li>
+<li>
+<p>replace certain words with standard abbreviations</p>
+</li>
+</ul>
+</div>
+<div class="exampleblock">
+<div class="title">Example 1. Example PhysicalNamingStrategy implementation</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">/*
+ * Hibernate, Relational Persistence for Idiomatic Java
+ *
+ * License: GNU Lesser General Public License (LGPL), version 2.1 or later.
+ * See the lgpl.txt file in the root directory or &lt;http://www.gnu.org/licenses/lgpl-2.1.html&gt;.
+ */
+package org.hibernate.userguide.naming;
+
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.TreeMap;
+
+import org.hibernate.boot.model.naming.Identifier;
+import org.hibernate.boot.model.naming.PhysicalNamingStrategy;
+import org.hibernate.engine.jdbc.env.spi.JdbcEnvironment;
+
+import org.apache.commons.lang3.StringUtils;
+
+/**
+ * An example PhysicalNamingStrategy that implements database object naming standards
+ * for our fictitious company Acme Corp.
+ * &lt;p/&gt;
+ * In general Acme Corp prefers underscore-delimited words rather than camel casing.
+ * &lt;p/&gt;
+ * Additionally standards call for the replacement of certain words with abbreviations.
+ *
+ * @author Steve Ebersole
+ */
+public class AcmeCorpPhysicalNamingStrategy implements PhysicalNamingStrategy {
+	private static final Map&lt;String,String&gt; ABBREVIATIONS = buildAbbreviationMap();
+
+	@Override
+	public Identifier toPhysicalCatalogName(Identifier name, JdbcEnvironment jdbcEnvironment) {
+		// Acme naming standards do not apply to catalog names
+		return name;
+	}
+
+	@Override
+	public Identifier toPhysicalSchemaName(Identifier name, JdbcEnvironment jdbcEnvironment) {
+		// Acme naming standards do not apply to schema names
+		return null;
+	}
+
+	@Override
+	public Identifier toPhysicalTableName(Identifier name, JdbcEnvironment jdbcEnvironment) {
+		final List&lt;String&gt; parts = splitAndReplace( name.getText() );
+		return jdbcEnvironment.getIdentifierHelper().toIdentifier(
+				join( parts ),
+				name.isQuoted()
+		);
+	}
+
+	@Override
+	public Identifier toPhysicalSequenceName(Identifier name, JdbcEnvironment jdbcEnvironment) {
+		final LinkedList&lt;String&gt; parts = splitAndReplace( name.getText() );
+		// Acme Corp says all sequences should end with _seq
+		if ( !"seq".equalsIgnoreCase( parts.getLast() ) ) {
+			parts.add( "seq" );
+		}
+		return jdbcEnvironment.getIdentifierHelper().toIdentifier(
+				join( parts ),
+				name.isQuoted()
+		);
+	}
+
+	@Override
+	public Identifier toPhysicalColumnName(Identifier name, JdbcEnvironment jdbcEnvironment) {
+		final List&lt;String&gt; parts = splitAndReplace( name.getText() );
+		return jdbcEnvironment.getIdentifierHelper().toIdentifier(
+				join( parts ),
+				name.isQuoted()
+		);
+	}
+
+	private static Map&lt;String, String&gt; buildAbbreviationMap() {
+		TreeMap&lt;String,String&gt; abbreviationMap = new TreeMap&lt;&gt; ( String.CASE_INSENSITIVE_ORDER );
+		abbreviationMap.put( "account", "acct" );
+		abbreviationMap.put( "number", "num" );
+		return abbreviationMap;
+	}
+
+	private LinkedList&lt;String&gt; splitAndReplace(String name) {
+		LinkedList&lt;String&gt; result = new LinkedList&lt;&gt;();
+		for ( String part : StringUtils.splitByCharacterTypeCamelCase( name ) ) {
+			if ( part == null || part.trim().isEmpty() ) {
+				// skip null and space
+				continue;
+			}
+			part = applyAbbreviationReplacement( part );
+			result.add( part.toLowerCase( Locale.ROOT ) );
+		}
+		return result;
+	}
+
+	private String applyAbbreviationReplacement(String word) {
+		if ( ABBREVIATIONS.containsKey( word ) ) {
+			return ABBREVIATIONS.get( word );
+		}
+
+		return word;
+	}
+
+	private String join(List&lt;String&gt; parts) {
+		boolean firstPass = true;
+		String separator = "";
+		StringBuilder joined = new StringBuilder();
+		for ( String part : parts ) {
+			joined.append( separator ).append( part );
+			if ( firstPass ) {
+				firstPass = false;
+				separator = "_";
+			}
+		}
+		return joined.toString();
+	}
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>There are multiple ways to specify the PhysicalNamingStrategy to use.  First, applications can specify
+the implementation using the <code>hibernate.physical_naming_strategy</code> configuration setting which accepts:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>reference to a Class that implements the <code>org.hibernate.boot.model.naming.PhysicalNamingStrategy</code> contract</p>
+</li>
+<li>
+<p>FQN of a class that implements the <code>org.hibernate.boot.model.naming.PhysicalNamingStrategy</code> contract</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Secondly, applications and integrations can leverage <code>org.hibernate.boot.MetadataBuilder#applyPhysicalNamingStrategy</code>.
+See <a href="chapters/bootstrap/Bootstrap.html#bootstrap">Bootstrap</a> for additional details on bootstrapping.</p>
+</div>
+</div>
+</div>
+</div>
+<div id="footer">
+<div id="footer-text">
+Last updated 2016-10-05 09:27:39 +01:00
+</div>
+</div>
+</body>
+</html>

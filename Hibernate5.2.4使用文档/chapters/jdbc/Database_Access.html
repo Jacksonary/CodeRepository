@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<!--[if IE]><meta http-equiv="X-UA-Compatible" content="IE=edge"><![endif]-->
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="generator" content="Asciidoctor 1.5.2">
+<title>Database access</title>
+<link rel="stylesheet" href="./css/hibernate.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.2.0/css/font-awesome.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prettify/r298/prettify.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prettify/r298/prettify.min.js"></script>
+<script>document.addEventListener('DOMContentLoaded', prettyPrint)</script>
+</head>
+<body class="article">
+<div id="header">
+</div>
+<div id="content">
+<div class="sect1">
+<h2 id="database">Database access</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="database-connectionprovider">ConnectionProvider</h3>
+<div class="paragraph">
+<p>As an ORM tool, probably the single most important thing you need to tell Hibernate is how to connect to your database so that it may connect on behalf of your application.
+This is ultimately the function of the <code>org.hibernate.engine.jdbc.connections.spi.ConnectionProvider</code> interface.
+Hibernate provides some out of the box implementations of this interface.
+<code>ConnectionProvider</code> is also an extension point so you can also use custom implementations from third parties or written yourself.
+The <code>ConnectionProvider</code> to use is defined by the <code>hibernate.connection.provider_class</code> setting. See the <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/cfg/AvailableSettings.html#CONNECTION_PROVIDER"><code>org.hibernate.cfg.AvailableSettings#CONNECTION_PROVIDER</code></a></p>
+</div>
+<div class="paragraph">
+<p>Generally speaking, applications should not have to configure a <code>ConnectionProvider</code> explicitly if using one of the Hibernate-provided implementations.
+Hibernate will internally determine which <code>ConnectionProvider</code> to use based on the following algorithm:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>If <code>hibernate.connection.provider_class</code> is set, it takes precedence</p>
+</li>
+<li>
+<p>else if <code>hibernate.connection.datasource</code> is set &#8594; <a href="#database-connectionprovider-datasource">Using DataSources</a></p>
+</li>
+<li>
+<p>else if any setting prefixed by <code>hibernate.c3p0.</code> is set &#8594; <a href="#database-connectionprovider-c3p0">Using c3p0</a></p>
+</li>
+<li>
+<p>else if any setting prefixed by <code>hibernate.proxool.</code> is set &#8594; <a href="#database-connectionprovider-proxool">Using Proxool</a></p>
+</li>
+<li>
+<p>else if any setting prefixed by <code>hibernate.hikari.</code> is set &#8594; <a href="#database-connectionprovider-hikari">Using Hikari</a></p>
+</li>
+<li>
+<p>else if <code>hibernate.connection.url</code> is set &#8594; <a href="#database-connectionprovider-drivermanager">Using Hibernate&#8217;s built-in (and unsupported) pooling</a></p>
+</li>
+<li>
+<p>else &#8594; <a href="#database-connectionprovider-provided">User-provided Connections</a></p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="database-connectionprovider-datasource">Using DataSources</h3>
+<div class="paragraph">
+<p>Hibernate can integrate with a <code>javax.sql.DataSource</code> for obtaining JDBC Connections.
+Applications would tell Hibernate about the <code>DataSource</code> via the (required) <code>hibernate.connection.datasource</code> setting which can either specify a JNDI name or would reference the actual <code>DataSource</code> instance.
+For cases where a JNDI name is given, be sure to read <a href="chapters/jndi/JNDI.html#jndi">JNDI</a></p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>For JPA applications, note that <code>hibernate.connection.datasource</code> corresponds to either <code>javax.persistence.jtaDataSource</code> or <code>javax.persistence.nonJtaDataSource</code>.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>The <code>DataSource</code> <code>ConnectionProvider</code> also (optionally) accepts the <code>hibernate.connection.username</code> and <code>hibernate.connection.password</code>.
+If specified, the <a href="https://docs.oracle.com/javase/8/docs/api/javax/sql/DataSource.html#getConnection-java.lang.String-java.lang.String-"><code>DataSource#getConnection(String username, String password)</code></a> will be used.
+Otherwise, the no-arg form is used.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="database-connectionprovider-c3p0">Using c3p0</h3>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>To use this integration, the application must include the hibernate-c3p0 module jar (as well as its dependencies) on the classpath.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Hibernate also provides support for applications to use <a href="http://www.mchange.com/projects/c3p0/">c3p0</a> connection pooling.
+When using this c3p0 support, a number of additional configuration settings are recognized.</p>
+</div>
+<div class="paragraph">
+<p>Transaction isolation of the Connections is managed by the <code>ConnectionProvider</code> itself. See <a href="#database-connectionprovider-isolation">ConnectionProvider support for transaction isolation setting</a>.</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><code>hibernate.connection.driver_class</code></dt>
+<dd>
+<p>The name of the JDBC Driver class to use</p>
+</dd>
+<dt class="hdlist1"><code>hibernate.connection.url</code></dt>
+<dd>
+<p>The JDBC connection url.</p>
+</dd>
+<dt class="hdlist1">Any settings prefixed with <code>hibernate.connection.</code> (other than the "special ones")</dt>
+<dd>
+<p>These all have the <code>hibernate.connection.</code> prefix stripped and the rest will be passed as JDBC connection properties</p>
+</dd>
+<dt class="hdlist1"><code>hibernate.c3p0.min_size</code> or <code>c3p0.minPoolSize</code></dt>
+<dd>
+<p>The minimum size of the c3p0 pool. See <a href="http://www.mchange.com/projects/c3p0/#minPoolSize">c3p0 minPoolSize</a></p>
+</dd>
+<dt class="hdlist1"><code>hibernate.c3p0.max_size</code> or <code>c3p0.maxPoolSize</code></dt>
+<dd>
+<p>The maximum size of the c3p0 pool. See <a href="http://www.mchange.com/projects/c3p0/#maxPoolSize">c3p0 maxPoolSize</a></p>
+</dd>
+<dt class="hdlist1"><code>hibernate.c3p0.timeout</code> or <code>c3p0.maxIdleTime</code></dt>
+<dd>
+<p>The Connection idle time. See <a href="http://www.mchange.com/projects/c3p0/#maxIdleTime">c3p0 maxIdleTime</a></p>
+</dd>
+<dt class="hdlist1"><code>hibernate.c3p0.max_statements</code> or <code>c3p0.maxStatements</code></dt>
+<dd>
+<p>Controls the c3p0 PreparedStatement cache size (if using). See <a href="http://www.mchange.com/projects/c3p0/#maxStatements">c3p0 maxStatements</a></p>
+</dd>
+<dt class="hdlist1"><code>hibernate.c3p0.acquire_increment</code> or <code>c3p0.acquireIncrement</code></dt>
+<dd>
+<p>Number of connections c3p0 should acquire at a time when pool is exhausted. See <a href="http://www.mchange.com/projects/c3p0/#acquireIncrement">c3p0 acquireIncrement</a></p>
+</dd>
+<dt class="hdlist1"><code>hibernate.c3p0.idle_test_period</code> or <code>c3p0.idleConnectionTestPeriod</code></dt>
+<dd>
+<p>Idle time before a c3p0 pooled connection is validated. See <a href="http://www.mchange.com/projects/c3p0/#idleConnectionTestPeriod">c3p0 idleConnectionTestPeriod</a></p>
+</dd>
+<dt class="hdlist1"><code>hibernate.c3p0.initialPoolSize</code></dt>
+<dd>
+<p>The initial c3p0 pool size. If not specified, default is to use the min pool size. See <a href="http://www.mchange.com/projects/c3p0/#initialPoolSize">c3p0 initialPoolSize</a></p>
+</dd>
+<dt class="hdlist1">Any other settings prefixed with <code>hibernate.c3p0.</code></dt>
+<dd>
+<p>Will have the <code>hibernate.</code> portion stripped and be passed to c3p0.</p>
+</dd>
+<dt class="hdlist1">Any other settings prefixed with <code>c3p0.</code></dt>
+<dd>
+<p>Get passed to c3p0 as is. See <a href="http://www.mchange.com/projects/c3p0/#configuration">c3p0 configuration</a></p>
+</dd>
+</dl>
+</div>
+</div>
+<div class="sect2">
+<h3 id="database-connectionprovider-proxool">Using Proxool</h3>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>To use this integration, the application must include the hibernate-proxool module jar (as well as its dependencies) on the classpath.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Hibernate also provides support for applications to use <a href="http://proxool.sourceforge.net/">Proxool</a> connection pooling.</p>
+</div>
+<div class="paragraph">
+<p>Transaction isolation of the Connections is managed by the <code>ConnectionProvider</code> itself. See <a href="#database-connectionprovider-isolation">ConnectionProvider support for transaction isolation setting</a>.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="database-connectionprovider-proxool-existing">Using existing Proxool pools</h3>
+<div class="paragraph">
+<p>Controlled by the <code>hibernate.proxool.existing_pool</code> setting.
+If set to true, this ConnectionProvider will use an already existing Proxool pool by alias as indicated by the <code>hibernate.proxool.pool_alias</code> setting.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="database-connectionprovider-proxool-jaxp">Configuring Proxool via XML</h3>
+<div class="paragraph">
+<p>The <code>hibernate.proxool.xml</code> setting names a Proxool configuration XML file to be loaded as a classpath resource and loaded by Proxool&#8217;s JAXPConfigurator.
+See <a href="http://proxool.sourceforge.net/configure.html">proxool  configuration</a>.
+<code>hibernate.proxool.pool_alias</code> must be set to indicate which pool to use.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="database-connectionprovider-proxool-properties">Configuring Proxool via Properties</h3>
+<div class="paragraph">
+<p>The <code>hibernate.proxool.properties</code> setting names a Proxool configuration properties file to be loaded as a classpath resource and loaded by Proxool&#8217;s <code>PropertyConfigurator</code>.
+See <a href="http://proxool.sourceforge.net/configure.html">proxool  configuration</a>.
+<code>hibernate.proxool.pool_alias</code> must be set to indicate which pool to use.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="database-connectionprovider-hikari">Using Hikari</h3>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>To use this integration, the application must include the hibernate-hikari module jar (as well as its dependencies) on the classpath.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Hibernate also provides support for applications to use <a href="http://brettwooldridge.github.io/HikariCP/">Hikari</a> connection pool.</p>
+</div>
+<div class="paragraph">
+<p>Set all of your Hikari settings in Hibernate prefixed by <code>hibernate.hikari.</code> and this <code>ConnectionProvider</code> will pick them up and pass them along to Hikari.
+Additionally, this <code>ConnectionProvider</code> will pick up the following Hibernate-specific properties and map them to the corresponding Hikari ones (any <code>hibernate.hikari.</code> prefixed ones have precedence):</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><code>hibernate.connection.driver_class</code></dt>
+<dd>
+<p>Mapped to Hikari&#8217;s <code>driverClassName</code> setting</p>
+</dd>
+<dt class="hdlist1"><code>hibernate.connection.url</code></dt>
+<dd>
+<p>Mapped to Hikari&#8217;s <code>jdbcUrl</code> setting</p>
+</dd>
+<dt class="hdlist1"><code>hibernate.connection.username</code></dt>
+<dd>
+<p>Mapped to Hikari&#8217;s <code>username</code> setting</p>
+</dd>
+<dt class="hdlist1"><code>hibernate.connection.password</code></dt>
+<dd>
+<p>Mapped to Hikari&#8217;s <code>password</code> setting</p>
+</dd>
+<dt class="hdlist1"><code>hibernate.connection.isolation</code></dt>
+<dd>
+<p>Mapped to Hikari&#8217;s <code>transactionIsolation</code> setting. See <a href="#database-connectionprovider-isolation">ConnectionProvider support for transaction isolation setting</a>.
+Note that Hikari only supports JDBC standard isolation levels (apparently).</p>
+</dd>
+<dt class="hdlist1"><code>hibernate.connection.autocommit</code></dt>
+<dd>
+<p>Mapped to Hikari&#8217;s <code>autoCommit</code> setting</p>
+</dd>
+</dl>
+</div>
+</div>
+<div class="sect2">
+<h3 id="database-connectionprovider-drivermanager">Using Hibernate&#8217;s built-in (and unsupported) pooling</h3>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>The built-in connection pool is not supported supported for use.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>This section is here just for completeness.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="database-connectionprovider-provided">User-provided Connections</h3>
+<div class="paragraph">
+<p>It is possible to use Hibernate by simply passing a Connection to use to the Session when the Session is opened.
+This usage is discouraged and not discussed here.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="database-connectionprovider-isolation">ConnectionProvider support for transaction isolation setting</h3>
+<div class="paragraph">
+<p>All of the provided ConnectionProvider implementations, other than <code>DataSourceConnectionProvider</code>, support consistent setting of transaction isolation for all <code>Connections</code> obtained from the underlying pool.
+The value for <code>hibernate.connection.isolation</code> can be specified in one of 3 formats:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>the integer value accepted at the JDBC level</p>
+</li>
+<li>
+<p>the name of the <code>java.sql.Connection</code> constant field representing the isolation you would like to use.
+For example, <code>TRANSACTION_REPEATABLE_READ</code> for <a href="https://docs.oracle.com/javase/8/docs/api/java/sql/Connection.html#TRANSACTION_REPEATABLE_READ"><code>java.sql.Connection#TRANSACTION_REPEATABLE_READ</code></a>.
+Not that this is only supported for JDBC standard isolation levels, not for isolation levels specific to a particular JDBC driver.</p>
+</li>
+<li>
+<p>a short-name version of the java.sql.Connection constant field without the <code>TRANSACTION_</code> prefix. For example, <code>REPEATABLE_READ</code> for <a href="https://docs.oracle.com/javase/8/docs/api/java/sql/Connection.html#TRANSACTION_REPEATABLE_READ"><code>java.sql.Connection#TRANSACTION_REPEATABLE_READ</code></a>.
+Again, this is only supported for JDBC standard isolation levels, not for isolation levels specific to a particular JDBC driver.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="database-dialect">Database Dialect</h3>
+<div class="paragraph">
+<p>Although SQL is relatively standardized, each database vendor uses a subset and superset of ANSI SQL defined syntax.
+This is referred to as the database&#8217;s dialect.
+Hibernate handles variations across these dialects through its <code>org.hibernate.dialect.Dialect</code> class and the various subclasses for each database vendor.</p>
+</div>
+<div class="paragraph">
+<p>In most cases Hibernate will be able to determine the proper Dialect to use by asking some questions of the JDBC Connection during bootstrap.
+For information on Hibernate&#8217;s ability to determine the proper Dialect to use (and your ability to influence that resolution), see <a href="chapters/portability/Portability.html#portability-dialectresolver">Dialect resolution</a>.</p>
+</div>
+<div class="paragraph">
+<p>If for some reason it is not able to determine the proper one or you want to use a custom Dialect, you will need to set the <code>hibernate.dialect</code> setting.</p>
+</div>
+<table class="tableblock frame-all grid-all spread">
+<caption class="title">Table 1. Provided Dialects</caption>
+<colgroup>
+<col style="width: 28%;">
+<col style="width: 72%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Dialect (short name)</th>
+<th class="tableblock halign-left valign-top">Remarks</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Cache71</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Support for the Caché database, version 2007.1</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">CUBRID</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Support for the CUBRID database, version 8.3. May work with later versions.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">DB2</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Support for the DB2 database</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">DB2390</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Support for DB2 Universal Database for OS/390, also known as DB2/390.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">DB2400</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Support for DB2 Universal Database for iSeries, also known as DB2/400.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">DerbyTenFive</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Support for the Derby database, version 10.5</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">DerbyTenSix</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Support for the Derby database, version 10.6</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">DerbyTenSeven</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Support for the Derby database, version 10.7</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Firebird</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Support for the Firebird database</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">FrontBase</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Support for the Frontbase database</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">H2</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Support for the H2 database</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">HSQL</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Support for the HSQL (HyperSQL) database</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Informix</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Support for the Informix database</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Ingres</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Support for the Ingres database, version 9.2</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Ingres9</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Support for the Ingres database, version 9.3. May work with newer versions</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Ingres10</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Support for the Ingres database, version 10. May work with newer versions</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Interbase</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Support for the Interbase database.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">JDataStore</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Support for the JDataStore database</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">McKoi</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Support for the McKoi database</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Mimer</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Support for the Mimer database, version 9.2.1. May work with newer versions</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">MySQL5</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Support for the MySQL database, version 5.x</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">MySQL5InnoDB</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Support for the MySQL database, version 5.x preferring the InnoDB storage engine when exporting tables.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">MySQL57InnoDB</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Support for the MySQL database, version 5.7 preferring the InnoDB storage engine when exporting tables. May work with newer versions</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Oracle8i</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Support for the Oracle database, version 8i</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Oracle9i</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Support for the Oracle database, version 9i</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Oracle10g</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Support for the Oracle database, version 10g</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Pointbase</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Support for the Pointbase database</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">PostgresPlus</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Support for the Postgres Plus database</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">PostgreSQL81</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Support for the PostgrSQL database, version 8.1</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">PostgreSQL82</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Support for the PostgreSQL database, version 8.2</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">PostgreSQL9</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Support for the PostgreSQL database, version 9. May work with later versions.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Progress</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Support for the Progress database, version 9.1C. May work with newer versions.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">SAPDB</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Support for the SAPDB/MAXDB database.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">SQLServer</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Support for the SQL Server 2000 database</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">SQLServer2005</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Support for the SQL Server 2005 database</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">SQLServer2008</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Support for the SQL Server 2008 database</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Sybase11</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Support for the Sybase database, up to version 11.9.2</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">SybaseAnywhere</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Support for the Sybase Anywhere database</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">SybaseASE15</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Support for the Sybase Adaptive Server Enterprise database, version 15</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">SybaseASE157</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Support for the Sybase Adaptive Server Enterprise database, version 15.7. May work with newer versions.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Teradata</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Support for the Teradata database</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">TimesTen</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Support for the TimesTen database, version 5.1. May work with newer versions</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+<div id="footer">
+<div id="footer-text">
+Last updated 2016-10-05 09:27:39 +01:00
+</div>
+</div>
+</body>
+</html>

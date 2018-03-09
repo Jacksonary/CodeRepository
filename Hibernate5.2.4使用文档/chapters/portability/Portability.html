@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<!--[if IE]><meta http-equiv="X-UA-Compatible" content="IE=edge"><![endif]-->
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="generator" content="Asciidoctor 1.5.2">
+<title>Database Portability Considerations</title>
+<link rel="stylesheet" href="./css/hibernate.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.2.0/css/font-awesome.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prettify/r298/prettify.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prettify/r298/prettify.min.js"></script>
+<script>document.addEventListener('DOMContentLoaded', prettyPrint)</script>
+</head>
+<body class="article">
+<div id="header">
+</div>
+<div id="content">
+<div class="sect1">
+<h2 id="portability">Database Portability Considerations</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="portability-basics">Portability Basics</h3>
+<div class="paragraph">
+<p>One of the selling points of Hibernate (and really Object/Relational Mapping as a whole) is the notion of database portability.
+This could mean an internal IT user migrating from one database vendor to another, or it could mean a framework or deployable application consuming Hibernate to simultaneously target multiple database products by their users.
+Regardless of the exact scenario, the basic idea is that you want Hibernate to help you run against any number of databases without changes to your code, and ideally without any changes to the mapping metadata.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="portability-dialect">Dialect</h3>
+<div class="paragraph">
+<p>The first line of portability for Hibernate is the dialect, which is a specialization of the <code>org.hibernate.dialect.Dialect</code> contract.
+A dialect encapsulates all the differences in how Hibernate must communicate with a particular database to accomplish some task like getting a sequence value or structuring a SELECT query.
+Hibernate bundles a wide range of dialects for many of the most popular databases.
+If you find that your particular database is not among them, it is not terribly difficult to write your own.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="portability-dialectresolver">Dialect resolution</h3>
+<div class="paragraph">
+<p>Originally, Hibernate would always require that users specify which dialect to use. In the case of users looking to simultaneously target multiple databases with their build that was problematic.
+Generally, this required their users to configure the Hibernate dialect or defining their own method of setting that value.</p>
+</div>
+<div class="paragraph">
+<p>Starting with version 3.2, Hibernate introduced the notion of automatically detecting the dialect to use based on the <code>java.sql.DatabaseMetaData</code> obtained from a <code>java.sql.Connection</code> to that database.
+This was much better, expect that this resolution was limited to databases Hibernate know about ahead of time and was in no way configurable or overrideable.</p>
+</div>
+<div class="paragraph">
+<p>Starting with version 3.3, Hibernate has a fare more powerful way to automatically determine which dialect to should be used by relying on a series of delegates which implement the <code>org.hibernate.dialect.resolver.DialectResolver</code> which defines only a single method:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">public Dialect resolveDialect(DatabaseMetaData metaData) throws JDBCConnectionException</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The basic contract here is that if the resolver 'understands' the given database metadata then it returns the corresponding Dialect; if not it returns null and the process continues to the next resolver.
+The signature also identifies <code>org.hibernate.exception.JDBCConnectionException</code> as possibly being thrown.
+A <code>JDBCConnectionException</code> here is interpreted to imply a "non transient" (aka non-recoverable) connection problem and is used to indicate an immediate stop to resolution attempts.
+All other exceptions result in a warning and continuing on to the next resolver.</p>
+</div>
+<div class="paragraph">
+<p>The cool part about these resolvers is that users can also register their own custom resolvers which will be processed ahead of the built-in Hibernate ones.
+This might be useful in a number of different situations:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>it allows easy integration for auto-detection of dialects beyond those shipped with Hibernate itself</p>
+</li>
+<li>
+<p>it allows you to specify to use a custom dialect when a particular database is recognized.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>To register one or more resolvers, simply specify them (separated by commas, tabs or spaces) using the 'hibernate.dialect_resolvers' configuration setting (see the <code>DIALECT_RESOLVERS</code> constant on <code>org.hibernate.cfg.Environment</code>).</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="portability-idgen">Identifier generation</h3>
+<div class="paragraph">
+<p>When considering portability between databases, another important decision is selecting the identifier generation strategy you want to use.
+Originally Hibernate provided the <em>native</em> generator for this purpose, which was intended to select between a <em>sequence</em>, <em>identity</em>, or <em>table</em> strategy depending on the capability of the underlying database.</p>
+</div>
+<div class="paragraph">
+<p>However, an insidious implication of this approach comes about when targeting some databases which support <em>identity</em> generation and some which do not.
+<em>identity</em> generation relies on the SQL definition of an IDENTITY (or auto-increment) column to manage the identifier value.
+It is what is known as a <em>post-insert</em> generation strategy because the insert must actually happen before we can know the identifier value.</p>
+</div>
+<div class="paragraph">
+<p>Because Hibernate relies on this identifier value to uniquely reference entities within a persistence context,
+it must then issue the insert immediately when the users requests that the entity be associated with the session (e.g. like via <code>save()</code> or <code>persist()</code>) , regardless of current transactional semantics.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Hibernate was changed slightly, once the implications of this were better understood, so now the insert could be delayed in cases where this is feasible.</p>
+</div>
+<div class="paragraph">
+<p>The underlying issue is that the actual semantics of the application itself changes in these cases.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Starting with version 3.2.3, Hibernate comes with a set of <a href="http://in.relation.to/2082.lace">enhanced</a> identifier generators targeting portability in a much different way.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>There are specifically 2 bundled <em>enhanced</em>generators:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>org.hibernate.id.enhanced.SequenceStyleGenerator</code></p>
+</li>
+<li>
+<p><code>org.hibernate.id.enhanced.TableGenerator</code></p>
+</li>
+</ul>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>The idea behind these generators is to port the actual semantics of the identifier value generation to the different databases.
+For example, the <code>org.hibernate.id.enhanced.SequenceStyleGenerator</code> mimics the behavior of a sequence on databases which do not support sequences by using a table.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="portability-functions">Database functions</h3>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>This is an area in Hibernate in need of improvement.
+In terms of portability concerns, this function handling currently works pretty well in HQL, however, it is quite lacking in all other aspects.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>SQL functions can be referenced in many ways by users.
+However, not all databases support the same set of functions.
+Hibernate, provides a means of mapping a <em>logical</em> function name to a delegate which knows how to render that particular function, perhaps even using a totally different physical function call.</p>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Technically this function registration is handled through the <code>org.hibernate.dialect.function.SQLFunctionRegistry</code> class which is intended to allow users to provide custom function definitions without having to provide a custom dialect.
+This specific behavior is not fully completed as of yet.</p>
+</div>
+<div class="paragraph">
+<p>It is sort of implemented such that users can programmatically register functions with the <code>org.hibernate.cfg.Configuration</code> and those functions will be recognized for HQL.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="portability-types">Type mappings</h3>
+<div class="paragraph">
+<p>TODO: document the following as well</p>
+</div>
+<div class="sect3">
+<h4 id="portability-types-lobs">BLOB/CLOB mappings</h4>
+
+</div>
+<div class="sect3">
+<h4 id="portability-types-bool">Boolean mappings</h4>
+<div class="paragraph">
+<p>JPA portability</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>HQL/JPQL differences</p>
+</li>
+<li>
+<p>naming strategies</p>
+</li>
+<li>
+<p>basic types</p>
+</li>
+<li>
+<p>simple id types</p>
+</li>
+<li>
+<p>generated id types</p>
+</li>
+<li>
+<p>composite ids and many-to-one</p>
+</li>
+<li>
+<p>"embedded composite identifiers"</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div id="footer">
+<div id="footer-text">
+Last updated 2016-10-05 09:27:39 +01:00
+</div>
+</div>
+</body>
+</html>

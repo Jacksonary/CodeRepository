@@ -1,0 +1,4130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<!--[if IE]><meta http-equiv="X-UA-Compatible" content="IE=edge"><![endif]-->
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="generator" content="Asciidoctor 1.5.2">
+<title>Basic Types</title>
+<link rel="stylesheet" href="./css/hibernate.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.2.0/css/font-awesome.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prettify/r298/prettify.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prettify/r298/prettify.min.js"></script>
+<script>document.addEventListener('DOMContentLoaded', prettyPrint)</script>
+</head>
+<body class="article">
+<div id="header">
+</div>
+<div id="content">
+<div class="sect2">
+<h3 id="basic">Basic Types</h3>
+<div class="paragraph">
+<p>Basic value types usually map a single database column, to a single, non-aggregated Java type.
+Hibernate provides a number of built-in basic types, which follow the natural mappings recommended by the JDBC specifications.</p>
+</div>
+<div class="paragraph">
+<p>Internally Hibernate uses a registry of basic types when it needs to resolve a specific <code>org.hibernate.type.Type</code>.</p>
+</div>
+<div class="sect3">
+<h4 id="basic-provided">Hibernate-provided BasicTypes</h4>
+<table class="tableblock frame-all grid-all spread">
+<caption class="title">Table 1. Standard BasicTypes</caption>
+<colgroup>
+<col style="width: %;">
+<col style="width: %;">
+<col style="width: %;">
+<col style="width: %;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Hibernate type (org.hibernate.type package)</th>
+<th class="tableblock halign-left valign-top">JDBC type</th>
+<th class="tableblock halign-left valign-top">Java type</th>
+<th class="tableblock halign-left valign-top">BasicTypeRegistry key(s)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">StringType</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">VARCHAR</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">java.lang.String</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">string, java.lang.String</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">MaterializedClob</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">CLOB</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">java.lang.String</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">materialized_clob</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">TextType</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">LONGVARCHAR</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">java.lang.String</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">text</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">CharacterType</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">CHAR</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">char, java.lang.Character</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">char, java.lang.Character</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">BooleanType</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">BIT</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">boolean, java.lang.Boolean</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">boolean, java.lang.Boolean</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">NumericBooleanType</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">INTEGER, 0 is false, 1 is true</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">boolean, java.lang.Boolean</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">numeric_boolean</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">YesNoType</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">CHAR, 'N'/'n' is false, 'Y'/'y' is true. The uppercase value is written to the database.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">boolean, java.lang.Boolean</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">yes_no</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">TrueFalseType</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">CHAR, 'F'/'f' is false, 'T'/'t' is true. The uppercase value is written to the database.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">boolean, java.lang.Boolean</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">true_false</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ByteType</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">TINYINT</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">byte, java.lang.Byte</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">byte, java.lang.Byte</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ShortType</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">SMALLINT</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">short, java.lang.Short</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">short, java.lang.Short</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">IntegerTypes</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">INTEGER</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">int, java.lang.Integer</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">int, java.lang.Integer</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">LongType</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">BIGINT</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">long, java.lang.Long</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">long, java.lang.Long</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">FloatType</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">FLOAT</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">float, java.lang.Float</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">float, java.lang.Float</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">DoubleType</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">DOUBLE</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">double, java.lang.Double</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">double, java.lang.Double</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">BigIntegerType</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">NUMERIC</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">java.math.BigInteger</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">big_integer, java.math.BigInteger</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">BigDecimalType</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">NUMERIC</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">java.math.BigDecimal</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">big_decimal, java.math.bigDecimal</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">TimestampType</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">TIMESTAMP</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">java.sql.Timestamp</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">timestamp, java.sql.Timestamp</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">TimeType</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">TIME</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">java.sql.Time</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">time, java.sql.Time</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">DateType</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">DATE</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">java.sql.Date</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">date, java.sql.Date</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">CalendarType</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">TIMESTAMP</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">java.util.Calendar</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">calendar, java.util.Calendar</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">CalendarDateType</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">DATE</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">java.util.Calendar</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">calendar_date</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">CalendarTimeType</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">TIME</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">java.util.Calendar</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">calendar_time</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">CurrencyType</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">java.util.Currency</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">VARCHAR</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">currency, java.util.Currency</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">LocaleType</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">VARCHAR</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">java.util.Locale</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">locale, java.utility.locale</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">TimeZoneType</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">VARCHAR, using the TimeZone ID</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">java.util.TimeZone</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">timezone, java.util.TimeZone</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">UrlType</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">VARCHAR</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">java.net.URL</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">url, java.net.URL</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ClassType</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">VARCHAR (class FQN)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">java.lang.Class</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">class, java.lang.Class</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">BlobType</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">BLOB</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">java.sql.Blob</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">blog, java.sql.Blob</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ClobType</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">CLOB</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">java.sql.Clob</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">clob, java.sql.Clob</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">BinaryType</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">VARBINARY</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">byte[]</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">binary, byte[]</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">MaterializedBlobType</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">BLOB</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">byte[]</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">materized_blob</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ImageType</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">LONGVARBINARY</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">byte[]</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">image</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">WrapperBinaryType</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">VARBINARY</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">java.lang.Byte[]</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">wrapper-binary, Byte[], java.lang.Byte[]</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">CharArrayType</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">VARCHAR</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">char[]</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">characters, char[]</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">CharacterArrayType</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">VARCHAR</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">java.lang.Character[]</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">wrapper-characters, Character[], java.lang.Character[]</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">UUIDBinaryType</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">BINARY</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">java.util.UUID</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">uuid-binary, java.util.UUID</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">UUIDCharType</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">CHAR, can also read VARCHAR</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">java.util.UUID</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">uuid-char</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">PostgresUUIDType</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">PostgreSQL UUID, through Types#OTHER, which complies to the PostgreSQL JDBC driver definition</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">java.util.UUID</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">pg-uuid</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">SerializableType</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">VARBINARY</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">implementors of java.lang.Serializable</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Unlike the other value types, multiple instances of this type are registered. It is registered once under java.io.Serializable, and registered under the specific java.io.Serializable implementation class names.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">StringNVarcharType</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">NVARCHAR</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">java.lang.String</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">nstring</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">NTextType</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">LONGNVARCHAR</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">java.lang.String</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ntext</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">NClobType</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">NCLOB</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">java.sql.NClob</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">nclob, java.sql.NClob</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">MaterializedNClobType</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">NCLOB</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">java.lang.String</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">materialized_nclob</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">PrimitiveCharacterArrayNClobType</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">NCHAR</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">char[]</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">N/A</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">CharacterNCharType</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">NCHAR</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">java.lang.Character</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ncharacter</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">CharacterArrayNClobType</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">NCLOB</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">java.lang.Character[]</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">N/A</p></td>
+</tr>
+</tbody>
+</table>
+<table class="tableblock frame-all grid-all spread">
+<caption class="title">Table 2. Java 8 BasicTypes</caption>
+<colgroup>
+<col style="width: %;">
+<col style="width: %;">
+<col style="width: %;">
+<col style="width: %;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Hibernate type (org.hibernate.type package)</th>
+<th class="tableblock halign-left valign-top">JDBC type</th>
+<th class="tableblock halign-left valign-top">Java type</th>
+<th class="tableblock halign-left valign-top">BasicTypeRegistry key(s)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">DurationType</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">BIGINT</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">java.time.Duration</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Duration, java.time.Duration</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">InstantType</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">TIMESTAMP</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">java.time.Instant</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Instant, java.time.Instant</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">LocalDateTimeType</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">TIMESTAMP</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">java.time.LocalDateTime</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">LocalDateTime, java.time.LocalDateTime</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">LocalDateType</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">DATE</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">java.time.LocalDate</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">LocalDate, java.time.LocalDate</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">LocalTimeType</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">TIME</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">java.time.LocalTime</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">LocalTime, java.time.LocalTime</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">OffsetDateTimeType</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">TIMESTAMP</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">java.time.OffsetDateTime</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">OffsetDateTime, java.time.OffsetDateTime</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">OffsetTimeType</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">TIME</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">java.time.OffsetTime</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">OffsetTime, java.time.OffsetTime</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">OffsetTimeType</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">TIMESTAMP</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">java.time.ZonedDateTime</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ZonedDateTime, java.time.ZonedDateTime</p></td>
+</tr>
+</tbody>
+</table>
+<table class="tableblock frame-all grid-all spread">
+<caption class="title">Table 3. Hibernate Spatial BasicTypes</caption>
+<colgroup>
+<col style="width: %;">
+<col style="width: %;">
+<col style="width: %;">
+<col style="width: %;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Hibernate type (org.hibernate.spatial package)</th>
+<th class="tableblock halign-left valign-top">JDBC type</th>
+<th class="tableblock halign-left valign-top">Java type</th>
+<th class="tableblock halign-left valign-top">BasicTypeRegistry key(s)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">JTSGeometryType</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">depends on the dialect</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">com.vividsolutions.jts.geom.Geometry</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">jts_geometry, or the classname of Geometry or any of its subclasses</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">GeolatteGeometryType</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">depends on the dialect</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">org.geolatte.geom.Geometry</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">geolatte_geometry, or the classname of Geometry or any of its subclasses</p></td>
+</tr>
+</tbody>
+</table>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>To use these hibernate-spatial types just must add the <code>hibernate-spatial</code> dependency to your classpath <em>and</em> use a the <code>org.hibernate.spatial.SpatialDialect</code>.
+See <a href="#spatial">[spatial]</a> for more about spatial types.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>These mappings are managed by a service inside Hibernate called the <code>org.hibernate.type.BasicTypeRegistry</code>, which essentially maintains a map of <code>org.hibernate.type.BasicType</code> (a <code>org.hibernate.type.Type</code> specialization) instances keyed by a name.
+That is the purpose of the "BasicTypeRegistry key(s)" column in the previous tables.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="basic-annotation">The <code>@Basic</code> annotation</h4>
+<div class="paragraph">
+<p>Strictly speaking, a basic type is denoted with with the <code>javax.persistence.Basic</code> annotation.
+Generally speaking, the <code>@Basic</code> annotation can be ignored, as it is assumed by default.
+Both of the following examples are ultimately the same.</p>
+</div>
+<div id="basic-annotation-explicit-example" class="exampleblock">
+<div class="title">Example 1. <code>@Basic</code> declared explicitly</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">@Entity(name = "Product")
+public class Product {
+
+    @Id
+    @Basic
+    private Integer id;
+
+    @Basic
+    private String sku;
+
+    @Basic
+    private String name;
+
+    @Basic
+    private String description;
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div id="basic-annotation-implicit-example" class="exampleblock">
+<div class="title">Example 2. <code>@Basic</code> being implicitly implied</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">@Entity(name = "Product")
+public class Product {
+
+    @Id
+    private Integer id;
+
+    private String sku;
+
+    private String name;
+
+    private String description;
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>The JPA specification strictly limits the Java types that can be marked as basic to the following listing:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Java primitive types (<code>boolean</code>, <code>int</code>, etc)</p>
+</li>
+<li>
+<p>wrappers for the primitive types (<code>java.lang.Boolean</code>, <code>java.lang.Integer</code>, etc)</p>
+</li>
+<li>
+<p><code>java.lang.String</code></p>
+</li>
+<li>
+<p><code>java.math.BigInteger</code></p>
+</li>
+<li>
+<p><code>java.math.BigDecimal</code></p>
+</li>
+<li>
+<p><code>java.util.Date</code></p>
+</li>
+<li>
+<p><code>java.util.Calendar</code></p>
+</li>
+<li>
+<p><code>java.sql.Date</code></p>
+</li>
+<li>
+<p><code>java.sql.Time</code></p>
+</li>
+<li>
+<p><code>java.sql.Timestamp</code></p>
+</li>
+<li>
+<p><code>byte[]</code> or <code>Byte[]</code></p>
+</li>
+<li>
+<p><code>char[]</code> or <code>Character[]</code></p>
+</li>
+<li>
+<p><code>enums</code></p>
+</li>
+<li>
+<p>any other type that implements <code>Serializable</code> (JPA&#8217;s "support" for <code>Serializable</code> types is to directly serialize their state to the database).</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>If provider portability is a concern, you should stick to just these basic types.
+Note that JPA 2.1 did add the notion of a <code>javax.persistence.AttributeConverter</code> to help alleviate some of these concerns; see <a href="#basic-jpa-convert">JPA 2.1 AttributeConverters</a> for more on this topic.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>The <code>@Basic</code> annotation defines 2 attributes.</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><code>optional</code> - boolean (defaults to true)</dt>
+<dd>
+<p>Defines whether this attribute allows nulls.
+JPA defines this as "a hint", which essentially means that it effect is specifically required.
+As long as the type is not primitive, Hibernate takes this to mean that the underlying column should be <code>NULLABLE</code>.</p>
+</dd>
+<dt class="hdlist1"><code>fetch</code> - FetchType (defaults to EAGER)</dt>
+<dd>
+<p>Defines whether this attribute should be fetched eagerly or lazily.
+JPA says that EAGER is a requirement to the provider (Hibernate) that the value should be fetched when the owner is fetched, while LAZY is merely a hint that the value be fetched when the attribute is accessed.
+Hibernate ignores this setting for basic types unless you are using bytecode enhancement.
+See the <a href="chapters/pc/BytecodeEnhancement.html#BytecodeEnhancement">BytecodeEnhancement</a> for additional information on fetching and on bytecode enhancement.</p>
+</dd>
+</dl>
+</div>
+</div>
+<div class="sect3">
+<h4 id="basic-column-annotation">The <code>@Column</code> annotation</h4>
+<div class="paragraph">
+<p>JPA defines rules for implicitly determining the name of tables and columns.
+For a detailed discussion of implicit naming see <a href="chapters/domain/naming.html#naming">Naming</a>.</p>
+</div>
+<div class="paragraph">
+<p>For basic type attributes, the implicit naming rule is that the column name is the same as the attribute name.
+If that implicit naming rule does not meet your requirements, you can explicitly tell Hibernate (and other providers) the column name to use.</p>
+</div>
+<div id="basic-annotation-explicit-column-example" class="exampleblock">
+<div class="title">Example 3. Explicit column naming</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">@Entity(name = "Product")
+public class Product {
+
+    @Id
+    private Integer id;
+
+    private String sku;
+
+    private String name;
+
+    @Column( name = "NOTES" )
+    private String description;
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Here we use <code>@Column</code> to explicitly map the <code>description</code> attribute to the <code>NOTES</code> column, as opposed to the implicit column name <code>description</code>.</p>
+</div>
+<div class="paragraph">
+<p>The <code>@Column</code> annotation defines other mapping information as well. See its Javadocs for details.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="basic-registry">BasicTypeRegistry</h4>
+<div class="paragraph">
+<p>We said before that a Hibernate type is not a Java type, nor a SQL type, but that it understands both and performs the marshalling between them.
+But looking at the basic type mappings from the previous examples,
+how did Hibernate know to use its <code>org.hibernate.type.StringType</code> for mapping for <code>java.lang.String</code> attributes,
+or its <code>org.hibernate.type.IntegerType</code> for mapping <code>java.lang.Integer</code> attributes?</p>
+</div>
+<div class="paragraph">
+<p>The answer lies in a service inside Hibernate called the <code>org.hibernate.type.BasicTypeRegistry</code>, which essentially maintains a map of <code>org.hibernate.type.BasicType</code> (a <code>org.hibernate.type.Type</code> specialization) instances keyed by a name.</p>
+</div>
+<div class="paragraph">
+<p>We will see later, in the <a href="#basic-type-annotation">Explicit BasicTypes</a> section, that we can explicitly tell Hibernate which BasicType to use for a particular attribute.
+But first let&#8217;s explore how implicit resolution works and how applications can adjust implicit resolution.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>A thorough discussion of the <code>BasicTypeRegistry</code> and all the different ways to contribute types to it is beyond the scope of this documentation.
+Please see Integrations Guide for complete details.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>As an example, take a String attribute such as we saw before with Product#sku.
+Since there was no explicit type mapping, Hibernate looks to the <code>BasicTypeRegistry</code> to find the registered mapping for <code>java.lang.String</code>.
+This goes back to the "BasicTypeRegistry key(s)" column we saw in the tables at the start of this chapter.</p>
+</div>
+<div class="paragraph">
+<p>As a baseline within <code>BasicTypeRegistry</code>, Hibernate follows the recommended mappings of JDBC for Java types.
+JDBC recommends mapping Strings to VARCHAR, which is the exact mapping that <code>StringType</code> handles.
+So that is the baseline mapping within <code>BasicTypeRegistry</code> for Strings.</p>
+</div>
+<div class="paragraph">
+<p>Applications can also extend (add new <code>BasicType</code> registrations) or override (replace an existing <code>BasicType</code> registration) using one of the
+<code>MetadataBuilder#applyBasicType</code> methods or the <code>MetadataBuilder#applyTypes</code> method during bootstrap.
+For more details, see <a href="#basic-custom-type">Custom BasicTypes</a> section.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="basic-type-annotation">Explicit BasicTypes</h4>
+<div class="paragraph">
+<p>Sometimes you want a particular attribute to be handled differently.
+Occasionally Hibernate will implicitly pick a <code>BasicType</code> that you do not want (and for some reason you do not want to adjust the <code>BasicTypeRegistry</code>).</p>
+</div>
+<div class="paragraph">
+<p>In these cases you must explicitly tell Hibernate the <code>BasicType</code> to use, via the <code>org.hibernate.annotations.Type</code> annotation.</p>
+</div>
+<div id="basic-type-annotation-example" class="exampleblock">
+<div class="title">Example 4. Using <code>@org.hibernate.annotations.Type</code></div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">@Entity(name = "Product")
+public class Product {
+
+    @Id
+    private Integer id;
+
+    private String sku;
+
+    @org.hibernate.annotations.Type( type = "nstring" )
+    private String name;
+
+    @org.hibernate.annotations.Type( type = "materialized_nclob" )
+    private String description;
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>This tells Hibernate to store the Strings as nationalized data.
+This is just for illustration purposes; for better ways to indicate nationalized character data see <a href="#basic-nationalized">Mapping Nationalized Character Data</a> section.</p>
+</div>
+<div class="paragraph">
+<p>Additionally, the description is to be handled as a LOB. Again, for better ways to indicate LOBs see <a href="#basic-lob">Mapping LOBs</a> section.</p>
+</div>
+<div class="paragraph">
+<p>The <code>org.hibernate.annotations.Type#type</code> attribute can name any of the following:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Fully qualified name of any <code>org.hibernate.type.Type</code> implementation</p>
+</li>
+<li>
+<p>Any key registered with <code>BasicTypeRegistry</code></p>
+</li>
+<li>
+<p>The name of any known <em>type definitions</em></p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="basic-custom-type">Custom BasicTypes</h4>
+<div class="paragraph">
+<p>Hibernate makes it relatively easy for developers to create their own basic type mappings type.
+For example, you might want to persist properties of type <code>java.util.BigInteger</code> to <code>VARCHAR</code> columns, or support completely new types.</p>
+</div>
+<div class="paragraph">
+<p>There are two approaches to developing a custom type:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>implementing a <code>BasicType</code> and registering it</p>
+</li>
+<li>
+<p>implement a <code>UserType</code> which doesn&#8217;t require type registration</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>As a means of illustrating the different approaches, let&#8217;s consider a use case where we need to support a <code>java.util.BitSet</code> mapping that&#8217;s stored as a VARCHAR.</p>
+</div>
+<div class="sect4">
+<h5 id="basic-custom-type-BasicType">Implementing a <code>BasicType</code></h5>
+<div class="paragraph">
+<p>The first approach is to directly implement the <code>BasicType</code> interface.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Because the <code>BasicType</code> interface has a lot of methods to implement, it&#8217;s much more convenient to extend the <code>AbstractStandardBasicType</code>,
+or the <code>AbstractSingleColumnStandardBasicType</code> if the value is stored in a single database column.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>First, we need to extend the <code>AbstractSingleColumnStandardBasicType</code> like this:</p>
+</div>
+<div id="basic-custom-type-BitSetType-example" class="exampleblock">
+<div class="title">Example 5. Custom <code>BasicType</code> implementation</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">public class BitSetType
+        extends AbstractSingleColumnStandardBasicType&lt;BitSet&gt;
+        implements DiscriminatorType&lt;BitSet&gt; {
+
+    public static final BitSetType INSTANCE = new BitSetType();
+
+    public BitSetType() {
+        super( VarcharTypeDescriptor.INSTANCE, BitSetTypeDescriptor.INSTANCE );
+    }
+
+    @Override
+    public BitSet stringToObject(String xml) throws Exception {
+        return fromString( xml );
+    }
+
+    @Override
+    public String objectToSQLString(BitSet value, Dialect dialect) throws Exception {
+        return toString( value );
+    }
+
+    @Override
+    public String getName() {
+        return "bitset";
+    }
+
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>The <code>AbstractSingleColumnStandardBasicType</code> requires an <code>sqlTypeDescriptor</code> and a <code>javaTypeDescriptor</code>.
+The <code>sqlTypeDescriptor</code> is <code>VarcharTypeDescriptor.INSTANCE</code> because the database column is a VARCHAR.
+On the Java side, we need to use a <code>BitSetTypeDescriptor</code> instance which can be implemented like this:</p>
+</div>
+<div id="basic-custom-type-BitSetTypeDescriptor-example" class="exampleblock">
+<div class="title">Example 6. Custom <code>AbstractTypeDescriptor</code> implementation</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">public class BitSetTypeDescriptor extends AbstractTypeDescriptor&lt;BitSet&gt; {
+
+    private static final String DELIMITER = ",";
+
+    public static final BitSetTypeDescriptor INSTANCE = new BitSetTypeDescriptor();
+
+    public BitSetTypeDescriptor() {
+        super( BitSet.class );
+    }
+
+    @Override
+    public String toString(BitSet value) {
+        StringBuilder builder = new StringBuilder();
+        for ( long token : value.toLongArray() ) {
+            if ( builder.length() &gt; 0 ) {
+                builder.append( DELIMITER );
+            }
+            builder.append( Long.toString( token, 2 ) );
+        }
+        return builder.toString();
+    }
+
+    @Override
+    public BitSet fromString(String string) {
+        if ( string == null || string.isEmpty() ) {
+            return null;
+        }
+        String[] tokens = string.split( DELIMITER );
+        long[] values = new long[tokens.length];
+
+        for ( int i = 0; i &lt; tokens.length; i++ ) {
+            values[i] = Long.valueOf( tokens[i], 2 );
+        }
+        return BitSet.valueOf( values );
+    }
+
+    @SuppressWarnings({"unchecked"})
+    public &lt;X&gt; X unwrap(BitSet value, Class&lt;X&gt; type, WrapperOptions options) {
+        if ( value == null ) {
+            return null;
+        }
+        if ( BitSet.class.isAssignableFrom( type ) ) {
+            return (X) value;
+        }
+        if ( String.class.isAssignableFrom( type ) ) {
+            return (X) toString( value);
+        }
+        throw unknownUnwrap( type );
+    }
+
+    public &lt;X&gt; BitSet wrap(X value, WrapperOptions options) {
+        if ( value == null ) {
+            return null;
+        }
+        if ( String.class.isInstance( value ) ) {
+            return fromString( (String) value );
+        }
+        if ( BitSet.class.isInstance( value ) ) {
+            return (BitSet) value;
+        }
+        throw unknownWrap( value.getClass() );
+    }
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>The <code>unwrap</code> method is used when passing a <code>BitSet</code> as a <code>PreparedStatement</code> bind parameter, while the <code>wrap</code> method is used to transform the JDBC column value object (e.g. <code>String</code> in our case) to the actual mapping object type (e.g. <code>BitSet</code> in this example).</p>
+</div>
+<div class="paragraph">
+<p>The <code>BasicType</code> must be registered, and this can be done at bootstrapping time:</p>
+</div>
+<div id="basic-custom-type-register-BasicType-example" class="exampleblock">
+<div class="title">Example 7. Register a Custom <code>BasicType</code> implementation</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">configuration.registerTypeContributor( (typeContributions, serviceRegistry) -&gt; {
+    typeContributions.contributeType( BitSetType.INSTANCE );
+} );</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>or using the <code>MetadataBuilder</code></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">ServiceRegistry standardRegistry =
+    new StandardServiceRegistryBuilder().build();
+
+MetadataSources sources = new MetadataSources( standardRegistry );
+
+MetadataBuilder metadataBuilder = sources.getMetadataBuilder();
+
+metadataBuilder.applyBasicType( BitSetType.INSTANCE );</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>With the new <code>BitSetType</code> being registered as <code>bitset</code>, the entity mapping looks like this:</p>
+</div>
+<div id="basic-custom-type-BitSetType-mapping-example" class="exampleblock">
+<div class="title">Example 8. Custom <code>BasicType</code> mapping</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">@Entity(name = "Product")
+public static class Product {
+
+    @Id
+    private Integer id;
+
+    @Type( type = "bitset" )
+    private BitSet bitSet;
+
+    public Integer getId() {
+        return id;
+    }
+
+    public void setId(Integer id) {
+        this.id = id;
+    }
+
+    public BitSet getBitSet() {
+        return bitSet;
+    }
+
+    public void setBitSet(BitSet bitSet) {
+        this.bitSet = bitSet;
+    }
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>To validate this new <code>BasicType</code> implementation, we can test it as follows:</p>
+</div>
+<div id="basic-custom-type-BitSetType-persistence-example" class="exampleblock">
+<div class="title">Example 9. Persisting the custom <code>BasicType</code></div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">BitSet bitSet = BitSet.valueOf( new long[] {1, 2, 3} );
+
+doInHibernate( this::sessionFactory, session -&gt; {
+    Product product = new Product( );
+    product.setId( 1 );
+    product.setBitSet( bitSet );
+    session.persist( product );
+} );
+
+doInHibernate( this::sessionFactory, session -&gt; {
+    Product product = session.get( Product.class, 1 );
+    assertEquals(bitSet, product.getBitSet());
+} );</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>When executing this unit test, Hibernate generates the following SQL statements:</p>
+</div>
+<div id="basic-custom-type-BitSetType-persistence-sql-example" class="exampleblock">
+<div class="title">Example 10. Persisting the custom <code>BasicType</code></div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">DEBUG SQL:92 -
+    insert
+    into
+        Product
+        (bitSet, id)
+    values
+        (?, ?)
+
+TRACE BasicBinder:65 - binding parameter [1] as [VARCHAR] - [{0, 65, 128, 129}]
+TRACE BasicBinder:65 - binding parameter [2] as [INTEGER] - [1]
+
+DEBUG SQL:92 -
+    select
+        bitsettype0_.id as id1_0_0_,
+        bitsettype0_.bitSet as bitSet2_0_0_
+    from
+        Product bitsettype0_
+    where
+        bitsettype0_.id=?
+
+TRACE BasicBinder:65 - binding parameter [1] as [INTEGER] - [1]
+TRACE BasicExtractor:61 - extracted value ([bitSet2_0_0_] : [VARCHAR]) - [{0, 65, 128, 129}]</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>As you can see, the <code>BitSetType</code> takes care of the <em>Java-to-SQL</em> and <em>SQL-to-Java</em> type conversion.</p>
+</div>
+</div>
+<div class="sect4">
+<h5 id="basic-custom-type-UserType">Implementing a <code>UserType</code></h5>
+<div class="paragraph">
+<p>The second approach is to implement the <code>UserType</code> interface.</p>
+</div>
+<div id="basic-custom-type-BitSetUserType-example" class="exampleblock">
+<div class="title">Example 11. Custom <code>UserType</code> implementation</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">public class BitSetUserType implements UserType {
+
+	public static final BitSetUserType INSTANCE = new BitSetUserType();
+
+    private static final Logger log = Logger.getLogger( BitSetUserType.class );
+
+    @Override
+    public int[] sqlTypes() {
+        return new int[] {StringType.INSTANCE.sqlType()};
+    }
+
+    @Override
+    public Class returnedClass() {
+        return String.class;
+    }
+
+    @Override
+    public boolean equals(Object x, Object y)
+			throws HibernateException {
+        return Objects.equals( x, y );
+    }
+
+    @Override
+    public int hashCode(Object x)
+			throws HibernateException {
+        return Objects.hashCode( x );
+    }
+
+    @Override
+    public Object nullSafeGet(
+            ResultSet rs, String[] names, SharedSessionContractImplementor session, Object owner)
+            throws HibernateException, SQLException {
+        String columnName = names[0];
+        String columnValue = (String) rs.getObject( columnName );
+        log.debugv("Result set column {0} value is {1}", columnName, columnValue);
+        return columnValue == null ? null :
+				BitSetTypeDescriptor.INSTANCE.fromString( columnValue );
+    }
+
+    @Override
+    public void nullSafeSet(
+            PreparedStatement st, Object value, int index, SharedSessionContractImplementor session)
+            throws HibernateException, SQLException {
+        if ( value == null ) {
+            log.debugv("Binding null to parameter {0} ",index);
+            st.setNull( index, Types.VARCHAR );
+        }
+        else {
+            String stringValue = BitSetTypeDescriptor.INSTANCE.toString( (BitSet) value );
+            log.debugv("Binding {0} to parameter {1} ", stringValue, index);
+            st.setString( index, stringValue );
+        }
+    }
+
+    @Override
+    public Object deepCopy(Object value)
+			throws HibernateException {
+        return value == null ? null :
+            BitSet.valueOf( BitSet.class.cast( value ).toLongArray() );
+    }
+
+    @Override
+    public boolean isMutable() {
+        return true;
+    }
+
+    @Override
+    public Serializable disassemble(Object value)
+			throws HibernateException {
+        return (BitSet) deepCopy( value );
+    }
+
+    @Override
+    public Object assemble(Serializable cached, Object owner)
+			throws HibernateException {
+        return deepCopy( cached );
+    }
+
+    @Override
+    public Object replace(Object original, Object target, Object owner)
+			throws HibernateException {
+        return deepCopy( original );
+    }
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>The entity mapping looks as follows:</p>
+</div>
+<div id="basic-custom-type-BitSetUserType-mapping-example" class="exampleblock">
+<div class="title">Example 12. Custom <code>UserType</code> mapping</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">@Entity(name = "Product")
+public static class Product {
+
+    @Id
+    private Integer id;
+
+    @Type( type = "bitset" )
+    private BitSet bitSet;
+
+    public Integer getId() {
+        return id;
+    }
+
+    public void setId(Integer id) {
+        this.id = id;
+    }
+
+    public BitSet getBitSet() {
+        return bitSet;
+    }
+
+    public void setBitSet(BitSet bitSet) {
+        this.bitSet = bitSet;
+    }
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>In this example, the <code>UserType</code> is registered under the <code>bitset</code> name, and this is done like this:</p>
+</div>
+<div id="basic-custom-type-register-UserType-example" class="exampleblock">
+<div class="title">Example 13. Register a Custom <code>UserType</code> implementation</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">configuration.registerTypeContributor( (typeContributions, serviceRegistry) -&gt; {
+    typeContributions.contributeType( BitSetUserType.INSTANCE, "bitset");
+} );</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>or using the <code>MetadataBuilder</code></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">ServiceRegistry standardRegistry =
+    new StandardServiceRegistryBuilder().build();
+
+MetadataSources sources = new MetadataSources( standardRegistry );
+
+MetadataBuilder metadataBuilder = sources.getMetadataBuilder();
+
+metadataBuilder.applyBasicType( BitSetUserType.INSTANCE, "bitset" );</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Like <code>BasicType</code>, you can also register the <code>UserType</code> using a simple name.</p>
+</div>
+<div class="paragraph">
+<p>Without registration, the <code>UserType</code> mapping requires the fully-classified name:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">@Type( type = "org.hibernate.userguide.mapping.basic.BitSetUserType" )</code></pre>
+</div>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>When running the previous test case against the <code>BitSetUserType</code> entity mapping, Hibernate executed the following SQL statements:</p>
+</div>
+<div id="basic-custom-type-BitSetUserType-persistence-sql-example" class="exampleblock">
+<div class="title">Example 14. Persisting the custom <code>BasicType</code></div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">DEBUG SQL:92 -
+    insert
+    into
+        Product
+        (bitSet, id)
+    values
+        (?, ?)
+
+DEBUG BitSetUserType:71 - Binding 1,10,11 to parameter 1
+TRACE BasicBinder:65 - binding parameter [2] as [INTEGER] - [1]
+
+DEBUG SQL:92 -
+    select
+        bitsetuser0_.id as id1_0_0_,
+        bitsetuser0_.bitSet as bitSet2_0_0_
+    from
+        Product bitsetuser0_
+    where
+        bitsetuser0_.id=?
+
+TRACE BasicBinder:65 - binding parameter [1] as [INTEGER] - [1]
+DEBUG BitSetUserType:56 - Result set column bitSet2_0_0_ value is 1,10,11</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="basic-enums">Mapping enums</h4>
+<div class="paragraph">
+<p>Hibernate supports the mapping of Java enums as basic value types in a number of different ways.</p>
+</div>
+<div class="sect4">
+<h5 id="basic-enums-Enumerated"><code>@Enumerated</code></h5>
+<div class="paragraph">
+<p>The original JPA-compliant way to map enums was via the <code>@Enumerated</code> and <code>@MapKeyEnumerated</code> for map keys annotations which works on the principle that the enum values are stored according to one of 2 strategies indicated by <code>javax.persistence.EnumType</code>:</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><code>ORDINAL</code></dt>
+<dd>
+<p>- stored according to the enum value&#8217;s ordinal position within the enum class, as indicated by java.lang.Enum#ordinal</p>
+</dd>
+<dt class="hdlist1"><code>STRING</code></dt>
+<dd>
+<p>- stored according to the enum value&#8217;s name, as indicated by java.lang.Enum#name</p>
+</dd>
+</dl>
+</div>
+<div class="paragraph">
+<p>Assuming the following enumeration:</p>
+</div>
+<div class="exampleblock">
+<div class="title">Example 15. <code>PhoneType</code> enumeration</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">public enum PhoneType {
+    LAND_LINE,
+    MOBILE;
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>In the ORDINAL example, the <code>phone_type</code> column is defined as an (nullable) INTEGER type and would hold:</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><code>NULL</code></dt>
+<dd>
+<p>For null values</p>
+</dd>
+<dt class="hdlist1"><code>0</code></dt>
+<dd>
+<p>For the <code>LAND_LINE</code> enum</p>
+</dd>
+<dt class="hdlist1"><code>1</code></dt>
+<dd>
+<p>For the <code>MOBILE</code> enum</p>
+</dd>
+</dl>
+</div>
+<div id="basic-enums-Enumerated-ordinal-example" class="exampleblock">
+<div class="title">Example 16. <code>@Enumerated(ORDINAL)</code> example</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">@Entity(name = "Phone")
+public static class Phone {
+
+    @Id
+    private Long id;
+
+    @Column(name = "phone_number")
+    private String number;
+
+    @Enumerated(EnumType.ORDINAL)
+    @Column(name = "phone_type")
+    private PhoneType type;
+
+    //Getters and setters are omitted for brevity
+
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>When persisting this entity, Hibernate generates the following SQL statement:</p>
+</div>
+<div id="basic-enums-Enumerated-ordinal-persistence-example" class="exampleblock">
+<div class="title">Example 17. Persisting an entity with an <code>@Enumerated(ORDINAL)</code> mapping</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">Phone phone = new Phone( );
+phone.setId( 1L );
+phone.setNumber( "123-456-78990" );
+phone.setType( PhoneType.MOBILE );
+entityManager.persist( phone );</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-SQL" data-lang="SQL">INSERT INTO Phone (phone_number, phone_type, id)
+VALUES ('123-456-78990', 2, 1)</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>In the STRING example, the <code>phone_type</code> column is defined as an (nullable) VARCHAR type and would hold:</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><code>NULL</code></dt>
+<dd>
+<p>For null values</p>
+</dd>
+<dt class="hdlist1"><code>LAND_LINE</code></dt>
+<dd>
+<p>For the <code>LAND_LINE</code> enum</p>
+</dd>
+<dt class="hdlist1"><code>MOBILE</code></dt>
+<dd>
+<p>For the <code>MOBILE</code> enum</p>
+</dd>
+</dl>
+</div>
+<div id="basic-enums-Enumerated-string-example" class="exampleblock">
+<div class="title">Example 18. <code>@Enumerated(STRING)</code> example</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">@Entity(name = "Phone")
+public static class Phone {
+
+    @Id
+    private Long id;
+
+    @Column(name = "phone_number")
+    private String number;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "phone_type")
+    private PhoneType type;
+
+    //Getters and setters are omitted for brevity
+
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Persisting the same entity like in the <code>@Enumerated(ORDINAL)</code> example, Hibernate generates the following SQL statement:</p>
+</div>
+<div id="basic-enums-Enumerated-string-persistence-example" class="exampleblock">
+<div class="title">Example 19. Persisting an entity with an <code>@Enumerated(STRING)</code> mapping</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-SQL" data-lang="SQL">INSERT INTO Phone (phone_number, phone_type, id)
+VALUES ('123-456-78990', 'MOBILE', 1)</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect4">
+<h5 id="basic-enums-attribute-converter">AttributeConverter</h5>
+<div class="paragraph">
+<p>Let&#8217;s consider the following <code>Gender</code> enum which stores its values using the <code>'M'</code> and <code>'F'</code> codes.</p>
+</div>
+<div id="basic-enums-converter-example" class="exampleblock">
+<div class="title">Example 20. Enum with custom constructor</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">public enum Gender {
+
+    MALE( 'M' ),
+    FEMALE( 'F' );
+
+    private final char code;
+
+    Gender(char code) {
+        this.code = code;
+    }
+
+    public static Gender fromCode(char code) {
+        if ( code == 'M' || code == 'm' ) {
+            return MALE;
+        }
+        if ( code == 'F' || code == 'f' ) {
+            return FEMALE;
+        }
+        throw new UnsupportedOperationException(
+            "The code " + code + " is not supported!"
+        );
+    }
+
+    public char getCode() {
+        return code;
+    }
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>You can map enums in a JPA compliant way using a JPA 2.1 AttributeConverter.</p>
+</div>
+<div id="basic-enums-attribute-converter-example" class="exampleblock">
+<div class="title">Example 21. Enum mapping with <code>AttributeConverter</code> example</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">@Entity(name = "Person")
+public static class Person {
+
+    @Id
+    private Long id;
+
+    private String name;
+
+    @Convert( converter = GenderConverter.class )
+    public Gender gender;
+
+    //Getters and setters are omitted for brevity
+
+}
+
+@Converter
+public static class GenderConverter
+        implements AttributeConverter&lt;Gender, Character&gt; {
+
+    public Character convertToDatabaseColumn( Gender value ) {
+        if ( value == null ) {
+            return null;
+        }
+
+        return value.getCode();
+    }
+
+    public Gender convertToEntityAttribute( Character value ) {
+        if ( value == null ) {
+            return null;
+        }
+
+        return Gender.fromCode( value );
+    }
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Here, the gender column is defined as a CHAR type and would hold:</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><code>NULL</code></dt>
+<dd>
+<p>For null values</p>
+</dd>
+<dt class="hdlist1"><code>'M'</code></dt>
+<dd>
+<p>For the <code>MALE</code> enum</p>
+</dd>
+<dt class="hdlist1"><code>'F'</code></dt>
+<dd>
+<p>For the <code>FEMALE</code> enum</p>
+</dd>
+</dl>
+</div>
+<div class="paragraph">
+<p>For additional details on using AttributeConverters, see <a href="#basic-jpa-convert">JPA 2.1 AttributeConverters</a> section.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>JPA explicitly disallows the use of an AttributeConverter with an attribute marked as <code>@Enumerated</code>.
+So if using the AttributeConverter approach, be sure not to mark the attribute as <code>@Enumerated</code>.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect4">
+<h5 id="basic-enums-custom-type">Custom type</h5>
+<div class="paragraph">
+<p>You can also map enums using a Hibernate custom type mapping.
+Let&#8217;s again revisit the Gender enum example, this time using a custom Type to store the more standardized <code>'M'</code> and <code>'F'</code> codes.</p>
+</div>
+<div id="basic-enums-custom-type-example" class="exampleblock">
+<div class="title">Example 22. Enum mapping with custom Type example</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">@Entity(name = "Person")
+public static class Person {
+
+    @Id
+    private Long id;
+
+    private String name;
+
+    @Type( type = "org.hibernate.userguide.mapping.basic.GenderType" )
+    public Gender gender;
+
+    //Getters and setters are omitted for brevity
+
+}
+
+public class GenderType extends AbstractSingleColumnStandardBasicType&lt;Gender&gt; {
+
+    public static final GenderType INSTANCE = new GenderType();
+
+    public GenderType() {
+        super(
+            CharTypeDescriptor.INSTANCE,
+            GenderJavaTypeDescriptor.INSTANCE
+        );
+    }
+
+    public String getName() {
+        return "gender";
+    }
+
+    @Override
+    protected boolean registerUnderJavaType() {
+        return true;
+    }
+}
+
+public class GenderJavaTypeDescriptor extends AbstractTypeDescriptor&lt;Gender&gt; {
+
+    public static final GenderJavaTypeDescriptor INSTANCE =
+        new GenderJavaTypeDescriptor();
+
+    protected GenderJavaTypeDescriptor() {
+        super( Gender.class );
+    }
+
+    public String toString(Gender value) {
+        return value == null ? null : value.name();
+    }
+
+    public Gender fromString(String string) {
+        return string == null ? null : Gender.valueOf( string );
+    }
+
+    public &lt;X&gt; X unwrap(Gender value, Class&lt;X&gt; type, WrapperOptions options) {
+        return CharacterTypeDescriptor.INSTANCE.unwrap(
+            value == null ? null : value.getCode(),
+            type,
+            options
+        );
+    }
+
+    public &lt;X&gt; Gender wrap(X value, WrapperOptions options) {
+        return Gender.fromCode(
+            CharacterTypeDescriptor.INSTANCE.wrap( value, options )
+        );
+    }
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Again, the gender column is defined as a CHAR type and would hold:</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><code>NULL</code></dt>
+<dd>
+<p>For null values</p>
+</dd>
+<dt class="hdlist1"><code>'M'</code></dt>
+<dd>
+<p>For the <code>MALE</code> enum</p>
+</dd>
+<dt class="hdlist1"><code>'F'</code></dt>
+<dd>
+<p>For the <code>FEMALE</code> enum</p>
+</dd>
+</dl>
+</div>
+<div class="paragraph">
+<p>For additional details on using custom types, see <a href="#basic-custom-type">Custom BasicTypes</a> section.</p>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="basic-lob">Mapping LOBs</h4>
+<div class="paragraph">
+<p>Mapping LOBs (database Large Objects) come in 2 forms, those using the JDBC locator types and those materializing the LOB data.</p>
+</div>
+<div class="paragraph">
+<p>JDBC LOB locators exist to allow efficient access to the LOB data.
+They allow the JDBC driver to stream parts of the LOB data as needed, potentially freeing up memory space.
+However they can be unnatural to deal with and have certain limitations.
+For example, a LOB locator is only portably valid during the duration of the transaction in which it was obtained.</p>
+</div>
+<div class="paragraph">
+<p>The idea of materialized LOBs is to trade-off the potential efficiency (not all drivers handle LOB data efficiently) for a more natural programming paradigm using familiar Java types such as String or byte[], etc for these LOBs.</p>
+</div>
+<div class="paragraph">
+<p>Materialized deals with the entire LOB contents in memory, whereas LOB locators (in theory) allow streaming parts of the LOB contents into memory as needed.</p>
+</div>
+<div class="paragraph">
+<p>The JDBC LOB locator types include:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>java.sql.Blob</code></p>
+</li>
+<li>
+<p><code>java.sql.Clob</code></p>
+</li>
+<li>
+<p><code>java.sql.NClob</code></p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Mapping materialized forms of these LOB values would use more familiar Java types such as <code>String</code>, <code>char[]</code>, <code>byte[]</code>, etc.
+The trade off for <em>more familiar</em> is usually performance.</p>
+</div>
+<div class="paragraph">
+<p>For a first look, let&#8217;s assume we have a <code>CLOB</code> column that we would like to map (<code>NCLOB</code> character <code>LOB</code> data will be covered in <a href="#basic-nationalized">Mapping Nationalized Character Data</a> section).</p>
+</div>
+<div id="basic-clob-sql-example" class="exampleblock">
+<div class="title">Example 23. CLOB - SQL</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-sql" data-lang="sql">CREATE TABLE Product (
+  id INTEGER NOT NULL
+  image clob
+  name VARCHAR(255)
+  PRIMARY KEY ( id )
+)</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Let&#8217;s first map this using the <code>@Lob</code> JPA annotation and the <code>java.sql.Clob</code> type:</p>
+</div>
+<div id="basic-clob-example" class="exampleblock">
+<div class="title">Example 24. <code>CLOB</code> mapped to <code>java.sql.Clob</code></div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">@Entity(name = "Product")
+public static class Product {
+
+    @Id
+    private Integer id;
+
+    private String name;
+
+    @Lob
+    private Clob warranty;
+
+    //Getters and setters are omitted for brevity
+
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>To persist such an entity, you have to create a <code>Clob</code> using plain JDBC:</p>
+</div>
+<div id="basic-clob-persist-example" class="exampleblock">
+<div class="title">Example 25. Persisting a <code>java.sql.Clob</code> entity</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">String warranty = "My product warranty";
+
+final Product product = new Product();
+product.setId( 1 );
+product.setName( "Mobile phone" );
+
+session.doWork( connection -&gt; {
+    product.setWarranty( ClobProxy.generateProxy( warranty ) );
+} );
+
+entityManager.persist( product );</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>To retrieve the <code>Clob</code> content, you need to transform the underlying <code>java.io.Reader</code>:</p>
+</div>
+<div id="basic-clob-find-example" class="exampleblock">
+<div class="title">Example 26. Returning a <code>java.sql.Clob</code> entity</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">Product product = entityManager.find( Product.class, productId );
+try (Reader reader = product.getWarranty().getCharacterStream()) {
+    assertEquals( "My product warranty", toString( reader ) );
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>We could also map the CLOB in a materialized form. This way, we can either use a <code>String</code> or a <code>char[]</code>.</p>
+</div>
+<div id="basic-clob-string-example" class="exampleblock">
+<div class="title">Example 27. <code>CLOB</code> mapped to <code>String</code></div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">@Entity(name = "Product")
+public static class Product {
+
+    @Id
+    private Integer id;
+
+    private String name;
+
+    @Lob
+    private String warranty;
+
+    //Getters and setters are omitted for brevity
+
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>How JDBC deals with <code>LOB</code> data varies from driver to driver, and Hibernate tries to handle all these variances on your behalf.</p>
+</div>
+<div class="paragraph">
+<p>However, some drivers are trickier (e.g. PostgreSQL JDBC drivers), and, in such cases, you may have to do some extra to get LOBs working.
+Such discussions are beyond the scope of this guide.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>We might even want the materialized data as a char array (for some crazy reason).</p>
+</div>
+<div id="basic-clob-char-array-example" class="exampleblock">
+<div class="title">Example 28. CLOB - materialized <code>char[]</code> mapping</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">@Entity(name = "Product")
+public static class Product {
+
+    @Id
+    private Integer id;
+
+    private String name;
+
+    @Lob
+    private char[] warranty;
+
+    //Getters and setters are omitted for brevity
+
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p><code>BLOB</code> data is mapped in a similar fashion.</p>
+</div>
+<div id="basic-blob-sql-example" class="exampleblock">
+<div class="title">Example 29. BLOB - SQL</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-sql" data-lang="sql">CREATE TABLE Product (
+    id INTEGER NOT NULL ,
+    image blob ,
+    name VARCHAR(255) ,
+    PRIMARY KEY ( id )
+)</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Let&#8217;s first map this using the JDBC <code>java.sql.Blob</code> type.</p>
+</div>
+<div id="basic-blob-example" class="exampleblock">
+<div class="title">Example 30. <code>BLOB</code> mapped to <code>java.sql.Blob</code></div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">@Entity(name = "Product")
+public static class Product {
+
+    @Id
+    private Integer id;
+
+    private String name;
+
+    @Lob
+    private Blob image;
+
+    //Getters and setters are omitted for brevity
+
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>To persist such an entity, you have to create a <code>Blob</code> using plain JDBC:</p>
+</div>
+<div id="basic-blob-persist-example" class="exampleblock">
+<div class="title">Example 31. Persisting a <code>java.sql.Blob</code> entity</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">byte[] image = new byte[] {1, 2, 3};
+
+final Product product = new Product();
+product.setId( 1 );
+product.setName( "Mobile phone" );
+
+session.doWork( connection -&gt; {
+    product.setImage( BlobProxy.generateProxy( image ) );
+} );
+
+entityManager.persist( product );</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>To retrieve the <code>Blob</code> content, you need to transform the underlying <code>java.io.Reader</code>:</p>
+</div>
+<div id="basic-blob-find-example" class="exampleblock">
+<div class="title">Example 32. Returning a <code>java.sql.Blob</code> entity</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">Product product = entityManager.find( Product.class, productId );
+
+try (InputStream inputStream = product.getImage().getBinaryStream()) {
+    assertArrayEquals(new byte[] {1, 2, 3}, toBytes( inputStream ) );
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>We could also map the BLOB in a materialized form (e.g. <code>byte[]</code>).</p>
+</div>
+<div id="basic-blob-byte-array-example" class="exampleblock">
+<div class="title">Example 33. <code>BLOB</code> mapped to <code>byte[]</code></div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">@Entity(name = "Product")
+public static class Product {
+
+    @Id
+    private Integer id;
+
+    private String name;
+
+    @Lob
+    private byte[] image;
+
+    //Getters and setters are omitted for brevity
+
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="basic-nationalized">Mapping Nationalized Character Data</h4>
+<div class="paragraph">
+<p>JDBC 4 added the ability to explicitly handle nationalized character data.
+To this end it added specific nationalized character data types.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>NCHAR</code></p>
+</li>
+<li>
+<p><code>NVARCHAR</code></p>
+</li>
+<li>
+<p><code>LONGNVARCHAR</code></p>
+</li>
+<li>
+<p><code>NCLOB</code></p>
+</li>
+</ul>
+</div>
+<div id="basic-nationalized-sql-example" class="exampleblock">
+<div class="title">Example 34. <code>NVARCHAR</code> - SQL</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">CREATE TABLE Product (
+    id INTEGER NOT NULL ,
+    name VARCHAR(255) ,
+    warranty NVARCHAR(255) ,
+    PRIMARY KEY ( id )
+)</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>To map a specific attribute to a nationalized variant data type, Hibernate defines the <code>@Nationalized</code> annotation.</p>
+</div>
+<div id="basic-nationalized-example" class="exampleblock">
+<div class="title">Example 35. <code>NVARCHAR</code> mapping</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">@Entity(name = "Product")
+public static class Product {
+
+    @Id
+    private Integer id;
+
+    private String name;
+
+    @Nationalized
+    private String warranty;
+
+    //Getters and setters are omitted for brevity
+
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Just like with <code>CLOB</code>, Hibernate can also deal with <code>NCLOB</code> SQL data types:</p>
+</div>
+<div id="basic-nclob-sql-example" class="exampleblock">
+<div class="title">Example 36. <code>NCLOB</code> - SQL</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">CREATE TABLE Product (
+    id INTEGER NOT NULL ,
+    name VARCHAR(255) ,
+    warranty nclob ,
+    PRIMARY KEY ( id )
+)</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Hibernate can map the <code>NCLOB</code> to a <code>java.sql.NClob</code></p>
+</div>
+<div id="basic-nclob-example" class="exampleblock">
+<div class="title">Example 37. <code>NCLOB</code> mapped to <code>java.sql.NClob</code></div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">@Entity(name = "Product")
+public static class Product {
+
+    @Id
+    private Integer id;
+
+    private String name;
+
+    @Lob
+    @Nationalized
+    // Clob also works, because NClob extends Clob.
+    // The database type is still NCLOB either way and handled as such.
+    private NClob warranty;
+
+    //Getters and setters are omitted for brevity
+
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>To persist such an entity, you have to create a <code>NClob</code> using plain JDBC:</p>
+</div>
+<div id="basic-nclob-persist-example" class="exampleblock">
+<div class="title">Example 38. Persisting a <code>java.sql.NClob</code> entity</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">String warranty = "My product warranty";
+
+final Product product = new Product();
+product.setId( 1 );
+product.setName( "Mobile phone" );
+
+session.doWork( connection -&gt; {
+    product.setWarranty( connection.createNClob() );
+    product.getWarranty().setString( 1, warranty );
+} );
+
+entityManager.persist( product );</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>To retrieve the <code>NClob</code> content, you need to transform the underlying <code>java.io.Reader</code>:</p>
+</div>
+<div id="basic-nclob-find-example" class="exampleblock">
+<div class="title">Example 39. Returning a <code>java.sql.NClob</code> entity</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">Product product = entityManager.find( Product.class, productId );
+try (Reader reader = product.getWarranty().getCharacterStream()) {
+    assertEquals( "My product warranty", toString( reader ) );
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>We could also map the <code>NCLOB</code> in a materialized form. This way, we can either use a <code>String</code> or a <code>char[]</code>.</p>
+</div>
+<div id="basic-nclob-string-example" class="exampleblock">
+<div class="title">Example 40. <code>NCLOB</code> mapped to <code>String</code></div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">@Entity(name = "Product")
+public static class Product {
+
+    @Id
+    private Integer id;
+
+    private String name;
+
+    @Lob
+    @Nationalized
+    private String warranty;
+
+    //Getters and setters are omitted for brevity
+
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>We might even want the materialized data as a char array.</p>
+</div>
+<div id="basic-nclob-char-array-example" class="exampleblock">
+<div class="title">Example 41. NCLOB - materialized <code>char[]</code> mapping</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">@Entity(name = "Product")
+public static class Product {
+
+    @Id
+    private Integer id;
+
+    private String name;
+
+    @Lob
+    @Nationalized
+    private char[] warranty;
+
+    //Getters and setters are omitted for brevity
+
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>If you application and database are entirely nationalized you may instead want to enable nationalized character data as the default.
+You can do this via the <code>hibernate.use_nationalized_character_data</code> setting or by calling <code>MetadataBuilder#enableGlobalNationalizedCharacterDataSupport</code> during bootstrap.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect3">
+<h4 id="basic-uuid">Mapping UUID Values</h4>
+<div class="paragraph">
+<p>Hibernate also allows you to map UUID values, again in a number of ways.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>The default UUID mapping is as binary because it represents more efficient storage.
+However many applications prefer the readability of character storage.
+To switch the default mapping, simply call <code>MetadataBuilder.applyBasicType( UUIDCharType.INSTANCE, UUID.class.getName() )</code></p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_uuid_as_binary">UUID as binary</h4>
+<div class="paragraph">
+<p>As mentioned, the default mapping for UUID attributes.
+Maps the UUID to a <code>byte[]</code> using <code>java.util.UUID#getMostSignificantBits</code> and <code>java.util.UUID#getLeastSignificantBits</code> and stores that as <code>BINARY</code> data.</p>
+</div>
+<div class="paragraph">
+<p>Chosen as the default simply because it is generally more efficient from storage perspective.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_uuid_as_var_char">UUID as (var)char</h4>
+<div class="paragraph">
+<p>Maps the UUID to a String using <code>java.util.UUID#toString</code> and <code>java.util.UUID#fromString</code> and stores that as <code>CHAR</code> or <code>VARCHAR</code> data.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_postgesql_specific_uuid">PostgeSQL-specific UUID</h4>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>When using one of the PostgreSQL Dialects, this becomes the default UUID mapping</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Maps the UUID using PostgreSQL&#8217;s specific UUID data type.
+The PostgreSQL JDBC driver chooses to map its UUID type to the <code>OTHER</code> code.
+Note that this can cause difficulty as the driver chooses to map many different data types to <code>OTHER</code>.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_uuid_as_identifier">UUID as identifier</h4>
+<div class="paragraph">
+<p>Hibernate supports using UUID values as identifiers, and they can even be generated on user&#8217;s behalf.
+For details, see the discussion of generators in <a href="chapters/domain/identifiers.html#identifiers"><em>Identifier generators</em></a>.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="basic-datetime">Mapping Date/Time Values</h4>
+<div class="paragraph">
+<p>Hibernate allows various Java Date/Time classes to be mapped as persistent domain model entity properties.
+The SQL standard defines three Date/Time types:</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">DATE</dt>
+<dd>
+<p>Represents a calendar date by storing years, months and days. The JDBC equivalent is <code>java.sql.Date</code></p>
+</dd>
+<dt class="hdlist1">TIME</dt>
+<dd>
+<p>Represents the time of a day and it stores hours, minutes and seconds. The JDBC equivalent is <code>java.sql.Time</code></p>
+</dd>
+<dt class="hdlist1">TIMESTAMP</dt>
+<dd>
+<p>It stores both a DATE and a TIME plus nanoseconds. The JDBC equivalent is <code>java.sql.Timestamp</code></p>
+</dd>
+</dl>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>To avoid dependencies on the <code>java.sql</code> package, it&#8217;s common to use the <code>java.util</code> or <code>java.time</code> Date/Time classes instead.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>While the <code>java.sql</code> classes define a direct association to the SQL Date/Time data types,
+the <code>java.util</code> or <code>java.time</code> properties need to explicitly mark the SQL type correlation with the <code>@Temporal</code> annotation.
+This way, a <code>java.util.Date</code> or a <code>java.util.Calendar</code> cn be mapped to either an SQL <code>DATE</code>, <code>TIME</code> or <code>TIMESTAMP</code> type.</p>
+</div>
+<div class="paragraph">
+<p>Considering the following entity:</p>
+</div>
+<div id="basic-datetime-temporal-date-example" class="exampleblock">
+<div class="title">Example 42. <code>java.util.Date</code> mapped as <code>DATE</code></div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">@Entity(name = "DateEvent")
+public static class DateEvent {
+
+    @Id
+    @GeneratedValue
+    private Long id;
+
+    @Column(name = "`timestamp`")
+    @Temporal(TemporalType.DATE)
+    private Date timestamp;
+
+    //Getters and setters are omitted for brevity
+
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>When persisting such entity:</p>
+</div>
+<div id="basic-datetime-temporal-date-persist-example" class="exampleblock">
+<div class="title">Example 43. Persisting a <code>java.util.Date</code> mapping</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">DateEvent dateEvent = new DateEvent( new Date() );
+entityManager.persist( dateEvent );</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Hibernate generates the following INSERT statement:</p>
+</div>
+<div class="exampleblock">
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-sql" data-lang="sql">INSERT INTO DateEvent ( timestamp, id )
+VALUES ( '2015-12-29', 1 )</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Only the year, month and the day field were saved into the database.</p>
+</div>
+<div class="paragraph">
+<p>If we change the <code>@Temporal</code> type to <code>TIME</code>:</p>
+</div>
+<div id="basic-datetime-temporal-time-example" class="exampleblock">
+<div class="title">Example 44. <code>java.util.Date</code> mapped as <code>TIME</code></div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">@Column(name = "`timestamp`")
+@Temporal(TemporalType.TIME)
+private Date timestamp;</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Hibernate will issue an INSERT statement containing the hour, minutes and seconds.</p>
+</div>
+<div class="exampleblock">
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-sql" data-lang="sql">INSERT INTO DateEvent ( timestamp, id )
+VALUES ( '16:51:58', 1 )</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>When the <code>@Temporal</code> type is set to <code>TIMESTAMP</code>:</p>
+</div>
+<div id="basic-datetime-temporal-timestamp-example" class="exampleblock">
+<div class="title">Example 45. <code>java.util.Date</code> mapped as <code>TIMESTAMP</code></div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">@Column(name = "`timestamp`")
+@Temporal(TemporalType.TIMESTAMP)
+private Date timestamp;</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Hibernate will include both the <code>DATE</code>, the <code>TIME</code> and the nanoseconds in the INSERT statement:</p>
+</div>
+<div class="exampleblock">
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-sql" data-lang="sql">INSERT INTO DateEvent ( timestamp, id )
+VALUES ( '2015-12-29 16:54:04.544', 1 )</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Just like the <code>java.util.Date</code>, the <code>java.util.Calendar</code> requires the <code>@Temporal</code> annotation in order to know what JDBC data type to be chosen: DATE, TIME or TIMESTAMP.
+If the <code>java.util.Date</code> marks a point in time, the <code>java.util.Calendar</code> takes into consideration the default Time Zone.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="sect4">
+<h5 id="basic-datetime-java8">Mapping Java 8 Date/Time Values</h5>
+<div class="paragraph">
+<p>Java 8 came with a new Date/Time API, offering support for instant dates, intervals, local and zoned Date/Time immutable instances, bundled in the <code>java.time</code> package.</p>
+</div>
+<div class="paragraph">
+<p>The mapping between the standard SQL Date/Time types and the supported Java 8 Date/Time class types looks as follows;</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">DATE</dt>
+<dd>
+<p><code>java.time.LocalDate</code></p>
+</dd>
+<dt class="hdlist1">TIME</dt>
+<dd>
+<p><code>java.time.LocalTime</code>, <code>java.time.OffsetTime</code></p>
+</dd>
+<dt class="hdlist1">TIMESTAMP</dt>
+<dd>
+<p><code>java.time.Instant</code>, <code>java.time.LocalDateTime</code>, <code>java.time.OffsetDateTime</code> and <code>java.time.ZonedDateTime</code></p>
+</dd>
+</dl>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Because the mapping between Java 8 Date/Time classes and the SQL types is implicit, there is not need to specify the <code>@Temporal</code> annotation.
+Setting it on the <code>java.time</code> classes throws the following exception:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>org.hibernate.AnnotationException: @Temporal should only be set on a java.util.Date or java.util.Calendar property</pre>
+</div>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect4">
+<h5 id="basic-datetime-time-zone">Using a specific time zone</h5>
+<div class="paragraph">
+<p>By default, Hibernate is going to use the <a href="https://docs.oracle.com/javase/8/docs/api/java/sql/PreparedStatement.html#setTimestamp-int-java.sql.Timestamp-"><code>PreparedStatement.setTimestamp(int parameterIndex, java.sql.Timestamp)</code></a> or
+<a href="https://docs.oracle.com/javase/8/docs/api/java/sql/PreparedStatement.html#setTime-int-java.sql.Time-"><code>PreparedStatement.setTime(int parameterIndex, java.sql.Time x)</code></a> when saving a <code>java.sql.Timestamp</code> or a <code>java.sql.Time</code> property.</p>
+</div>
+<div class="paragraph">
+<p>When the time zone is not specified, the JDBC driver is going to use the underlying JVM default time zone, which might not be suitable if the application is used from all across the globe.
+For this reason, it is very common to use a single reference time zone (e.g. UTC) whenever saving/loading data from the database.</p>
+</div>
+<div class="paragraph">
+<p>One alternative would be to configure all JVMs to use the reference time zone:</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">Declaratively</dt>
+<dd>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">java -Duser.timezone=UTC ...</code></pre>
+</div>
+</div>
+</dd>
+<dt class="hdlist1">Programmatically</dt>
+<dd>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">TimeZone.setDefault( TimeZone.getTimeZone( "UTC" ) );</code></pre>
+</div>
+</div>
+</dd>
+</dl>
+</div>
+<div class="paragraph">
+<p>However, as explained in <a href="http://in.relation.to/2016/09/12/jdbc-time-zone-configuration-property/">this article</a>, this is not always practical especially for front-end nodes.
+For this reason, Hibernate offers the <code>hibernate.jdbc.time_zone</code> configuration property which can be configured:</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">Declaratively, at the <code>SessionFactory</code> level</dt>
+<dd>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">settings.put(
+    AvailableSettings.JDBC_TIME_ZONE,
+    TimeZone.getTimeZone( "UTC" )
+);</code></pre>
+</div>
+</div>
+</dd>
+<dt class="hdlist1">Programmatically, on a per <code>Session</code> basis</dt>
+<dd>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">Session session = sessionFactory()
+    .withOptions()
+    .jdbcTimeZone( TimeZone.getTimeZone( "UTC" ) )
+    .openSession();</code></pre>
+</div>
+</div>
+</dd>
+</dl>
+</div>
+<div class="paragraph">
+<p>With this configuration property in place, Hibernate is going to call the <a href="https://docs.oracle.com/javase/8/docs/api/java/sql/PreparedStatement.html#setTimestamp-int-java.sql.Timestamp-java.util.Calendar-"><code>PreparedStatement.setTimestamp(int parameterIndex, java.sql.Timestamp, Calendar cal)</code></a> or
+<a href="https://docs.oracle.com/javase/8/docs/api/java/sql/PreparedStatement.html#setTime-int-java.sql.Time-java.util.Calendar-"><code>PreparedStatement.setTime(int parameterIndex, java.sql.Time x, Calendar cal)</code></a>, where the <code>java.util.Calendar</code> references the time zone provided via the <code>hibernate.jdbc.time_zone</code> property.</p>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="basic-jpa-convert">JPA 2.1 AttributeConverters</h4>
+<div class="paragraph">
+<p>Although Hibernate has long been offering <a href="#basic-custom-type">custom types</a>, as a JPA 2.1 provider,
+it also supports `AttributeConverter`s as well.</p>
+</div>
+<div class="paragraph">
+<p>With a custom <code>AttributeConverter</code>, the application developer can map a given JDBC type to an entity basic type.</p>
+</div>
+<div class="paragraph">
+<p>In the following example, the <code>java.util.Period</code> is going to be mapped to a <code>VARCHAR</code> database column.</p>
+</div>
+<div id="basic-jpa-convert-period-string-converter-example" class="exampleblock">
+<div class="title">Example 46. <code>java.util.Period</code> custom <code>AttributeConverter</code></div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">@Converter
+public class PeriodStringConverter
+        implements AttributeConverter&lt;Period, String&gt; {
+
+    @Override
+    public String convertToDatabaseColumn(Period attribute) {
+        return attribute.toString();
+    }
+
+    @Override
+    public Period convertToEntityAttribute(String dbData) {
+        return Period.parse( dbData );
+    }
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>To make use of this custom converter, the <code>@Convert</code> annotation must decorate the entity attribute.</p>
+</div>
+<div id="basic-jpa-convert-period-string-converter-mapping-example" class="exampleblock">
+<div class="title">Example 47. Entity using the custom <code>java.util.Period</code> <code>AttributeConverter</code> mapping</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">@Entity(name = "Event")
+public static class Event {
+
+    @Id
+    @GeneratedValue
+    private Long id;
+
+    @Convert(converter = PeriodStringConverter.class)
+    @Column(columnDefinition = "")
+    private Period span;
+
+    //Getters and setters are omitted for brevity
+
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>When persisting such entity, Hibernate will do the type conversion based on the <code>AttributeConverter</code> logic:</p>
+</div>
+<div id="basic-jpa-convert-period-string-converter-sql-example" class="exampleblock">
+<div class="title">Example 48. Persisting entity using the custom <code>AttributeConverter</code></div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-sql" data-lang="sql">INSERT INTO Event ( span, id )
+VALUES ( 'P1Y2M3D', 1 )</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="mapping-quoted-identifiers">SQL quoted identifiers</h4>
+<div class="paragraph">
+<p>You can force Hibernate to quote an identifier in the generated SQL by enclosing the table or column name in backticks in the mapping document.
+While traditionally, Hibernate used backticks for escaping SQL reserved keywords, JPA uses double quotes instead.</p>
+</div>
+<div class="paragraph">
+<p>Once the reserved keywords are escaped, Hibernate will use the correct quotation style for the SQL <code>Dialect</code>.
+This is usually double quotes, but SQL Server uses brackets and MySQL uses backticks.</p>
+</div>
+<div id="basic-quoting-example" class="exampleblock">
+<div class="title">Example 49. Hibernate legacy quoting</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">@Entity(name = "Product")
+public static class Product {
+
+    @Id
+    private Long id;
+
+    @Column(name = "`name`")
+    private String name;
+
+    @Column(name = "`number`")
+    private String number;
+
+    //Getters and setters are omitted for brevity
+
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div id="basic-jpa-quoting-example" class="exampleblock">
+<div class="title">Example 50. JPA quoting</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">@Entity(name = "Product")
+public static class Product {
+
+    @Id
+    private Long id;
+
+    @Column(name = "\"name\"")
+    private String name;
+
+    @Column(name = "\"number\"")
+    private String number;
+
+    //Getters and setters are omitted for brevity
+
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Because <code>name</code> and <code>number</code> are reserved words, the <code>Product</code> entity mapping uses backtricks to quote these column names.</p>
+</div>
+<div class="paragraph">
+<p>When saving the following <code>Product entity</code>, Hibernate generates the following SQL insert statement:</p>
+</div>
+<div id="basic-quoting-persistence-example" class="exampleblock">
+<div class="title">Example 51. Persisting a quoted column name</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">Product product = new Product();
+product.setId( 1L );
+product.setName( "Mobile phone" );
+product.setNumber( "123-456-7890" );
+entityManager.persist( product );</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-SQL" data-lang="SQL">INSERT INTO Product ("name", "number", id)
+VALUES ('Mobile phone', '123-456-7890', 1)</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect4">
+<h5 id="mapping-global-quoted-identifiers">Global quoting</h5>
+<div class="paragraph">
+<p>Hibernate can also quote all identifiers (e.g. table, columns) using the following configuration property:</p>
+</div>
+<div class="exampleblock">
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-xml" data-lang="xml">&lt;property
+    name="hibernate.globally_quoted_identifiers"
+    value="true"
+/&gt;</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>This way, we don&#8217;t need to manually quote any identifier:</p>
+</div>
+<div id="basic-auto-quoting-example" class="exampleblock">
+<div class="title">Example 52. JPA quoting</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">@Entity(name = "Product")
+public static class Product {
+
+    @Id
+    private Long id;
+
+    private String name;
+
+    private String number;
+
+    //Getters and setters are omitted for brevity
+
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>When persisting a <code>Product</code> entity, Hibernate is going to quote all identifiers as in the following example:</p>
+</div>
+<div class="exampleblock">
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-SQL" data-lang="SQL">INSERT INTO "Product" ("name", "number", "id")
+VALUES ('Mobile phone', '123-456-7890', 1)</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>As you can see, both the table name and all the column have been quoted.</p>
+</div>
+<div class="paragraph">
+<p>For more about quoting-related configuration properties, check out the <a href="appendices/Configurations.html#configurations-mapping">Mapping configurations</a> section as well.</p>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="mapping-generated">Generated properties</h4>
+<div class="paragraph">
+<p>Generated properties are properties that have their values generated by the database.
+Typically, Hibernate applications needed to <code>refresh</code> objects that contain any properties for which the database was generating values.
+Marking properties as generated, however, lets the application delegate this responsibility to Hibernate.
+When Hibernate issues an SQL INSERT or UPDATE for an entity that has defined generated properties, it immediately issues a select to retrieve the generated values.</p>
+</div>
+<div class="paragraph">
+<p>Properties marked as generated must additionally be <em>non-insertable</em> and <em>non-updateable</em>.
+Only <code>@Version</code> and <code>@Basic</code> types can be marked as generated.</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><code>never</code> (the default)</dt>
+<dd>
+<p>the given property value is not generated within the database.</p>
+</dd>
+<dt class="hdlist1"><code>insert</code></dt>
+<dd>
+<p>the given property value is generated on insert, but is not regenerated on subsequent updates. Properties like <em>creationTimestamp</em> fall into this category.</p>
+</dd>
+<dt class="hdlist1"><code>always</code></dt>
+<dd>
+<p>the property value is generated both on insert and on update.</p>
+</dd>
+</dl>
+</div>
+<div class="paragraph">
+<p>To mark a property as generated, use The Hibernate specific <code>@Generated</code> annotation.</p>
+</div>
+<div class="sect4">
+<h5 id="mapping-generated-ValueGenerationType">@ValueGenerationType meta-annotation</h5>
+<div class="paragraph">
+<p>Hibernate 4.3 introduced the <code>@ValueGenerationType</code> meta-annotation, which is a new approach to declaring generated attributes or customizing generators.</p>
+</div>
+<div class="paragraph">
+<p><code>@Generated</code> has been retrofitted to use the <code>@ValueGenerationType</code> meta-annotation.
+But <code>@ValueGenerationType</code> exposes more features than what <code>@Generated</code> currently supports, and,
+to leverage some of those features, you&#8217;d simply wire up a new generator annotation.</p>
+</div>
+<div class="paragraph">
+<p>As you&#8217;ll see in the following examples, the <code>@ValueGenerationType</code> meta-annotation is used when declaring the custom annotation used to mark the entity properties that need a specific generation strategy.
+The actual generation logic must be implemented in class that implements the <code>AnnotationValueGeneration</code> interface.</p>
+</div>
+<div class="sect5">
+<h6 id="mapping-database-generated-value">Database-generated values</h6>
+<div class="paragraph">
+<p>For example, let&#8217;s say we want the timestamps to be generated by calls to the standard ANSI SQL function <code>current_timestamp</code> (rather than triggers or DEFAULT values):</p>
+</div>
+<div id="mapping-database-generated-value-example" class="exampleblock">
+<div class="title">Example 53. A <code>ValueGenerationType</code> mapping for database generation</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">@Entity(name = "Event")
+public static class Event {
+
+    @Id
+    @GeneratedValue
+    private Long id;
+
+    @Column(name = "`timestamp`")
+    @FunctionCreationTimestamp
+    private Date timestamp;
+
+    public Event() {}
+
+    public Long getId() {
+        return id;
+    }
+
+    public Date getTimestamp() {
+        return timestamp;
+    }
+}
+
+@ValueGenerationType(generatedBy = FunctionCreationValueGeneration.class)
+@Retention(RetentionPolicy.RUNTIME)
+public @interface FunctionCreationTimestamp {}
+
+public static class FunctionCreationValueGeneration
+        implements AnnotationValueGeneration&lt;FunctionCreationTimestamp&gt; {
+
+    @Override
+    public void initialize(FunctionCreationTimestamp annotation, Class&lt;?&gt; propertyType) {
+    }
+
+    /**
+     * Generate value on INSERT
+     * @return when to generate the value
+     */
+    public GenerationTiming getGenerationTiming() {
+        return GenerationTiming.INSERT;
+    }
+
+    /**
+     * Returns null because the value is generated by the database.
+     * @return null
+     */
+    public ValueGenerator&lt;?&gt; getValueGenerator() {
+        return null;
+    }
+
+    /**
+     * Returns true because the value is generated by the database.
+     * @return true
+     */
+    public boolean referenceColumnInSql() {
+        return true;
+    }
+
+    /**
+     * Returns the database-generated value
+     * @return database-generated value
+     */
+    public String getDatabaseGeneratedReferencedColumnValue() {
+        return "current_timestamp";
+    }
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>When persisting an <code>Event</code> entity, Hibernate generates the following SQL statement:</p>
+</div>
+<div class="exampleblock">
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-SQL" data-lang="SQL">INSERT INTO Event ("timestamp", id)
+VALUES (current_timestamp, 1)</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>As you can see, the <code>current_timestamp</code> value was used for assigning the <code>timestamp</code> column value.</p>
+</div>
+</div>
+<div class="sect5">
+<h6 id="mapping-in-memory-generated-value">In-memory-generated values</h6>
+<div class="paragraph">
+<p>If the timestamp value needs to be generated in-memory, the following mapping must be used instead:</p>
+</div>
+<div id="mapping-in-memory-generated-value-example" class="exampleblock">
+<div class="title">Example 54. A <code>ValueGenerationType</code> mapping for in-memory value generation</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">@Entity(name = "Event")
+public static class Event {
+
+    @Id
+    @GeneratedValue
+    private Long id;
+
+    @Column(name = "`timestamp`")
+    @FunctionCreationTimestamp
+    private Date timestamp;
+
+    public Event() {}
+
+    public Long getId() {
+        return id;
+    }
+
+    public Date getTimestamp() {
+        return timestamp;
+    }
+}
+
+@ValueGenerationType(generatedBy = FunctionCreationValueGeneration.class)
+@Retention(RetentionPolicy.RUNTIME)
+public @interface FunctionCreationTimestamp {}
+
+public static class FunctionCreationValueGeneration
+        implements AnnotationValueGeneration&lt;FunctionCreationTimestamp&gt; {
+
+    @Override
+    public void initialize(FunctionCreationTimestamp annotation, Class&lt;?&gt; propertyType) {
+    }
+
+    /**
+     * Generate value on INSERT
+     * @return when to generate the value
+     */
+    public GenerationTiming getGenerationTiming() {
+        return GenerationTiming.INSERT;
+    }
+
+    /**
+     * Returns the in-memory generated value
+     * @return {@code true}
+     */
+    public ValueGenerator&lt;?&gt; getValueGenerator() {
+        return (session, owner) -&gt; new Date( );
+    }
+
+    /**
+     * Returns false because the value is generated by the database.
+     * @return false
+     */
+    public boolean referenceColumnInSql() {
+        return false;
+    }
+
+    /**
+     * Returns null because the value is generated in-memory.
+     * @return null
+     */
+    public String getDatabaseGeneratedReferencedColumnValue() {
+        return null;
+    }
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>When persisting an <code>Event</code> entity, Hibernate generates the following SQL statement:</p>
+</div>
+<div class="exampleblock">
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-SQL" data-lang="SQL">INSERT INTO Event ("timestamp", id)
+VALUES ('Tue Mar 01 10:58:18 EET 2016', 1)</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>As you can see, the <code>new Date()</code> object value was used for assigning the <code>timestamp</code> column value.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="mapping-column-read-and-write">Column transformers: read and write expressions</h4>
+<div class="paragraph">
+<p>Hibernate allows you to customize the SQL it uses to read and write the values of columns mapped to <code>@Basic</code> types.
+For example, if your database provides a set of data encryption functions, you can invoke them for individual columns like in the following example.</p>
+</div>
+<div id="mapping-column-read-and-write-example" class="exampleblock">
+<div class="title">Example 55. <code>@ColumnTransformer</code> example</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">@Entity(name = "Employee")
+public static class Employee {
+
+    @Id
+    private Long id;
+
+    @NaturalId
+    private String username;
+
+    @Column(name = "pswd")
+    @ColumnTransformer(
+        read = "decrypt( 'AES', '00', pswd  )",
+        write = "encrypt('AES', '00', ?)"
+    )
+    private String password;
+
+    private int accessLevel;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    private Department department;
+
+    @ManyToMany(mappedBy = "employees")
+    private List&lt;Project&gt; projects = new ArrayList&lt;&gt;();
+
+    //Getters and setters omitted for brevity
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>You can use the plural form <code>@ColumnTransformers</code> if more than one columns need to define either of these rules.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>If a property uses more than one column, you must use the <code>forColumn</code> attribute to specify which column, the expressions are targeting.</p>
+</div>
+<div id="mapping-column-read-and-write-composite-type-example" class="exampleblock">
+<div class="title">Example 56. <code>@ColumnTransformer</code> <code>forColumn</code> attribute usage</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">@Entity(name = "Savings")
+public static class Savings {
+
+    @Id
+    private Long id;
+
+    @Type(type = "org.hibernate.userguide.mapping.basic.MonetaryAmountUserType")
+    @Columns(columns = {
+        @Column(name = "money"),
+        @Column(name = "currency")
+    })
+    @ColumnTransformer(
+        forColumn = "money",
+        read = "money / 100",
+        write = "? * 100"
+    )
+    private MonetaryAmount wallet;
+
+    //Getters and setters omitted for brevity
+
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Hibernate applies the custom expressions automatically whenever the property is referenced in a query.
+This functionality is similar to a derived-property <a href="#mapping-column-formula">@Formula</a> with two differences:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>The property is backed by one or more columns that are exported as part of automatic schema generation.</p>
+</li>
+<li>
+<p>The property is read-write, not read-only.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>The <code>write</code> expression, if specified, must contain exactly one '?' placeholder for the value.</p>
+</div>
+<div id="mapping-column-read-and-write-composite-type-persistence-example" class="exampleblock">
+<div class="title">Example 57. Persisting an entity with a <code>@ColumnTransformer</code> and a composite type</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">doInJPA( this::entityManagerFactory, entityManager -&gt; {
+    Savings savings = new Savings( );
+    savings.setId( 1L );
+    savings.setWallet( new MonetaryAmount( BigDecimal.TEN, Currency.getInstance( Locale.US ) ) );
+    entityManager.persist( savings );
+} );
+
+doInJPA( this::entityManagerFactory, entityManager -&gt; {
+    Savings savings = entityManager.find( Savings.class, 1L );
+    assertEquals( 10, savings.getWallet().getAmount().intValue());
+} );</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-SQL" data-lang="SQL">INSERT INTO Savings (money, currency, id)
+VALUES (10 * 100, 'USD', 1)
+
+SELECT
+    s.id as id1_0_0_,
+    s.money / 100 as money2_0_0_,
+    s.currency as currency3_0_0_
+FROM
+    Savings s
+WHERE
+    s.id = 1</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="mapping-column-formula">@Formula</h4>
+<div class="paragraph">
+<p>Sometimes, you want the Database to do some computation for you rather than in the JVM, you might also create some kind of virtual column.
+You can use a SQL fragment (aka formula) instead of mapping a property into a column. This kind of property is read only (its value is calculated by your formula fragment)</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>You should be aware that the <code>@Formula</code> annotation takes a native SQL clause which can affect database portability.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div id="mapping-column-formula-example" class="exampleblock">
+<div class="title">Example 58. <code>@Formula</code> mapping usage</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">@Entity(name = "Account")
+public static class Account {
+
+    @Id
+    private Long id;
+
+    private Double credit;
+
+    private Double rate;
+
+    @Formula(value = "credit * rate")
+    private Double interest;
+
+    //Getters and setters omitted for brevity
+
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>When loading the <code>Account</code> entity, Hibernate is going to calculate the <code>interest</code> property using the configured <code>@Formula</code>:</p>
+</div>
+<div id="mapping-column-formula-persistence-example" class="exampleblock">
+<div class="title">Example 59. Persisting an entity with a <code>@Formula</code> mapping</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">doInJPA( this::entityManagerFactory, entityManager -&gt; {
+    Account account = new Account( );
+    account.setId( 1L );
+    account.setCredit( 5000d );
+    account.setRate( 1.25 / 100 );
+    entityManager.persist( account );
+} );
+
+doInJPA( this::entityManagerFactory, entityManager -&gt; {
+    Account account = entityManager.find( Account.class, 1L );
+    assertEquals( Double.valueOf( 62.5d ), account.getInterest());
+} );</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-SQL" data-lang="SQL">INSERT INTO Account (credit, rate, id)
+VALUES (5000.0, 0.0125, 1)
+
+SELECT
+    a.id as id1_0_0_,
+    a.credit as credit2_0_0_,
+    a.rate as rate3_0_0_,
+    a.credit * a.rate as formula0_0_
+FROM
+    Account a
+WHERE
+    a.id = 1</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>The SQL fragment can be as complex as you want and even include subselects.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect3">
+<h4 id="mapping-column-where">@Where</h4>
+<div class="paragraph">
+<p>Sometimes, you want to filter out entities or collections using a custom SQL criteria.
+This can be achieved using the <code>@Where</code> annotation, which can be applied to entities and collections.</p>
+</div>
+<div id="mapping-where-example" class="exampleblock">
+<div class="title">Example 60. <code>@Where</code> mapping usage</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">public enum AccountType {
+    DEBIT,
+    CREDIT
+}
+
+@Entity(name = "Client")
+public static class Client {
+
+    @Id
+    private Long id;
+
+    private String name;
+
+    @Where( clause = "account_type = 'DEBIT'")
+    @OneToMany(mappedBy = "client")
+    private List&lt;Account&gt; debitAccounts = new ArrayList&lt;&gt;( );
+
+    @Where( clause = "account_type = 'CREDIT'")
+    @OneToMany(mappedBy = "client")
+    private List&lt;Account&gt; creditAccounts = new ArrayList&lt;&gt;( );
+
+    //Getters and setters omitted for brevity
+
+}
+
+@Entity(name = "Account")
+@Where( clause = "active = true" )
+public static class Account {
+
+    @Id
+    private Long id;
+
+    @ManyToOne
+    private Client client;
+
+    @Column(name = "account_type")
+    @Enumerated(EnumType.STRING)
+    private AccountType type;
+
+    private Double amount;
+
+    private Double rate;
+
+    private boolean active;
+
+    //Getters and setters omitted for brevity
+
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>If the database contains the following entities:</p>
+</div>
+<div id="mapping-where-persistence-example" class="exampleblock">
+<div class="title">Example 61. Persisting an fetching entities with a <code>@Where</code> mapping</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">doInJPA( this::entityManagerFactory, entityManager -&gt; {
+
+    Client client = new Client();
+    client.setId( 1L );
+    client.setName( "John Doe" );
+    entityManager.persist( client );
+
+    Account account1 = new Account( );
+    account1.setId( 1L );
+    account1.setType( AccountType.CREDIT );
+    account1.setAmount( 5000d );
+    account1.setRate( 1.25 / 100 );
+    account1.setActive( true );
+    account1.setClient( client );
+    client.getCreditAccounts().add( account1 );
+    entityManager.persist( account1 );
+
+    Account account2 = new Account( );
+    account2.setId( 2L );
+    account2.setType( AccountType.DEBIT );
+    account2.setAmount( 0d );
+    account2.setRate( 1.05 / 100 );
+    account2.setActive( false );
+    account2.setClient( client );
+    client.getDebitAccounts().add( account2 );
+    entityManager.persist( account2 );
+
+    Account account3 = new Account( );
+    account3.setType( AccountType.DEBIT );
+    account3.setId( 3L );
+    account3.setAmount( 250d );
+    account3.setRate( 1.05 / 100 );
+    account3.setActive( true );
+    account3.setClient( client );
+    client.getDebitAccounts().add( account3 );
+    entityManager.persist( account3 );
+} );</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-SQL" data-lang="SQL">INSERT INTO Client (name, id)
+VALUES ('John Doe', 1)
+
+INSERT INTO Account (active, amount, client_id, rate, account_type, id)
+VALUES (true, 5000.0, 1, 0.0125, 'CREDIT', 1)
+
+INSERT INTO Account (active, amount, client_id, rate, account_type, id)
+VALUES (false, 0.0, 1, 0.0105, 'DEBIT', 2)
+
+INSERT INTO Account (active, amount, client_id, rate, account_type, id)
+VALUES (true, 250.0, 1, 0.0105, 'DEBIT', 3)</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>When executing an <code>Account</code> entity query, Hibernate is going to filter out all records that are not active.</p>
+</div>
+<div id="mapping-where-entity-query-example" class="exampleblock">
+<div class="title">Example 62. Query entities mapped with <code>@Where</code></div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">doInJPA( this::entityManagerFactory, entityManager -&gt; {
+    List&lt;Account&gt; accounts = entityManager.createQuery(
+        "select a from Account a", Account.class)
+    .getResultList();
+    assertEquals( 2, accounts.size());
+} );</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-SQL" data-lang="SQL">SELECT
+    a.id as id1_0_,
+    a.active as active2_0_,
+    a.amount as amount3_0_,
+    a.client_id as client_i6_0_,
+    a.rate as rate4_0_,
+    a.account_type as account_5_0_
+FROM
+    Account a
+WHERE ( a.active = true )</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>When fetching the <code>debitAccounts</code> or the <code>creditAccounts</code> collections, Hibernate is going to apply the <code>@Where</code> clause filtering criteria to the associated child entities.</p>
+</div>
+<div id="mapping-where-collection-query-example" class="exampleblock">
+<div class="title">Example 63. Traversing collections mapped with <code>@Where</code></div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">doInJPA( this::entityManagerFactory, entityManager -&gt; {
+    Client client = entityManager.find( Client.class, 1L );
+    assertEquals( 1, client.getCreditAccounts().size() );
+    assertEquals( 1, client.getDebitAccounts().size() );
+} );</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-SQL" data-lang="SQL">SELECT
+    c.client_id as client_i6_0_0_,
+    c.id as id1_0_0_,
+    c.id as id1_0_1_,
+    c.active as active2_0_1_,
+    c.amount as amount3_0_1_,
+    c.client_id as client_i6_0_1_,
+    c.rate as rate4_0_1_,
+    c.account_type as account_5_0_1_
+FROM
+    Account c
+WHERE ( c.active = true and c.account_type = 'CREDIT' ) AND c.client_id = 1
+
+SELECT
+    d.client_id as client_i6_0_0_,
+    d.id as id1_0_0_,
+    d.id as id1_0_1_,
+    d.active as active2_0_1_,
+    d.amount as amount3_0_1_,
+    d.client_id as client_i6_0_1_,
+    d.rate as rate4_0_1_,
+    d.account_type as account_5_0_1_
+FROM
+    Account d
+WHERE ( d.active = true and d.account_type = 'DEBIT' ) AND d.client_id = 1</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="mapping-column-filter">@Filter</h4>
+<div class="paragraph">
+<p>The <code>@Filter</code> annotation is another way to filter out entities or collections using a custom SQL criteria, for both entities and collections.
+Unlike the <code>@Where</code> annotation, <code>@Filter</code> allows you to parameterize the filter clause at runtime.</p>
+</div>
+<div id="mapping-filter-example" class="exampleblock">
+<div class="title">Example 64. <code>@Filter</code> mapping usage</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">public enum AccountType {
+    DEBIT,
+    CREDIT
+}
+
+@Entity(name = "Client")
+public static class Client {
+
+    @Id
+    private Long id;
+
+    private String name;
+
+    @OneToMany(mappedBy = "client")
+    @Filter(name="activeAccount", condition="active = :active")
+    private List&lt;Account&gt; accounts = new ArrayList&lt;&gt;( );
+
+    //Getters and setters omitted for brevity
+
+}
+
+@Entity(name = "Account")
+@FilterDef(name="activeAccount", parameters=@ParamDef( name="active", type="boolean" ) )
+@Filter(name="activeAccount", condition="active = :active")
+public static class Account {
+
+    @Id
+    private Long id;
+
+    @ManyToOne
+    private Client client;
+
+    @Column(name = "account_type")
+    @Enumerated(EnumType.STRING)
+    private AccountType type;
+
+    private Double amount;
+
+    private Double rate;
+
+    private boolean active;
+
+    //Getters and setters omitted for brevity
+
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>If the database contains the following entities:</p>
+</div>
+<div id="mapping-filter-persistence-example" class="exampleblock">
+<div class="title">Example 65. Persisting an fetching entities with a <code>@Filter</code> mapping</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">doInJPA( this::entityManagerFactory, entityManager -&gt; {
+
+    Client client = new Client();
+    client.setId( 1L );
+    client.setName( "John Doe" );
+    entityManager.persist( client );
+
+    Account account1 = new Account( );
+    account1.setId( 1L );
+    account1.setType( AccountType.CREDIT );
+    account1.setAmount( 5000d );
+    account1.setRate( 1.25 / 100 );
+    account1.setActive( true );
+    account1.setClient( client );
+    client.getAccounts().add( account1 );
+    entityManager.persist( account1 );
+
+    Account account2 = new Account( );
+    account2.setId( 2L );
+    account2.setType( AccountType.DEBIT );
+    account2.setAmount( 0d );
+    account2.setRate( 1.05 / 100 );
+    account2.setActive( false );
+    account2.setClient( client );
+    client.getAccounts().add( account2 );
+    entityManager.persist( account2 );
+
+    Account account3 = new Account( );
+    account3.setType( AccountType.DEBIT );
+    account3.setId( 3L );
+    account3.setAmount( 250d );
+    account3.setRate( 1.05 / 100 );
+    account3.setActive( true );
+    account3.setClient( client );
+    client.getAccounts().add( account3 );
+    entityManager.persist( account3 );
+} );</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-SQL" data-lang="SQL">INSERT INTO Client (name, id)
+VALUES ('John Doe', 1)
+
+INSERT INTO Account (active, amount, client_id, rate, account_type, id)
+VALUES (true, 5000.0, 1, 0.0125, 'CREDIT', 1)
+
+INSERT INTO Account (active, amount, client_id, rate, account_type, id)
+VALUES (false, 0.0, 1, 0.0105, 'DEBIT', 2)
+
+INSERT INTO Account (active, amount, client_id, rate, account_type, id)
+VALUES (true, 250.0, 1, 0.0105, 'DEBIT', 3)</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>By default, without explicitly enabling the filter, Hibernate is going to fetch all <code>Account</code> entities.
+If the filter is enabled and the filter parameter value is provided,
+then Hibernate is going to apply the filtering criteria to the associated <code>Account</code> entities.</p>
+</div>
+<div id="mapping-filter-entity-query-example" class="exampleblock">
+<div class="title">Example 66. Query entities mapped with <code>@Filter</code></div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">doInJPA( this::entityManagerFactory, entityManager -&gt; {
+    List&lt;Account&gt; accounts = entityManager.createQuery(
+        "select a from Account a", Account.class)
+    .getResultList();
+    assertEquals( 3, accounts.size());
+} );
+
+doInJPA( this::entityManagerFactory, entityManager -&gt; {
+    log.infof( "Activate filter [%s]", "activeAccount");
+
+    entityManager
+        .unwrap( Session.class )
+        .enableFilter( "activeAccount" )
+        .setParameter( "active", true);
+
+    List&lt;Account&gt; accounts = entityManager.createQuery(
+        "select a from Account a", Account.class)
+    .getResultList();
+    assertEquals( 2, accounts.size());
+} );</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-SQL" data-lang="SQL">SELECT
+    a.id as id1_0_,
+    a.active as active2_0_,
+    a.amount as amount3_0_,
+    a.client_id as client_i6_0_,
+    a.rate as rate4_0_,
+    a.account_type as account_5_0_
+FROM
+    Account a
+
+-- Activate filter [activeAccount]
+
+SELECT
+    a.id as id1_0_,
+    a.active as active2_0_,
+    a.amount as amount3_0_,
+    a.client_id as client_i6_0_,
+    a.rate as rate4_0_,
+    a.account_type as account_5_0_
+FROM
+    Account a
+WHERE
+    a.active = true</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Jut like with entities, collections can be filtered as well, but only if the filter is explicilty enabled on the currently running Hibernate <code>Session</code>.
+This way, when fetching the <code>accounts</code> collections, Hibernate is going to apply the <code>@Filter</code> clause filtering criteria to the associated collection entries.</p>
+</div>
+<div id="mapping-filter-collection-query-example" class="exampleblock">
+<div class="title">Example 67. Traversing collections mapped with <code>@Filter</code></div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">doInJPA( this::entityManagerFactory, entityManager -&gt; {
+    Client client = entityManager.find( Client.class, 1L );
+    assertEquals( 3, client.getAccounts().size() );
+} );
+
+doInJPA( this::entityManagerFactory, entityManager -&gt; {
+    log.infof( "Activate filter [%s]", "activeAccount");
+
+    entityManager
+        .unwrap( Session.class )
+        .enableFilter( "activeAccount" )
+        .setParameter( "active", true);
+
+    Client client = entityManager.find( Client.class, 1L );
+    assertEquals( 2, client.getAccounts().size() );
+} );</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-SQL" data-lang="SQL">SELECT
+    c.id as id1_1_0_,
+    c.name as name2_1_0_
+FROM
+    Client c
+WHERE
+    c.id = 1
+
+SELECT
+    a.id as id1_0_,
+    a.active as active2_0_,
+    a.amount as amount3_0_,
+    a.client_id as client_i6_0_,
+    a.rate as rate4_0_,
+    a.account_type as account_5_0_
+FROM
+    Account a
+WHERE
+    a.client_id = 1
+
+-- Activate filter [activeAccount]
+
+SELECT
+    c.id as id1_1_0_,
+    c.name as name2_1_0_
+FROM
+    Client c
+WHERE
+    c.id = 1
+
+SELECT
+    a.id as id1_0_,
+    a.active as active2_0_,
+    a.amount as amount3_0_,
+    a.client_id as client_i6_0_,
+    a.rate as rate4_0_,
+    a.account_type as account_5_0_
+FROM
+    Account a
+WHERE
+    accounts0_.active = true
+    and a.client_id = 1</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>The main advantage of <code>@Filter</code> over the <code>@Where</code> clause is that the filtering criteria can be customized at runtime.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>It&#8217;s not possible to combine the <code>@Filter</code> and <code>@Cache</code> collection annotations.
+This limitation is due to ensuring consistency and because the filtering information is not stored in the second-level cache.</p>
+</div>
+<div class="paragraph">
+<p>If caching was allowed for a currently filtered collection, then the second-level cache would store only a subset of the whole collection.
+Afterward, every other Session will get the filtered collection from the cache, even if the Session-level filters have not been explicitly activated.</p>
+</div>
+<div class="paragraph">
+<p>For this reason, the second-level collection cache is limited to storing whole collections, and not subsets.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect3">
+<h4 id="mapping-column-any">@Any mapping</h4>
+<div class="paragraph">
+<p>There is one more type of property mapping.
+The <code>@Any</code> mapping defines a polymorphic association to classes from multiple tables.
+This type of mapping requires more than one column.
+The first column contains the type of the associated entity.
+The remaining columns contain the identifier.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>It is impossible to specify a foreign key constraint for this kind of association.
+This is not the usual way of mapping polymorphic associations and you should use this only in special cases (e.g. audit logs, user session data, etc).</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>The <code>@Any</code> annotation describes the column holding the metadata information.
+To link the value of the metadata information and an actual entity type, the <code>@AnyDef</code> and <code>@AnyDefs</code> annotations are used.
+The <code>metaType</code> attribute allows the application to specify a custom type that maps database column values to persistent classes that have identifier properties of the type specified by <code>idType</code>.
+You must specify the mapping from values of the <code>metaType</code> to class names.</p>
+</div>
+<div class="paragraph">
+<p>For the next examples, consider the following <code>Property</code> class hierarchy:</p>
+</div>
+<div id="mapping-column-any-property-example" class="exampleblock">
+<div class="title">Example 68. <code>Property</code> class hierarchy</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">public interface Property&lt;T&gt; {
+
+    String getName();
+
+    T getValue();
+}
+
+
+@Entity
+@Table(name="integer_property")
+public class IntegerProperty implements Property&lt;Integer&gt; {
+
+    @Id
+    private Long id;
+
+    @Column(name = "`name`")
+    private String name;
+
+    @Column(name = "`value`")
+    private Integer value;
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    @Override
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public Integer getValue() {
+        return value;
+    }
+
+    public void setValue(Integer value) {
+        this.value = value;
+    }
+}
+
+
+@Entity
+@Table(name="string_property")
+public class StringProperty implements Property&lt;String&gt; {
+
+    @Id
+    private Long id;
+
+    @Column(name = "`name`")
+    private String name;
+
+    @Column(name = "`value`")
+    private String value;
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    @Override
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getValue() {
+        return value;
+    }
+
+    public void setValue(String value) {
+        this.value = value;
+    }
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>A <code>PropertyHolder</code> can reference any such property, and, because each <code>Property</code> belongs to a separate table, the <code>@Any</code> annotation is, therefore, required.</p>
+</div>
+<div id="mapping-column-any-example" class="exampleblock">
+<div class="title">Example 69. <code>@Any</code> mapping usage</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">@Entity
+@Table( name = "property_holder" )
+public class PropertyHolder {
+
+    @Id
+    private Long id;
+
+    @Any(
+        metaDef = "PropertyMetaDef",
+        metaColumn = @Column( name = "property_type" )
+    )
+    @JoinColumn( name = "property_id" )
+    private Property property;
+
+	//Getters and setters are omitted for brevity
+
+}</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-SQL" data-lang="SQL">CREATE TABLE property_holder (
+    id BIGINT NOT NULL,
+    property_type VARCHAR(255),
+    property_id BIGINT,
+    PRIMARY KEY ( id )
+)</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>As you can see, there are two columns used to reference a <code>Property</code> instance: <code>property_id</code> and <code>property_type</code>.
+The <code>property_id</code> is used to match the <code>id</code> column of either the <code>string_property</code> or <code>integer_property</code> tables,
+while the <code>property_type</code> is used to match the <code>string_property</code> or the  <code>integer_property</code> table.</p>
+</div>
+<div class="paragraph">
+<p>The table resolving mapping is defined by the <code>metaDef</code> attribute which references an <code>@AnyMetaDef</code> mapping.
+Although the <code>@AnyMetaDef</code> mapping could be set right next to the <code>@Any</code> annotation,
+it&#8217;s good practice to reuse it, therefore it makes sense to configure it on a class or package-level basis.</p>
+</div>
+<div class="paragraph">
+<p>The <code>package-info.java</code> contains the <code>@AnyMetaDef</code> mapping:</p>
+</div>
+<div id="mapping-column-any-meta-def-example" class="exampleblock">
+<div class="title">Example 70. <code>@Any</code> mapping usage</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">@AnyMetaDef( name= "PropertyMetaDef", metaType = "string", idType = "long",
+    metaValues = {
+            @MetaValue(value = "S", targetEntity = StringProperty.class),
+            @MetaValue(value = "I", targetEntity = IntegerProperty.class)
+        }
+    )
+package org.hibernate.userguide.mapping.basic.any;
+
+import org.hibernate.annotations.AnyMetaDef;
+import org.hibernate.annotations.MetaValue;</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>It is recommended to place the <code>@AnyMetaDef</code> mapping as a package metadata.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>To see how the <code>@Any</code> annotation in action, consider the following example:</p>
+</div>
+<div id="mapping-column-any-persistence-example" class="exampleblock">
+<div class="title">Example 71. <code>@Any</code> mapping usage</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">doInHibernate( this::sessionFactory, session -&gt; {
+    IntegerProperty ageProperty = new IntegerProperty();
+    ageProperty.setId( 1L );
+    ageProperty.setName( "age" );
+    ageProperty.setValue( 23 );
+
+    StringProperty nameProperty = new StringProperty();
+    nameProperty.setId( 1L );
+    nameProperty.setName( "name" );
+    nameProperty.setValue( "John Doe" );
+
+    session.persist( ageProperty );
+    session.persist( nameProperty );
+
+    PropertyHolder namePropertyHolder = new PropertyHolder();
+    namePropertyHolder.setId( 1L );
+    namePropertyHolder.setProperty( nameProperty );
+    session.persist( namePropertyHolder );
+} );
+
+doInHibernate( this::sessionFactory, session -&gt; {
+    PropertyHolder propertyHolder = session.get( PropertyHolder.class, 1L );
+    assertEquals("name", propertyHolder.getProperty().getName());
+    assertEquals("John Doe", propertyHolder.getProperty().getValue());
+} );</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-SQL" data-lang="SQL">INSERT INTO integer_property
+       ( "name", "value", id )
+VALUES ( 'age', 23, 1 )
+
+INSERT INTO string_property
+       ( "name", "value", id )
+VALUES ( 'name', 'John Doe', 1 )
+
+INSERT INTO property_holder
+       ( property_type, property_id, id )
+VALUES ( 'S', 1, 1 )
+
+
+SELECT ph.id AS id1_1_0_,
+       ph.property_type AS property2_1_0_,
+       ph.property_id AS property3_1_0_
+FROM   property_holder ph
+WHERE  ph.id = 1
+
+
+SELECT sp.id AS id1_2_0_,
+       sp."name" AS name2_2_0_,
+       sp."value" AS value3_2_0_
+FROM   string_property sp
+WHERE  sp.id = 1</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect4">
+<h5 id="mapping-column-many-to-any"><code>@ManyToAny</code> mapping</h5>
+<div class="paragraph">
+<p>The <code>@Any</code> mapping is useful to emulate a <code>@ManyToOne</code> association when there can be multiple target entities.
+To emulate a <code>@OneToMany</code> association, the <code>@ManyToAny</code> annotation must be used.</p>
+</div>
+<div class="paragraph">
+<p>In the following example, the <code>PropertyRepository</code> entity has a collection of <code>Property</code> entities.
+The <code>repository_properties</code> link table holds the associations between <code>PropertyRepository</code> and <code>Property</code> entities.</p>
+</div>
+<div id="mapping-column-many-to-any-example" class="exampleblock">
+<div class="title">Example 72. <code>@ManyToAny</code> mapping usage</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">@Entity
+@Table( name = "property_repository" )
+public class PropertyRepository {
+
+    @Id
+    private Long id;
+
+    @ManyToAny(
+        metaDef = "PropertyMetaDef",
+        metaColumn = @Column( name = "property_type" )
+    )
+    @Cascade( { org.hibernate.annotations.CascadeType.ALL })
+    @JoinTable(name = "repository_properties",
+        joinColumns = @JoinColumn(name = "repository_id"),
+        inverseJoinColumns = @JoinColumn(name = "property_id")
+    )
+    private List&lt;Property&lt;?&gt;&gt; properties = new ArrayList&lt;&gt;(  );
+
+	//Getters and setters are omitted for brevity
+
+}</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-SQL" data-lang="SQL">CREATE TABLE property_repository (
+    id BIGINT NOT NULL,
+    PRIMARY KEY ( id )
+)
+
+CREATE TABLE repository_properties (
+    repository_id BIGINT NOT NULL,
+    property_type VARCHAR(255),
+    property_id BIGINT NOT NULL
+)</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>To see how the <code>@ManyToAny</code> annotation works, consider the following example:</p>
+</div>
+<div id="mapping-column-many-to-any-persistence-example" class="exampleblock">
+<div class="title">Example 73. <code>@Any</code> mapping usage</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">doInHibernate( this::sessionFactory, session -&gt; {
+    IntegerProperty ageProperty = new IntegerProperty();
+    ageProperty.setId( 1L );
+    ageProperty.setName( "age" );
+    ageProperty.setValue( 23 );
+
+    StringProperty nameProperty = new StringProperty();
+    nameProperty.setId( 1L );
+    nameProperty.setName( "name" );
+    nameProperty.setValue( "John Doe" );
+
+    session.persist( ageProperty );
+    session.persist( nameProperty );
+
+    PropertyRepository propertyRepository = new PropertyRepository();
+    propertyRepository.setId( 1L );
+    propertyRepository.getProperties().add( ageProperty );
+    propertyRepository.getProperties().add( nameProperty );
+    session.persist( propertyRepository );
+} );
+
+doInHibernate( this::sessionFactory, session -&gt; {
+    PropertyRepository propertyRepository = session.get( PropertyRepository.class, 1L );
+    assertEquals(2, propertyRepository.getProperties().size());
+    for(Property property : propertyRepository.getProperties()) {
+        assertNotNull( property.getValue() );
+    }
+} );</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-SQL" data-lang="SQL">INSERT INTO integer_property
+       ( "name", "value", id )
+VALUES ( 'age', 23, 1 )
+
+INSERT INTO string_property
+       ( "name", "value", id )
+VALUES ( 'name', 'John Doe', 1 )
+
+INSERT INTO property_repository ( id )
+VALUES ( 1 )
+
+INSERT INTO repository_properties
+    ( repository_id , property_type , property_id )
+VALUES
+    ( 1 , 'I' , 1 )
+
+INSERT INTO repository_properties
+    ( repository_id , property_type , property_id )
+VALUES
+    ( 1 , 'S' , 1 )
+
+SELECT pr.id AS id1_1_0_
+FROM   property_repository pr
+WHERE  pr.id = 1
+
+SELECT ip.id AS id1_0_0_ ,
+       integerpro0_."name" AS name2_0_0_ ,
+       integerpro0_."value" AS value3_0_0_
+FROM   integer_property integerpro0_
+WHERE  integerpro0_.id = 1
+
+SELECT sp.id AS id1_3_0_ ,
+       sp."name" AS name2_3_0_ ,
+       sp."value" AS value3_3_0_
+FROM   string_property sp
+WHERE  sp.id = 1</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div id="footer">
+<div id="footer-text">
+Last updated 2016-10-26 14:44:36 +01:00
+</div>
+</div>
+</body>
+</html>

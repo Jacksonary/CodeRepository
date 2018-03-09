@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<!--[if IE]><meta http-equiv="X-UA-Compatible" content="IE=edge"><![endif]-->
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="generator" content="Asciidoctor 1.5.2">
+<title>Legacy Bootstrapping</title>
+<link rel="stylesheet" href="./css/hibernate.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.2.0/css/font-awesome.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prettify/r298/prettify.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prettify/r298/prettify.min.js"></script>
+<script>document.addEventListener('DOMContentLoaded', prettyPrint)</script>
+</head>
+<body class="article">
+<div id="header">
+</div>
+<div id="content">
+<div class="sect1">
+<h2 id="appendix-legacy-bootstrap">Legacy Bootstrapping</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The legacy way to bootstrap a SessionFactory is via the <code>org.hibernate.cfg.Configuration</code> object.
+<code>Configuration</code> represents, essentially, a single point for specifying all aspects of building the <code>SessionFactory</code>: everything from settings, to mappings, to strategies, etc.
+I like to think of <code>Configuration</code> as a big pot to which we add a bunch of stuff (mappings, settings, etc) and from which we eventually get a <code>SessionFactory.</code></p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>There are some significant draw backs to this approach which led to its deprecation and the development of the new approach, which is discussed in  <a href="chapters/bootstrap/Bootstrap.html#bootstrap-native">Native Bootstrapping</a>.
+<code>Configuration</code> is semi-deprecated but still available for use, in a limited form that eliminates these drawbacks.
+"Under the covers", <code>Configuration</code> uses the new bootstrapping code, so the things available there as also available here in terms of auto-discovery.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>You can obtain the <code>Configuration</code> by instantiating it directly.
+You then specify mapping metadata (XML mapping documents, annotated classes) that describe your applications object model and its mapping to a SQL database.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">Configuration cfg = new Configuration()
+    // addResource does a classpath resource lookup
+    .addResource("Item.hbm.xml")
+    .addResource("Bid.hbm.xml")
+
+    // calls addResource using "/org/hibernate/auction/User.hbm.xml"
+    .addClass(`org.hibernate.auction.User.class`)
+
+    // parses Address class for mapping annotations
+    .addAnnotatedClass( Address.class )
+
+    // reads package-level (package-info.class) annotations in the named package
+    .addPackage( "org.hibernate.auction" )
+
+    .setProperty("hibernate.dialect", "org.hibernate.dialect.H2Dialect")
+    .setProperty("hibernate.connection.datasource", "java:comp/env/jdbc/test")
+    .setProperty("hibernate.order_updates", "true");</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>There are other ways to specify Configuration information, including:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Place a file named hibernate.properties in a root directory of the classpath</p>
+</li>
+<li>
+<p>Pass an instance of java.util.Properties to <code>Configuration#setProperties</code></p>
+</li>
+<li>
+<p>Via a <code>hibernate.cfg.xml</code> file</p>
+</li>
+<li>
+<p>System properties using java <code>-Dproperty=value</code></p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_migration">Migration</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Mapping Configuration methods to the corresponding methods in the new APIs..</p>
+</div>
+<table class="tableblock frame-all grid-all spread">
+<colgroup>
+<col style="width: 50%;">
+<col style="width: 50%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Configuration#addFile</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Configuration#addFile</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Configuration#add(XmlDocument)</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Configuration#add(XmlDocument)</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Configuration#addXML</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Configuration#addXML</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Configuration#addCacheableFile</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Configuration#addCacheableFile</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Configuration#addURL</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Configuration#addURL</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Configuration#addInputStream</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Configuration#addInputStream</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Configuration#addResource</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Configuration#addResource</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Configuration#addClass</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Configuration#addClass</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Configuration#addAnnotatedClass</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Configuration#addAnnotatedClass</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Configuration#addPackage</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Configuration#addPackage</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Configuration#addJar</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Configuration#addJar</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Configuration#addDirectory</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Configuration#addDirectory</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Configuration#registerTypeContributor</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Configuration#registerTypeContributor</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Configuration#registerTypeOverride</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Configuration#registerTypeOverride</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Configuration#setProperty</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Configuration#setProperty</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Configuration#setProperties</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Configuration#setProperties</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Configuration#addProperties</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Configuration#addProperties</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Configuration#setNamingStrategy</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Configuration#setNamingStrategy</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Configuration#setImplicitNamingStrategy</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Configuration#setImplicitNamingStrategy</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Configuration#setPhysicalNamingStrategy</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Configuration#setPhysicalNamingStrategy</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Configuration#configure</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Configuration#configure</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Configuration#setInterceptor</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Configuration#setInterceptor</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Configuration#setEntityNotFoundDelegate</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Configuration#setEntityNotFoundDelegate</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Configuration#setSessionFactoryObserver</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Configuration#setSessionFactoryObserver</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Configuration#setCurrentTenantIdentifierResolver</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Configuration#setCurrentTenantIdentifierResolver</code></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+<div id="footer">
+<div id="footer-text">
+Last updated 2016-05-09 10:21:21 +01:00
+</div>
+</div>
+</body>
+</html>

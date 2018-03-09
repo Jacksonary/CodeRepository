@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<!--[if IE]><meta http-equiv="X-UA-Compatible" content="IE=edge"><![endif]-->
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="generator" content="Asciidoctor 1.5.2">
+<title>Legacy Hibernate Native Queries</title>
+<link rel="stylesheet" href="./css/hibernate.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.2.0/css/font-awesome.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prettify/r298/prettify.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prettify/r298/prettify.min.js"></script>
+<script>document.addEventListener('DOMContentLoaded', prettyPrint)</script>
+</head>
+<body class="article">
+<div id="header">
+</div>
+<div id="content">
+<div class="sect1">
+<h2 id="appendix-legacy-native-queries">Legacy Hibernate Native Queries</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="legacy-sql-named-queries">Legacy Named SQL queries</h3>
+<div class="paragraph">
+<p>Named SQL queries can also be defined during mapping and called in exactly the same way as a named HQL query.
+In this case, you do <em>not</em> need to call <code>addEntity()</code> anymore.</p>
+</div>
+<div class="exampleblock">
+<div class="title">Example 1. Named sql query using the <code>&lt;sql-query&gt;</code> mapping element</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-xml" data-lang="xml">&lt;sql-query name = "persons"&gt;
+    &lt;return alias="person" class="eg.Person"/&gt;
+    SELECT person.NAME AS {person.name},
+           person.AGE AS {person.age},
+           person.SEX AS {person.sex}
+    FROM PERSON person
+    WHERE person.NAME LIKE :namePattern
+&lt;/sql-query&gt;</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="exampleblock">
+<div class="title">Example 2. Execution of a named query</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">List people = session
+    .getNamedQuery( "persons" )
+    .setParameter( "namePattern", namePattern )
+    .setMaxResults( 50 )
+    .list();</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>The <code>&lt;return-join&gt;</code> element is use to join associations and the <code>&lt;load-collection&gt;</code> element is used to define queries which initialize collections.</p>
+</div>
+<div class="exampleblock">
+<div class="title">Example 3. Named sql query with association</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-xml" data-lang="xml">&lt;sql-query name = "personsWith"&gt;
+    &lt;return alias="person" class="eg.Person"/&gt;
+    &lt;return-join alias="address" property="person.mailingAddress"/&gt;
+    SELECT person.NAME AS {person.name},
+           person.AGE AS {person.age},
+           person.SEX AS {person.sex},
+           address.STREET AS {address.street},
+           address.CITY AS {address.city},
+           address.STATE AS {address.state},
+           address.ZIP AS {address.zip}
+    FROM PERSON person
+    JOIN ADDRESS address
+        ON person.ID = address.PERSON_ID AND address.TYPE='MAILING'
+    WHERE person.NAME LIKE :namePattern
+&lt;/sql-query&gt;</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>A named SQL query may return a scalar value.
+You must declare the column alias and Hibernate type using the <code>&lt;return-scalar&gt;</code> element:</p>
+</div>
+<div class="exampleblock">
+<div class="title">Example 4. Named query returning a scalar</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-xml" data-lang="xml">&lt;sql-query name = "mySqlQuery"&gt;
+    &lt;return-scalar column = "name" type="string"/&gt;
+    &lt;return-scalar column = "age" type="long"/&gt;
+    SELECT p.NAME AS name,
+           p.AGE AS age,
+    FROM PERSON p WHERE p.NAME LIKE 'Hiber%'
+&lt;/sql-query&gt;</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>You can externalize the resultset mapping information in a <code>&lt;resultset&gt;</code> element which will allow you to either reuse them across several named queries or through the <code>setResultSetMapping()</code> API.</p>
+</div>
+<div class="exampleblock">
+<div class="title">Example 5. &lt;resultset&gt; mapping used to externalize mappinginformation</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-xml" data-lang="xml">&lt;resultset name = "personAddress"&gt;
+    &lt;return alias="person" class="eg.Person"/&gt;
+    &lt;return-join alias="address" property="person.mailingAddress"/&gt;
+&lt;/resultset&gt;
+
+&lt;sql-query name = "personsWith" resultset-ref="personAddress"&gt;
+    SELECT person.NAME AS {person.name},
+           person.AGE AS {person.age},
+           person.SEX AS {person.sex},
+           address.STREET AS {address.street},
+           address.CITY AS {address.city},
+           address.STATE AS {address.state},
+           address.ZIP AS {address.zip}
+    FROM PERSON person
+    JOIN ADDRESS address
+        ON person.ID = address.PERSON_ID AND address.TYPE='MAILING'
+    WHERE person.NAME LIKE :namePattern
+&lt;/sql-query&gt;</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>You can, alternatively, use the resultset mapping information in your hbm files directly in java code.</p>
+</div>
+<div class="exampleblock">
+<div class="title">Example 6. Programmatically specifying the result mapping information</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">List cats = session
+    .createSQLQuery( "select {cat.*}, {kitten.*} from cats cat, cats kitten where kitten.mother = cat.id" )
+    .setResultSetMapping("catAndKitten")
+    .list();</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="legacy-propertyresults">Legacy return-property to explicitly specify column/alias names</h3>
+<div class="paragraph">
+<p>You can explicitly tell Hibernate what column aliases to use with <code>&lt;return-property&gt;</code>, instead of using the <code>{}</code> syntax to let Hibernate inject its own aliases.
+For example:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-xml" data-lang="xml">&lt;sql-query name = "mySqlQuery"&gt;
+    &lt;return alias = "person" class = "eg.Person"&gt;
+        &lt;return-property name = "name" column = "myName"/&gt;
+        &lt;return-property name = "age" column = "myAge"/&gt;
+        &lt;return-property name = "sex" column = "mySex"/&gt;
+    &lt;/return&gt;
+    SELECT person.NAME AS myName,
+           person.AGE AS myAge,
+           person.SEX AS mySex,
+    FROM PERSON person WHERE person.NAME LIKE :name
+&lt;/sql-query&gt;</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><code>&lt;return-property&gt;</code> also works with multiple columns.
+This solves a limitation with the <code>{}</code> syntax which cannot allow fine grained control of multi-column properties.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-xml" data-lang="xml">&lt;sql-query name = "organizationCurrentEmployments"&gt;
+    &lt;return alias = "emp" class = "Employment"&gt;
+        &lt;return-property name = "salary"&gt;
+            &lt;return-column name = "VALUE"/&gt;
+            &lt;return-column name = "CURRENCY"/&gt;
+        &lt;/return-property&gt;
+        &lt;return-property name = "endDate" column = "myEndDate"/&gt;
+    &lt;/return&gt;
+        SELECT EMPLOYEE AS {emp.employee}, EMPLOYER AS {emp.employer},
+        STARTDATE AS {emp.startDate}, ENDDATE AS {emp.endDate},
+        REGIONCODE as {emp.regionCode}, EID AS {emp.id}, VALUE, CURRENCY
+        FROM EMPLOYMENT
+        WHERE EMPLOYER = :id AND ENDDATE IS NULL
+        ORDER BY STARTDATE ASC
+&lt;/sql-query&gt;</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>In this example <code>&lt;return-property&gt;</code> was used in combination with the <code>{}</code> syntax for injection.
+This allows users to choose how they want to refer column and properties.</p>
+</div>
+<div class="paragraph">
+<p>If your mapping has a discriminator you must use <code>&lt;return-discriminator&gt;</code> to specify the discriminator column.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="legacy-sp_query">Legacy stored procedures for querying</h3>
+<div class="paragraph">
+<p>Hibernate provides support for queries via stored procedures and functions.
+Most of the following documentation is equivalent for both.
+The stored procedure/function must return a resultset as the first out-parameter to be able to work with Hibernate.
+An example of such a stored function in Oracle 9 and higher is as follows:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-xml" data-lang="xml">CREATE OR REPLACE FUNCTION selectAllEmployments
+    RETURN SYS_REFCURSOR
+AS
+    st_cursor SYS_REFCURSOR;
+BEGIN
+    OPEN st_cursor FOR
+        SELECT EMPLOYEE, EMPLOYER,
+        STARTDATE, ENDDATE,
+        REGIONCODE, EID, VALUE, CURRENCY
+        FROM EMPLOYMENT;
+    RETURN  st_cursor;
+END;</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>To use this query in Hibernate you need to map it via a named query.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-xml" data-lang="xml">&lt;sql-query name = "selectAllEmployees_SP" callable = "true"&gt;
+    &lt;return alias="emp" class="Employment"&gt;
+        &lt;return-property name = "employee" column = "EMPLOYEE"/&gt;
+        &lt;return-property name = "employer" column = "EMPLOYER"/&gt;
+        &lt;return-property name = "startDate" column = "STARTDATE"/&gt;
+        &lt;return-property name = "endDate" column = "ENDDATE"/&gt;
+        &lt;return-property name = "regionCode" column = "REGIONCODE"/&gt;
+        &lt;return-property name = "id" column = "EID"/&gt;
+        &lt;return-property name = "salary"&gt;
+            &lt;return-column name = "VALUE"/&gt;
+            &lt;return-column name = "CURRENCY"/&gt;
+        &lt;/return-property&gt;
+    &lt;/return&gt;
+    { ? = call selectAllEmployments() }
+&lt;/sql-query&gt;</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Stored procedures currently only return scalars and entities.
+<code>&lt;return-join&gt;</code> and <code>&lt;load-collection&gt;</code> are not supported.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="legacy-sql-limits-storedprocedures">Legacy rules/limitations for using stored procedures</h3>
+<div class="paragraph">
+<p>You cannot use stored procedures with Hibernate unless you follow some procedure/function rules.
+If they do not follow those rules they are not usable with Hibernate.
+If you still want to use these procedures you have to execute them via <code>session.doWork()</code>.</p>
+</div>
+<div class="paragraph">
+<p>The rules are different for each database since database vendors have different stored procedure semantics/syntax.</p>
+</div>
+<div class="paragraph">
+<p>Stored procedure queries cannot be paged with <code>setFirstResult()/setMaxResults()</code>.</p>
+</div>
+<div class="paragraph">
+<p>The recommended call form is standard SQL92: <code>{ ? = call functionName(&lt;parameters&gt;) }</code> or <code>{ ? = call procedureName(&lt;parameters&gt;}</code>.
+Native call syntax is not supported.</p>
+</div>
+<div class="paragraph">
+<p>For Oracle the following rules apply:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>A function must return a result set.
+The first parameter of a procedure must be an <code>OUT</code> that returns a result set.
+This is done by using a <code>SYS_REFCURSOR</code> type in Oracle 9 or 10.
+In Oracle you need to define a <code>REF CURSOR</code> type.
+See Oracle literature for further information.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>For Sybase or MS SQL server the following rules apply:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>The procedure must return a result set.
+Note that since these servers can return multiple result sets and update counts, Hibernate will iterate the results and take the first result that is a result set as its return value.
+Everything else will be discarded.</p>
+</li>
+<li>
+<p>If you can enable <code>SET NOCOUNT ON</code> in your procedure it will probably be more efficient, but this is not a requirement.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="legacy-sql-cud">Legacy custom SQL for create, update and delete</h3>
+<div class="paragraph">
+<p>Hibernate can use custom SQL for create, update, and delete operations.
+The SQL can be overridden at the statement level or individual column level.
+This section describes statement overrides.
+For columns, see <a href="chapters/domain/basic_types.html#mapping-column-read-and-write">Column transformers: read and write expressions</a>.
+The following example shows how to define custom SQL operations using annotations.</p>
+</div>
+<div class="exampleblock">
+<div class="title">Example 7. Custom CRUD XML</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-xml" data-lang="xml">&lt;class name = "Person"&gt;
+    &lt;id name = "id"&gt;
+        &lt;generator class = "increment"/&gt;
+    &lt;/id&gt;
+    &lt;property name = "name" not-null = "true"/&gt;
+    &lt;sql-insert&gt;INSERT INTO PERSON (NAME, ID) VALUES ( UPPER(?), ? )&lt;/sql-insert&gt;
+    &lt;sql-update&gt;UPDATE PERSON SET NAME=UPPER(?) WHERE ID=?&lt;/sql-update&gt;
+    &lt;sql-delete&gt;DELETE FROM PERSON WHERE ID=?&lt;/sql-delete&gt;
+&lt;/class&gt;</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>If you expect to call a store procedure, be sure to set the <code>callable</code> attribute to <code>true</code>, in annotations as well as in xml.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>To check that the execution happens correctly, Hibernate allows you to define one of those three strategies:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>none: no check is performed: the store procedure is expected to fail upon issues</p>
+</li>
+<li>
+<p>count: use of rowcount to check that the update is successful</p>
+</li>
+<li>
+<p>param: like COUNT but using an output parameter rather that the standard mechanism</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>To define the result check style, use the <code>check</code> parameter which is again available in annotations as well as in xml.</p>
+</div>
+<div class="paragraph">
+<p>Last but not least, stored procedures are in most cases required to return the number of rows inserted, updated and deleted.
+Hibernate always registers the first statement parameter as a numeric output parameter for the CUD operations:</p>
+</div>
+<div class="exampleblock">
+<div class="title">Example 8. Stored procedures and their return value</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code>CREATE OR REPLACE FUNCTION updatePerson (uid IN NUMBER, uname IN VARCHAR2)
+    RETURN NUMBER IS
+BEGIN
+
+    update PERSON
+    set
+        NAME = uname,
+    where
+        ID = uid;
+
+    return SQL%ROWCOUNT;
+
+END updatePerson;</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="legacy-sql-load">Legacy custom SQL for loading</h3>
+<div class="paragraph">
+<p>You can also declare your own SQL (or HQL) queries for entity loading.
+As with inserts, updates, and deletes, this can be done at the individual column level as described in
+For columns, see <a href="chapters/domain/basic_types.html#mapping-column-read-and-write">Column transformers: read and write expressions</a> or at the statement level.
+Here is an example of a statement level override:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-xml" data-lang="xml">&lt;sql-query name = "person"&gt;
+    &lt;return alias = "pers" class = "Person" lock-mod e= "upgrade"/&gt;
+    SELECT NAME AS {pers.name}, ID AS {pers.id}
+    FROM PERSON
+    WHERE ID=?
+    FOR UPDATE
+&lt;/sql-query&gt;</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This is just a named query declaration, as discussed earlier. You can reference this named query in a class mapping:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-xml" data-lang="xml">&lt;class name = "Person"&gt;
+    &lt;id name = "id"&gt;
+        &lt;generator class = "increment"/&gt;
+    &lt;/id&gt;
+    &lt;property name = "name" not-null = "true"/&gt;
+    &lt;loader query-ref = "person"/&gt;
+&lt;/class&gt;</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This even works with stored procedures.</p>
+</div>
+<div class="paragraph">
+<p>You can even define a query for collection loading:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-xml" data-lang="xml">&lt;set name = "employments" inverse = "true"&gt;
+    &lt;key/&gt;
+    &lt;one-to-many class = "Employment"/&gt;
+    &lt;loader query-ref = "employments"/&gt;
+&lt;/set&gt;</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-xml" data-lang="xml">&lt;sql-query name = "employments"&gt;
+    &lt;load-collection alias = "emp" role = "Person.employments"/&gt;
+    SELECT {emp.*}
+    FROM EMPLOYMENT emp
+    WHERE EMPLOYER = :id
+    ORDER BY STARTDATE ASC, EMPLOYEE ASC
+&lt;/sql-query&gt;</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>You can also define an entity loader that loads a collection by join fetching:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-xml" data-lang="xml">&lt;sql-query name = "person"&gt;
+    &lt;return alias = "pers" class = "Person"/&gt;
+    &lt;return-join alias = "emp" property = "pers.employments"/&gt;
+    SELECT NAME AS {pers.*}, {emp.*}
+    FROM PERSON pers
+    LEFT OUTER JOIN EMPLOYMENT emp
+        ON pers.ID = emp.PERSON_ID
+    WHERE ID=?
+&lt;/sql-query&gt;</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div id="footer">
+<div id="footer-text">
+Last updated 2016-10-05 09:27:39 +01:00
+</div>
+</div>
+</body>
+</html>

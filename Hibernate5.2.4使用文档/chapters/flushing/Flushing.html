@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<!--[if IE]><meta http-equiv="X-UA-Compatible" content="IE=edge"><![endif]-->
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="generator" content="Asciidoctor 1.5.2">
+<title>Flushing</title>
+<link rel="stylesheet" href="./css/hibernate.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.2.0/css/font-awesome.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prettify/r298/prettify.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prettify/r298/prettify.min.js"></script>
+<script>document.addEventListener('DOMContentLoaded', prettyPrint)</script>
+</head>
+<body class="article">
+<div id="header">
+</div>
+<div id="content">
+<div class="sect1">
+<h2 id="flushing">Flushing</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Flushing is the process of synchronizing the state of the persistence context with the underlying database.
+The <code>EntityManager</code> and the Hibernate <code>Session</code> expose a set of methods, through which the application developer can change the persistent state of an entity.</p>
+</div>
+<div class="paragraph">
+<p>The persistence context acts as a transactional write-behind cache, queuing any entity state change.
+Like any write-behind cache, changes are first applied in-memory and synchronized with the database during flush time.
+The flush operation takes every entity state change and translates it to an <code>INSERT</code>, <code>UPDATE</code> or <code>DELETE</code> statement.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Because DML statements are grouped together, Hibernate can apply batching transparently.
+See the <a href="chapters/batch/Batching.html#batch">Batching chapter</a> for more information.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>The flushing strategy is given by the <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/Session.html#getFlushMode--"><code>flushMode</code></a> of the current running Hibernate <code>Session</code>.
+Although JPA defines only two flushing strategies (<a href="https://docs.oracle.com/javaee/7/api/javax/persistence/FlushModeType.html#AUTO"><code>AUTO</code></a> and <a href="https://docs.oracle.com/javaee/7/api/javax/persistence/FlushModeType.html#COMMIT"><code>COMMIT</code></a>),
+Hibernate has a much broader spectrum of flush types:</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">ALWAYS</dt>
+<dd>
+<p>Flushes the <code>Session</code> before every query.</p>
+</dd>
+<dt class="hdlist1">AUTO</dt>
+<dd>
+<p>This is the default mode and it flushes the <code>Session</code> only if necessary.</p>
+</dd>
+<dt class="hdlist1">COMMIT</dt>
+<dd>
+<p>The <code>Session</code> tries to delay the flush until the current <code>Transaction</code> is committed, although it might flush prematurely too.</p>
+</dd>
+<dt class="hdlist1">MANUAL</dt>
+<dd>
+<p>The <code>Session</code> flushing is delegated to the application, which must call <code>Session.flush()</code> explicitly in order to apply the persistence context changes.</p>
+</dd>
+</dl>
+</div>
+<div class="sect2">
+<h3 id="flushing-auto"><code>AUTO</code> flush</h3>
+<div class="paragraph">
+<p>By default, Hibernate uses the <code>AUTO</code> flush mode which triggers a flush in the following circumstances:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>prior to committing a <code>Transaction</code></p>
+</li>
+<li>
+<p>prior to executing a JPQL/HQL query that overlaps with the queued entity actions</p>
+</li>
+<li>
+<p>before executing any native SQL query that has no registered synchronization</p>
+</li>
+</ul>
+</div>
+<div class="sect3">
+<h4 id="__code_auto_code_flush_on_commit"><code>AUTO</code> flush on commit</h4>
+<div class="paragraph">
+<p>In the following example, an entity is persisted and then the transaction is committed.</p>
+</div>
+<div id="flushing-auto-flush-commit-example" class="exampleblock">
+<div class="title">Example 1. Automatic flushing on commit</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">entityManager = entityManagerFactory().createEntityManager();
+txn = entityManager.getTransaction();
+txn.begin();
+
+Person person = new Person( "John Doe" );
+entityManager.persist( person );
+log.info( "Entity is in persisted state" );
+
+txn.commit();</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-SQL" data-lang="SQL">--INFO: Entity is in persisted state
+INSERT INTO Person (name, id) VALUES ('John Doe', 1)</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Hibernate logs the message prior to inserting the entity because the flush only occurred during transaction commit.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>This is valid for the <code>SEQUENCE</code> and <code>TABLE</code> identifier generators.
+The <code>IDENTITY</code> generator must execute the insert right after calling <code>persist()</code>.
+For details, see the discussion of generators in <a href="chapters/domain/identifiers.html#identifiers"><em>Identifier generators</em></a>.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect3">
+<h4 id="__code_auto_code_flush_on_jpql_hql_query"><code>AUTO</code> flush on JPQL/HQL query</h4>
+<div class="paragraph">
+<p>A flush may also be triggered when executing an entity query.</p>
+</div>
+<div id="flushing-auto-flush-jpql-example" class="exampleblock">
+<div class="title">Example 2. Automatic flushing on JPQL/HQL</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">Person person = new Person( "John Doe" );
+entityManager.persist( person );
+entityManager.createQuery( "select p from Advertisement p" ).getResultList();
+entityManager.createQuery( "select p from Person p" ).getResultList();</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-SQL" data-lang="SQL">SELECT a.id AS id1_0_ ,
+       a.title AS title2_0_
+FROM   Advertisement a
+
+INSERT INTO Person (name, id) VALUES ('John Doe', 1)
+
+SELECT p.id AS id1_1_ ,
+       p.name AS name2_1_
+FROM   Person p</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>The reason why the <code>Advertisement</code> entity query didn&#8217;t trigger a flush is because there&#8217;s no overlapping between the <code>Advertisement</code> and the <code>Person</code> tables:</p>
+</div>
+<div id="flushing-auto-flush-jpql-entity-example" class="exampleblock">
+<div class="title">Example 3. Automatic flushing on JPQL/HQL entities</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">@Entity(name = "Person")
+public static class Person {
+
+    @Id
+    @GeneratedValue
+    private Long id;
+
+    private String name;
+
+    public Person() {}
+
+    public Person(String name) {
+        this.name = name;
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+}
+
+@Entity(name = "Advertisement")
+public static class Advertisement {
+
+    @Id
+    @GeneratedValue
+    private Long id;
+
+    private String title;
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
+    public void setTitle(String title) {
+        this.title = title;
+    }
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>When querying for a <code>Person</code> entity, the flush is triggered prior to executing the entity query.</p>
+</div>
+<div id="flushing-auto-flush-jpql-overlap-example" class="exampleblock">
+<div class="title">Example 4. Automatic flushing on JPQL/HQL</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">Person person = new Person( "John Doe" );
+entityManager.persist( person );
+entityManager.createQuery( "select p from Person p" ).getResultList();</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-SQL" data-lang="SQL">INSERT INTO Person (name, id) VALUES ('John Doe', 1)
+
+SELECT p.id AS id1_1_ ,
+       p.name AS name2_1_
+FROM   Person p</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>This time, the flush was triggered by a JPQL query because the pending entity persist action overlaps with the query being executed.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="__code_auto_code_flush_on_native_sql_query"><code>AUTO</code> flush on native SQL query</h4>
+<div class="paragraph">
+<p>When executing a native SQL query, a flush is always triggered when using the <code>EntityManager</code> API.</p>
+</div>
+<div id="flushing-auto-flush-sql-example" class="exampleblock">
+<div class="title">Example 5. Automatic flushing on native SQL using <code>EntityManager</code></div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">assertTrue(((Number) entityManager
+        .createNativeQuery( "select count(*) from Person")
+        .getSingleResult()).intValue() == 0 );
+
+Person person = new Person( "John Doe" );
+entityManager.persist( person );
+
+assertTrue(((Number) entityManager
+        .createNativeQuery( "select count(*) from Person")
+        .getSingleResult()).intValue() == 1 );</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>The <code>Session</code> API  doesn&#8217;t trigger an <code>AUTO</code> flush when executing a native query</p>
+</div>
+<div id="flushing-auto-flush-sql-native-example" class="exampleblock">
+<div class="title">Example 6. Automatic flushing on native SQL using <code>Session</code></div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">			assertTrue(((Number) entityManager
+					.createNativeQuery( "select count(*) from Person")
+					.getSingleResult()).intValue() == 0 );
+
+			Person person = new Person( "John Doe" );
+			entityManager.persist( person );
+			Session session = entityManager.unwrap(Session.class);
+
+			// for this to work, the Session/EntityManager must be put into COMMIT FlushMode
+			//  - this is a change since 5.2 to account for merging EntityManager functionality
+			// 		directly into Session.  Flushing would be the JPA-spec compliant behavior,
+			//		so we know do that by default.
+			session.setFlushMode( FlushModeType.COMMIT );
+			//		or using Hibernate's FlushMode enum
+			//session.setHibernateFlushMode( FlushMode.COMMIT );
+
+			assertTrue(((Number) session
+					.createSQLQuery( "select count(*) from Person")
+					.uniqueResult()).intValue() == 0 );
+			//end::flushing-auto-flush-sql-native-example[\]
+		} );
+	}
+
+	@Test
+	public void testFlushAutoSQLSynchronization() {
+		doInJPA( this::entityManagerFactory, entityManager -&gt; {
+			entityManager.createNativeQuery( "delete from Person" ).executeUpdate();;
+		} );
+		doInJPA( this::entityManagerFactory, entityManager -&gt; {
+			log.info( "testFlushAutoSQLSynchronization" );
+			assertTrue(((Number) entityManager
+					.createNativeQuery( "select count(*) from Person")
+					.getSingleResult()).intValue() == 0 );
+
+			Person person = new Person( "John Doe" );
+			entityManager.persist( person );
+			Session session = entityManager.unwrap( Session.class );
+
+			assertTrue(((Number) session
+					.createSQLQuery( "select count(*) from Person")
+					.addSynchronizedEntityClass( Person.class )
+					.uniqueResult()).intValue() == 1 );
+		} );
+	}
+
+	@Entity(name = "Person")
+	public static class Person {
+
+		@Id
+		@GeneratedValue
+		private Long id;
+
+		private String name;
+
+		public Person() {}
+
+		public Person(String name) {
+			this.name = name;
+		}
+
+		public Long getId() {
+			return id;
+		}
+
+		public String getName() {
+			return name;
+		}
+
+	}
+
+	@Entity(name = "Advertisement")
+	public static class Advertisement {
+
+		@Id
+		@GeneratedValue
+		private Long id;
+
+		private String title;
+
+		public Long getId() {
+			return id;
+		}
+
+		public void setId(Long id) {
+			this.id = id;
+		}
+
+		public String getTitle() {
+			return title;
+		}
+
+		public void setTitle(String title) {
+			this.title = title;
+		}
+	}
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>To flush the <code>Session</code>, the query must use a synchronization:</p>
+</div>
+<div id="flushing-auto-flush-sql-synchronization-example" class="exampleblock">
+<div class="title">Example 7. Automatic flushing on native SQL with <code>Session</code> synchronization</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">assertTrue(((Number) entityManager
+        .createNativeQuery( "select count(*) from Person")
+        .getSingleResult()).intValue() == 0 );
+
+Person person = new Person( "John Doe" );
+entityManager.persist( person );
+Session session = entityManager.unwrap( Session.class );
+
+assertTrue(((Number) session
+        .createSQLQuery( "select count(*) from Person")
+        .addSynchronizedEntityClass( Person.class )
+        .uniqueResult()).intValue() == 1 );</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="flushing-commit"><code>COMMIT</code> flush</h3>
+<div class="paragraph">
+<p>JPA also defines a COMMIT flush mode, which is described as follows:</p>
+</div>
+<div class="quoteblock">
+<blockquote>
+<div class="paragraph">
+<p>If <code>FlushModeType.COMMIT</code> is set, the effect of updates made to entities in the persistence context upon queries is unspecified.</p>
+</div>
+</blockquote>
+<div class="attribution">
+&#8212; Section 3.10.8 of the JPA 2.1 Specification
+</div>
+</div>
+<div class="paragraph">
+<p>When executing a JPQL query, the persistence context is only flushed when the current running transaction is committed.</p>
+</div>
+<div id="flushing-commit-flush-jpql-example" class="exampleblock">
+<div class="title">Example 8. <code>COMMIT</code> flushing on JPQL</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">Person person = new Person("John Doe");
+entityManager.persist(person);
+
+entityManager.createQuery("select p from Advertisement p")
+    .setFlushMode( FlushModeType.COMMIT)
+    .getResultList();
+
+entityManager.createQuery("select p from Person p")
+    .setFlushMode( FlushModeType.COMMIT)
+    .getResultList();</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-SQL" data-lang="SQL">SELECT a.id AS id1_0_ ,
+       a.title AS title2_0_
+FROM   Advertisement a
+
+SELECT p.id AS id1_1_ ,
+       p.name AS name2_1_
+FROM   Person p
+
+INSERT INTO Person (name, id) VALUES ('John Doe', 1)</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Because the JPA doesn&#8217;t impose a strict rule on delaying flushing, when executing a native SQL query, the persistence context is going to be flushed.</p>
+</div>
+<div id="flushing-commit-flush-sql-example" class="exampleblock">
+<div class="title">Example 9. <code>COMMIT</code> flushing on SQL</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">Person person = new Person("John Doe");
+entityManager.persist(person);
+
+assertTrue(((Number) entityManager
+    .createNativeQuery("select count(*) from Person")
+    .getSingleResult()).intValue() == 1);</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-SQL" data-lang="SQL">INSERT INTO Person (name, id) VALUES ('John Doe', 1)
+
+SELECT COUNT(*) FROM Person</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="flushing-always"><code>ALWAYS</code> flush</h3>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>The <code>ALWAYS</code> is only available with the native <code>Session</code> API.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>The <code>ALWAYS</code> flush mode triggers a persistence context flush even when executing a native SQL query against the <code>Session</code> API.</p>
+</div>
+<div id="flushing-always-flush-sql-example" class="exampleblock">
+<div class="title">Example 10. <code>COMMIT</code> flushing on SQL</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">Person person = new Person("John Doe");
+entityManager.persist(person);
+
+Session session = entityManager.unwrap( Session.class);
+assertTrue(((Number) session
+        .createSQLQuery("select count(*) from Person")
+        .setFlushMode( FlushMode.ALWAYS)
+        .uniqueResult()).intValue() == 1);</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-SQL" data-lang="SQL">INSERT INTO Person (name, id) VALUES ('John Doe', 1)
+
+SELECT COUNT(*) FROM Person</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="flushing-manual"><code>MANUAL</code> flush</h3>
+<div class="paragraph">
+<p>Both the <code>EntityManager</code> and the Hibernate <code>Session</code> define a <code>flush()</code> method that, when called, triggers a manual flush.
+Hibernate also defines a <code>MANUAL</code> flush mode so the persistence context can only be flushed manually.</p>
+</div>
+<div id="flushing-manual-flush-example" class="exampleblock">
+<div class="title">Example 11. <code>MANUAL</code> flushing</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">Person person = new Person("John Doe");
+entityManager.persist(person);
+
+Session session = entityManager.unwrap( Session.class);
+session.setHibernateFlushMode( FlushMode.MANUAL );
+
+assertTrue(((Number) entityManager
+    .createQuery("select count(id) from Person")
+    .getSingleResult()).intValue() == 0);
+
+assertTrue(((Number) session
+    .createSQLQuery("select count(*) from Person")
+    .uniqueResult()).intValue() == 0);</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-SQL" data-lang="SQL">SELECT COUNT(p.id) AS col_0_0_
+FROM   Person p
+
+SELECT COUNT(*)
+FROM   Person</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>The <code>INSERT</code> statement was not executed because the persistence context because there was no manual <code>flush()</code> call.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>This mode is useful when using multi-request logical transactions and only the last request should flush the persistence context.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="flushing-order">Flush operation order</h3>
+<div class="paragraph">
+<p>From a database perspective, a row state can be altered using either an <code>INSERT</code>, an <code>UPDATE</code> or a <code>DELETE</code> statement.
+Because entity state changes are automatically converted to SQL statements, it&#8217;s important to know which entity actions are associated to a given SQL statement.</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><code>INSERT</code></dt>
+<dd>
+<p>The <code>INSERT</code> statement is generated either by the <code>EntityInsertAction</code> or <code>EntityIdentityInsertAction</code>. These actions are scheduled by the <code>persist</code> operation, either explicitly or through cascading the <code>PersistEvent</code> from a parent to a child entity.</p>
+</dd>
+<dt class="hdlist1"><code>DELETE</code></dt>
+<dd>
+<p>The <code>DELETE</code> statement is generated by the <code>EntityDeleteAction</code> or <code>OrphanRemovalAction</code>.</p>
+</dd>
+<dt class="hdlist1"><code>UPDATE</code></dt>
+<dd>
+<p>The <code>UPDATE</code> statement is generated by <code>EntityUpdateAction</code> during flushing if the managed entity has been marked modified. The dirty checking mechanism is responsible for determining if a managed entity has been modified since it was first loaded.</p>
+</dd>
+</dl>
+</div>
+<div class="paragraph">
+<p>Hibernate does not execute the SQL statements in the order of their associated entity state operations.</p>
+</div>
+<div class="paragraph">
+<p>To visualize how this works, consider the following example:</p>
+</div>
+<div id="flushing-order-example" class="exampleblock">
+<div class="title">Example 12. Flush operation order</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">Person person = entityManager.find( Person.class, 1L);
+entityManager.remove(person);
+
+Person newPerson = new Person( );
+newPerson.setId( 2L );
+newPerson.setName( "John Doe" );
+entityManager.persist( newPerson );</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-SQL" data-lang="SQL">INSERT INTO Person (name, id)
+VALUES ('John Doe', 2L)
+
+DELETE FROM Person WHERE id = 1</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Even if we removed the first entity and then persist a new one, Hibernate is going to execute the <code>DELETE</code> statement after the <code>INSERT</code>.</p>
+</div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>The order in which SQL statements are executed is given by the <code>ActionQueue</code> and not by the order in which entity state operations have been previously defined.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>The <code>ActionQueue</code> executes all operations in the following order:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p><code>OrphanRemovalAction</code></p>
+</li>
+<li>
+<p><code>EntityInsertAction</code> or <code>EntityIdentityInsertAction</code></p>
+</li>
+<li>
+<p><code>EntityUpdateAction</code></p>
+</li>
+<li>
+<p><code>CollectionRemoveAction</code></p>
+</li>
+<li>
+<p><code>CollectionUpdateAction</code></p>
+</li>
+<li>
+<p><code>CollectionRecreateAction</code></p>
+</li>
+<li>
+<p><code>EntityDeleteAction</code></p>
+</li>
+</ol>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div id="footer">
+<div id="footer-text">
+Last updated 2016-10-26 14:44:36 +01:00
+</div>
+</div>
+</body>
+</html>

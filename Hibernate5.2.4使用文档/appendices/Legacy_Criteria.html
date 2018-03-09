@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<!--[if IE]><meta http-equiv="X-UA-Compatible" content="IE=edge"><![endif]-->
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="generator" content="Asciidoctor 1.5.2">
+<title>Legacy Hibernate Criteria Queries</title>
+<link rel="stylesheet" href="./css/hibernate.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.2.0/css/font-awesome.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prettify/r298/prettify.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prettify/r298/prettify.min.js"></script>
+<script>document.addEventListener('DOMContentLoaded', prettyPrint)</script>
+</head>
+<body class="article">
+<div id="header">
+</div>
+<div id="content">
+<div class="sect1">
+<h2 id="appendix-legacy-criteria">Legacy Hibernate Criteria Queries</h2>
+<div class="sectionbody">
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>This appendix covers the legacy Hibernate <code>org.hibernate.Criteria</code> API, which should be considered deprecated.</p>
+</div>
+<div class="paragraph">
+<p>New development should focus on the JPA javax.persistence.criteria.CriteriaQuery API.
+Eventually, Hibernate-specific criteria features will be ported as extensions to the JPA <code>javax.persistence.criteria.CriteriaQuery</code>.
+For details on the JPA APIs, see <a href="chapters/query/criteria/Criteria.html#criteria">Criteria</a>.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Hibernate features an intuitive, extensible criteria query API.</p>
+</div>
+<div class="sect2">
+<h3 id="criteria-creating">Creating a <code>Criteria</code> instance</h3>
+<div class="paragraph">
+<p>The interface <code>org.hibernate.Criteria</code> represents a query against a particular persistent class.
+The <code>Session</code> is a factory for <code>Criteria</code> instances.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">Criteria crit = sess.createCriteria(Cat.class);
+crit.setMaxResults(50);
+List cats = crit.list();</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="criteria-narrowing">Narrowing the result set</h3>
+<div class="paragraph">
+<p>An individual query criterion is an instance of the interface <code>org.hibernate.criterion.Criterion</code>.
+The class <code>org.hibernate.criterion.Restrictions</code> defines factory methods for obtaining certain built-in <code>Criterion</code> types.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">List cats = sess.createCriteria(Cat.class)
+    .add( Restrictions.like("name", "Fritz%") )
+    .add( Restrictions.between("weight", minWeight, maxWeight) )
+    .list();</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Restrictions can be grouped logically.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">List cats = sess.createCriteria(Cat.class)
+    .add( Restrictions.like("name", "Fritz%") )
+    .add( Restrictions.or(
+        Restrictions.eq( "age", new Integer(0) ),
+        Restrictions.isNull("age")
+    ) )
+    .list();</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">List cats = sess.createCriteria(Cat.class)
+    .add( Restrictions.in( "name", new String[] { "Fritz", "Izi", "Pk" } ) )
+    .add( Restrictions.disjunction()
+        .add( Restrictions.isNull("age") )
+        .add( Restrictions.eq("age", new Integer(0) ) )
+        .add( Restrictions.eq("age", new Integer(1) ) )
+        .add( Restrictions.eq("age", new Integer(2) ) )
+    ) )
+    .list();</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>There are a range of built-in criterion types (<code>Restrictions</code> subclasses).
+One of the most useful <code>Restrictions</code> allows you to specify SQL directly.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">List cats = sess.createCriteria(Cat.class)
+    .add( Restrictions.sqlRestriction("lower({alias}.name) like lower(?)", "Fritz%", Hibernate.STRING) )
+    .list();</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The <code>{alias}</code> placeholder will be replaced by the row alias of the queried entity.</p>
+</div>
+<div class="paragraph">
+<p>You can also obtain a criterion from a <code>Property</code> instance.
+You can create a <code>Property</code> by calling <code>Property.forName()</code>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">Property age = Property.forName("age");
+List cats = sess.createCriteria(Cat.class)
+    .add( Restrictions.disjunction()
+        .add( age.isNull() )
+        .add( age.eq( new Integer(0) ) )
+        .add( age.eq( new Integer(1) ) )
+        .add( age.eq( new Integer(2) ) )
+    ) )
+    .add( Property.forName("name").in( new String[] { "Fritz", "Izi", "Pk" } ) )
+    .list();</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="criteria-ordering">Ordering the results</h3>
+<div class="paragraph">
+<p>You can order the results using <code>org.hibernate.criterion.Order</code>.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">List cats = sess.createCriteria(Cat.class)
+    .add( Restrictions.like("name", "F%")
+    .addOrder( Order.asc("name").nulls(NullPrecedence.LAST) )
+    .addOrder( Order.desc("age") )
+    .setMaxResults(50)
+    .list();</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">List cats = sess.createCriteria(Cat.class)
+    .add( Property.forName("name").like("F%") )
+    .addOrder( Property.forName("name").asc() )
+    .addOrder( Property.forName("age").desc() )
+    .setMaxResults(50)
+    .list();</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="criteria-associations">Associations</h3>
+<div class="paragraph">
+<p>By navigating associations using <code>createCriteria()</code> you can specify constraints upon related entities:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">List cats = sess.createCriteria(Cat.class)
+    .add( Restrictions.like("name", "F%") )
+    .createCriteria("kittens")
+        .add( Restrictions.like("name", "F%") )
+    .list();</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The second <code>createCriteria()</code> returns a new instance of <code>Criteria</code> that refers to the elements of the <code>kittens</code> collection.</p>
+</div>
+<div class="paragraph">
+<p>There is also an alternate form that is useful in certain circumstances:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">List cats = sess.createCriteria(Cat.class)
+    .createAlias("kittens", "kt")
+    .createAlias("mate", "mt")
+    .add( Restrictions.eqProperty("kt.name", "mt.name") )
+    .list();</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>(<code>createAlias()</code> does not create a new instance of <code>Criteria</code>.)</p>
+</div>
+<div class="paragraph">
+<p>The kittens collections held by the <code>Cat</code> instances returned by the previous two queries are <em>not</em> pre-filtered by the criteria.
+If you want to retrieve just the kittens that match the criteria, you must use a <code>ResultTransformer</code>.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">List cats = sess.createCriteria(Cat.class)
+    .createCriteria("kittens", "kt")
+        .add( Restrictions.eq("name", "F%") )
+    .setResultTransformer(Criteria.ALIAS_TO_ENTITY_MAP)
+    .list();
+Iterator iter = cats.iterator();
+while ( iter.hasNext() ) {
+    Map map = (Map) iter.next();
+    Cat cat = (Cat) map.get(Criteria.ROOT_ALIAS);
+    Cat kitten = (Cat) map.get("kt");
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Additionally, you may manipulate the result set using a left outer join:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code>List cats = session.createCriteria( Cat.class )
+   .createAlias("mate", "mt", Criteria.LEFT_JOIN, Restrictions.like("mt.name", "good%") )
+   .addOrder(Order.asc("mt.age"))
+   .list();</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This will return all of the `Cat`s with a mate whose name starts with "good" ordered by their mate&#8217;s age, and all cats who do not have a mate.
+This is useful when there is a need to order or limit in the database prior to returning complex/large result sets,
+and removes many instances where multiple queries would have to be performed and the results unioned by java in memory.</p>
+</div>
+<div class="paragraph">
+<p>Without this feature, first all of the cats without a mate would need to be loaded in one query.</p>
+</div>
+<div class="paragraph">
+<p>A second query would need to retrieve the cats with mates who&#8217;s name started with "good" sorted by the mates age.</p>
+</div>
+<div class="paragraph">
+<p>Thirdly, in memory; the lists would need to be joined manually.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="criteria-dynamicfetching">Dynamic association fetching</h3>
+<div class="paragraph">
+<p>You can specify association fetching semantics at runtime using <code>setFetchMode()</code>.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">List cats = sess.createCriteria(Cat.class)
+    .add( Restrictions.like("name", "Fritz%") )
+    .setFetchMode("mate", FetchMode.EAGER)
+    .setFetchMode("kittens", FetchMode.EAGER)
+    .list();</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This query will fetch both <code>mate</code> and <code>kittens</code> by outer join.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="criteria-components">Components</h3>
+<div class="paragraph">
+<p>To add a restriction against a property of an embedded component, the component property name should be prepended to the property name when creating the <code>Restriction</code>.
+The criteria object should be created on the owning entity, and cannot be created on the component itself.
+For example, suppose the <code>Cat</code> has a component property <code>fullName</code> with sub-properties <code>firstName</code> and <code>lastName</code>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code>List cats = session.createCriteria(Cat.class)
+    .add(Restrictions.eq("fullName.lastName", "Cattington"))
+    .list();</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Note: this does not apply when querying collections of components, for that see below <a href="#criteria-collections">Collections</a></p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="criteria-collections">Collections</h3>
+<div class="paragraph">
+<p>When using criteria against collections, there are two distinct cases.
+One is if the collection contains entities (eg. <code>&lt;one-to-many/&gt;</code> or <code>&lt;many-to-many/&gt;</code>) or components (<code>&lt;composite-element/&gt;</code> ),
+and the second is if the collection contains scalar values (<code>&lt;element/&gt;</code>).
+In the first case, the syntax is as given above in the section <a href="#criteria-associations">Associations</a> where we restrict the <code>kittens</code> collection.
+Essentially we create a <code>Criteria</code> object against the collection property and restrict the entity or component properties using that instance.</p>
+</div>
+<div class="paragraph">
+<p>For querying a collection of basic values, we still create the <code>Criteria</code> object against the collection,
+but to reference the value, we use the special property "elements".
+For an indexed collection, we can also reference the index property using the special property "indices".</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code>List cats = session.createCriteria(Cat.class)
+    .createCriteria("nickNames")
+    .add(Restrictions.eq("elements", "BadBoy"))
+    .list();</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="criteria-examples">Example queries</h3>
+<div class="paragraph">
+<p>The class <code>org.hibernate.criterion.Example</code> allows you to construct a query criterion from a given instance.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">Cat cat = new Cat();
+cat.setSex('F');
+cat.setColor(Color.BLACK);
+List results = session.createCriteria(Cat.class)
+    .add( Example.create(cat) )
+    .list();</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Version properties, identifiers and associations are ignored.
+By default, null valued properties are excluded.</p>
+</div>
+<div class="paragraph">
+<p>You can adjust how the <code>Example</code> is applied.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">Example example = Example.create(cat)
+    .excludeZeroes()           //exclude zero valued properties
+    .excludeProperty("color")  //exclude the property named "color"
+    .ignoreCase()              //perform case insensitive string comparisons
+    .enableLike();             //use like for string comparisons
+List results = session.createCriteria(Cat.class)
+    .add(example)
+    .list();</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>You can even use examples to place criteria upon associated objects.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">List results = session.createCriteria(Cat.class)
+    .add( Example.create(cat) )
+    .createCriteria("mate")
+        .add( Example.create( cat.getMate() ) )
+    .list();</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="criteria-projection">Projections, aggregation and grouping</h3>
+<div class="paragraph">
+<p>The class <code>org.hibernate.criterion.Projections</code> is a factory for <code>Projection</code> instances.
+You can apply a projection to a query by calling <code>setProjection()</code>.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">List results = session.createCriteria(Cat.class)
+    .setProjection( Projections.rowCount() )
+    .add( Restrictions.eq("color", Color.BLACK) )
+    .list();</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">List results = session.createCriteria(Cat.class)
+    .setProjection( Projections.projectionList()
+        .add( Projections.rowCount() )
+        .add( Projections.avg("weight") )
+        .add( Projections.max("weight") )
+        .add( Projections.groupProperty("color") )
+    )
+    .list();</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>There is no explicit "group by" necessary in a criteria query.
+Certain projection types are defined to be <em>grouping projections</em>, which also appear in the SQL <code>group by</code> clause.</p>
+</div>
+<div class="paragraph">
+<p>An alias can be assigned to a projection so that the projected value can be referred to in restrictions or orderings.
+Here are two different ways to do this:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">List results = session.createCriteria(Cat.class)
+    .setProjection( Projections.alias( Projections.groupProperty("color"), "colr" ) )
+    .addOrder( Order.asc("colr") )
+    .list();</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">List results = session.createCriteria(Cat.class)
+    .setProjection( Projections.groupProperty("color").as("colr") )
+    .addOrder( Order.asc("colr") )
+    .list();</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The <code>alias()</code> and <code>as()</code> methods simply wrap a projection instance in another, aliased, instance of <code>Projection</code>.
+As a shortcut, you can assign an alias when you add the projection to a projection list:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">List results = session.createCriteria(Cat.class)
+    .setProjection( Projections.projectionList()
+        .add( Projections.rowCount(), "catCountByColor" )
+        .add( Projections.avg("weight"), "avgWeight" )
+        .add( Projections.max("weight"), "maxWeight" )
+        .add( Projections.groupProperty("color"), "color" )
+    )
+    .addOrder( Order.desc("catCountByColor") )
+    .addOrder( Order.desc("avgWeight") )
+    .list();</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">List results = session.createCriteria(Domestic.class, "cat")
+    .createAlias("kittens", "kit")
+    .setProjection( Projections.projectionList()
+        .add( Projections.property("cat.name"), "catName" )
+        .add( Projections.property("kit.name"), "kitName" )
+    )
+    .addOrder( Order.asc("catName") )
+    .addOrder( Order.asc("kitName") )
+    .list();</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>You can also use <code>Property.forName()</code> to express projections:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">List results = session.createCriteria(Cat.class)
+    .setProjection( Property.forName("name") )
+    .add( Property.forName("color").eq(Color.BLACK) )
+    .list();</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">List results = session.createCriteria(Cat.class)
+    .setProjection( Projections.projectionList()
+        .add( Projections.rowCount().as("catCountByColor") )
+        .add( Property.forName("weight").avg().as("avgWeight") )
+        .add( Property.forName("weight").max().as("maxWeight") )
+        .add( Property.forName("color").group().as("color" )
+    )
+    .addOrder( Order.desc("catCountByColor") )
+    .addOrder( Order.desc("avgWeight") )
+    .list();</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="criteria-detachedqueries">Detached queries and subqueries</h3>
+<div class="paragraph">
+<p>The <code>DetachedCriteria</code> class allows you to create a query outside the scope of a session and then execute it using an arbitrary <code>Session</code>.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">DetachedCriteria query = DetachedCriteria.forClass(Cat.class)
+    .add( Property.forName("sex").eq('F') );
+
+Session session = ....;
+Transaction txn = session.beginTransaction();
+List results = query.getExecutableCriteria(session).setMaxResults(100).list();
+txn.commit();
+session.close();</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>A <code>DetachedCriteria</code> can also be used to express a subquery.
+<code>Criterion</code> instances involving subqueries can be obtained via <code>Subqueries</code> or <code>Property</code>.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">DetachedCriteria avgWeight = DetachedCriteria.forClass(Cat.class)
+    .setProjection( Property.forName("weight").avg() );
+session.createCriteria(Cat.class)
+    .add( Property.forName("weight").gt(avgWeight) )
+    .list();</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">DetachedCriteria weights = DetachedCriteria.forClass(Cat.class)
+    .setProjection( Property.forName("weight") );
+session.createCriteria(Cat.class)
+    .add( Subqueries.geAll("weight", weights) )
+    .list();</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Correlated subqueries are also possible:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">DetachedCriteria avgWeightForSex = DetachedCriteria.forClass(Cat.class, "cat2")
+    .setProjection( Property.forName("weight").avg() )
+    .add( Property.forName("cat2.sex").eqProperty("cat.sex") );
+session.createCriteria(Cat.class, "cat")
+    .add( Property.forName("weight").gt(avgWeightForSex) )
+    .list();</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Example of multi-column restriction based on a subquery:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">DetachedCriteria sizeQuery = DetachedCriteria.forClass( Man.class )
+    .setProjection( Projections.projectionList().add( Projections.property( "weight" ) )
+                                                .add( Projections.property( "height" ) ) )
+    .add( Restrictions.eq( "name", "John" ) );
+session.createCriteria( Woman.class )
+    .add( Subqueries.propertiesEq( new String[] { "weight", "height" }, sizeQuery ) )
+    .list();</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="query-criteria-naturalid">Queries by natural identifier</h3>
+<div class="paragraph">
+<p>For most queries, including criteria queries, the query cache is not efficient because query cache invalidation occurs too frequently.
+However, there is a special kind of query where you can optimize the cache invalidation algorithm: lookups by a constant natural key.
+In some applications, this kind of query occurs frequently.
+The Criteria API provides special provision for this use case.</p>
+</div>
+<div class="paragraph">
+<p>First, map the natural key of your entity using <code>&lt;natural-id&gt;</code> and enable use of the second-level cache.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-xml" data-lang="xml">&lt;class name="User"&gt;
+    &lt;cache usage="read-write"/&gt;
+    &lt;id name="id"&gt;
+        &lt;generator class="increment"/&gt;
+    &lt;/id&gt;
+    &lt;natural-id&gt;
+        &lt;property name="name"/&gt;
+        &lt;property name="org"/&gt;
+    &lt;/natural-id&gt;
+    &lt;property name="password"/&gt;
+&lt;/class&gt;</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This functionality is not intended for use with entities with <em>mutable</em> natural keys.</p>
+</div>
+<div class="paragraph">
+<p>Once you have enabled the Hibernate query cache, the <code>Restrictions.naturalId()</code> allows you to make use of the more efficient cache algorithm.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">session.createCriteria(User.class)
+    .add( Restrictions.naturalId()
+        .set("name", "gavin")
+        .set("org", "hb")
+    ).setCacheable(true)
+    .uniqueResult();</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div id="footer">
+<div id="footer-text">
+Last updated 2016-10-05 09:27:39 +01:00
+</div>
+</div>
+</body>
+</html>

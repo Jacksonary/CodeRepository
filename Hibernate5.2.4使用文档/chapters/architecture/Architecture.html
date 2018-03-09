@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<!--[if IE]><meta http-equiv="X-UA-Compatible" content="IE=edge"><![endif]-->
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="generator" content="Asciidoctor 1.5.2">
+<title>Architecture</title>
+<link rel="stylesheet" href="./css/hibernate.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.2.0/css/font-awesome.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prettify/r298/prettify.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prettify/r298/prettify.min.js"></script>
+<script>document.addEventListener('DOMContentLoaded', prettyPrint)</script>
+</head>
+<body class="article">
+<div id="header">
+</div>
+<div id="content">
+<div class="sect1">
+<h2 id="architecture">Architecture</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="architecture-overview">Overview</h3>
+<div class="paragraph">
+<p><span class="image"><img src="images/architecture/data_access_layers.svg" alt="Data Access Layers"></span></p>
+</div>
+<div class="paragraph">
+<p>Hibernate, as an ORM solution, effectively "sits between" the Java application data access layer and the Relational Database, as can be seen in the diagram above.
+The Java application makes use of the Hibernate APIs to load, store, query, etc its domain data.
+Here we will introduce the essential Hibernate APIs.
+This will be a brief introduction; we will discuss these contracts in detail later.</p>
+</div>
+<div class="paragraph">
+<p>As a JPA provider, Hibernate implements the Java Persistence API specifications and the association between JPA interfaces and Hibernate specific implementations can be visualized in the following diagram:</p>
+</div>
+<div class="paragraph">
+<p><span class="image"><img src="images/architecture/JPA_Hibernate.svg" alt="image"></span></p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">SessionFactory (<code>org.hibernate.SessionFactory</code>)</dt>
+<dd>
+<p>A thread-safe (and immutable) representation of the mapping of the application domain model to a database.
+Acts as a factory for <code>org.hibernate.Session</code> instances. The <code>EntityManagerFactory</code> is the JPA equivalent of a <code>SessionFactory</code> and basically those two converge into the same <code>SessionFactory</code> implementation.</p>
+<div class="paragraph">
+<p>A <code>SessionFactory</code> is very expensive to create, so, for any given database, the application should have only one associated <code>SessionFactory</code>.
+The <code>SessionFactory</code> maintains services that Hibernate uses across all <code>Session(s)</code> such as second level caches, connection pools, transaction system integrations, etc.</p>
+</div>
+</dd>
+<dt class="hdlist1">Session (<code>org.hibernate.Session</code>)</dt>
+<dd>
+<p>A single-threaded, short-lived object conceptually modeling a "Unit of Work" <a href="Bibliography.html#PoEAA">PoEAA</a>.
+In JPA nomenclature, the <code>Session</code> is represented by an <code>EntityManager</code>.</p>
+<div class="paragraph">
+<p>Behind the scenes, the Hibernate <code>Session</code> wraps a JDBC <code>java.sql.Connection</code> and acts as a factory for <code>org.hibernate.Transaction</code> instances.
+It maintains a generally "repeatable read" persistence context (first level cache) of the application domain model.</p>
+</div>
+</dd>
+<dt class="hdlist1">Transaction (<code>org.hibernate.Transaction</code>)</dt>
+<dd>
+<p>A single-threaded, short-lived object used by the application to demarcate individual physical transaction boundaries.
+<code>EntityTransaction</code> is the JPA equivalent and both act as an abstraction API to isolate the application from the underlying transaction system in use (JDBC or JTA).</p>
+</dd>
+</dl>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div id="footer">
+<div id="footer-text">
+Last updated 2016-10-05 09:27:39 +01:00
+</div>
+</div>
+</body>
+</html>

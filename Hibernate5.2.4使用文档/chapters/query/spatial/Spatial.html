@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<!--[if IE]><meta http-equiv="X-UA-Compatible" content="IE=edge"><![endif]-->
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="generator" content="Asciidoctor 1.5.2">
+<title>Spatial</title>
+<link rel="stylesheet" href="./css/hibernate.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.2.0/css/font-awesome.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prettify/r298/prettify.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prettify/r298/prettify.min.js"></script>
+<script>document.addEventListener('DOMContentLoaded', prettyPrint)</script>
+</head>
+<body class="article">
+<div id="header">
+</div>
+<div id="content">
+<div class="sect1">
+<h2 id="spatial">Spatial</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="spatial-overview">Overview</h3>
+<div class="paragraph">
+<p>Hibernate Spatial was originally developed as a generic extension to Hibernate for handling geographic data.
+Since 5.0, Hibernate Spatial is now part of the Hibernate ORM project,
+and it allows you to deal with geographic data in a standardized way.</p>
+</div>
+<div class="paragraph">
+<p>Hibernate Spatial provides a standardized, cross-database interface to geographic data storage and query functions.
+It supports most of the functions described by the OGC Simple Feature Specification. Supported databases are: Oracle 10g/11g,
+PostgreSql/PostGIS, MySQL, Microsoft SQL Server and H2/GeoDB.</p>
+</div>
+<div class="paragraph">
+<p>Spatial data types are not part of the Java standard library, and they are absent from the JDBC specification.
+Over the years <a href="http://tsusiatsoftware.net/jts/main.html">JTS</a> has emerged the <em>de facto</em> standard to fill this gap. JTS is
+an implementation of the <a href="https://portal.opengeospatial.org/files/?artifact_id=829">Simple Feature Specification (SFS)</a>. Many databases
+on the other hand implement the SQL/MM - Part 3: Spatial Data specification - a related, but broader specification. The biggest difference is that
+SFS is limited to 2D geometries in the projected plane (although JTS supports 3D coordinates), whereas
+SQL/MM supports 2-, 3- or 4-dimensional coordinate spaces.</p>
+</div>
+<div class="paragraph">
+<p>Hibernate Spatial supports two different geometry models: <a href="http://tsusiatsoftware.net/jts/main.html">JTS</a> and
+<a href="https://github.com/GeoLatte/geolatte-geom">geolatte-geom</a>. As already mentioned, JTS is the <em>de facto</em>
+standard. Geolatte-geom (also written by the lead developer of Hibernate Spatial) is a more recent library that
+supports many features specified in SQL/MM but not available in JTS (such as support for 4D geometries, and support for extended WKT/WKB formats).
+Geolatte-geom also implements encoders/decoders for the database native types. Geolatte-geom has good interoperability with
+JTS. Converting a Geolatte <code>geometry</code> to a JTS `geometry, for instance, doesn&#8217;t require copying of the coordinates.
+It also delegates spatial processing to JTS.</p>
+</div>
+<div class="paragraph">
+<p>Whether you use JTS or Geolatte-geom, Hibernate spatial maps the database spatial types to your geometry model of choice. It will, however,
+always use Geolatte-geom to decode the database native types.</p>
+</div>
+<div class="paragraph">
+<p>Hibernate Spatial also makes a number of spatial functions available in HQL and in the Criteria Query API. These functions are
+specified in both SQL/MM as SFS, and are commonly implemented in databases with spatial support (see <a href="#spatial-configuration-dialect-features">Hibernate Spatial dialect function support</a>)</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="spatial-configuration">Configuration</h3>
+<div class="paragraph">
+<p>Hibernate Spatial requires some configuration prior to start using it.</p>
+</div>
+<div class="sect3">
+<h4 id="spatial-configuration-dependency">Dependency</h4>
+<div class="paragraph">
+<p>You need to include the <code>hibernate-spatial</code> dependency in your build environment.
+For Maven, you need to add the following dependency:</p>
+</div>
+<div id="spatial-configuration-maven-example" class="exampleblock">
+<div class="title">Example 1. Maven dependency</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-xml" data-lang="xml">&lt;dependency&gt;
+    &lt;groupId&gt;org.hibernate&lt;/groupId&gt;
+    &lt;artifactId&gt;hibernate-spatial&lt;/artifactId&gt;
+    &lt;version&gt;${hibernate.version}&lt;/version&gt;
+&lt;/dependency&gt;</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="spatial-configuration-dialect">Dialects</h4>
+<div class="paragraph">
+<p>Hibernate Spatial extends the Hibernate ORM dialects so that the spatial functions of the database are made available within HQL and JPQL.
+So, for instance, instead of using the <code>PostgreSQL82Dialect</code>, we use the Hibernate Spatial extension of that dialect which is the <code>PostgisDialect</code>.</p>
+</div>
+<div id="spatial-configuration-dialect-example" class="exampleblock">
+<div class="title">Example 2. Specifying a spatial dialect</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-xml" data-lang="xml">&lt;property
+    name="hibernate.dialect"
+    value="org.hibernate.spatial.dialect.postgis.PostgisDialect"
+/&gt;</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Not all databases support all the functions defined by Hibernate Spatial.
+The table below provides an overview of the functions provided by each database. If the function is defined in the
+<a href="https://portal.opengeospatial.org/files/?artifact_id=829">Simple Feature Specification</a>, the description references the
+relevant section.</p>
+</div>
+<table id="spatial-configuration-dialect-features" class="tableblock frame-all grid-all spread">
+<caption class="title">Table 1. Hibernate Spatial dialect function support</caption>
+<colgroup>
+<col style="width: %;">
+<col style="width: %;">
+<col style="width: %;">
+<col style="width: %;">
+<col style="width: %;">
+<col style="width: %;">
+<col style="width: %;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Function</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Description</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">PostgresSQL</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Oracle 10g/11g</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">MySQL</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">SQLServer</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">GeoDB (H2)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Basic functions on Geometry</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>int dimension(Geometry)</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">SFS §2.1.1.1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>String geometrytype(Geometry)</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">SFS §2.1.1.1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>int srid(Geometry)</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">SFS §2.1.1.1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Geometry envelope(Geometry)</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">SFS §2.1.1.1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>String astext(Geometry)</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">SFS §2.1.1.1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>byte[] asbinary(Geometry)</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">SFS §2.1.1.1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>boolean isempty(Geometry)</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">SFS §2.1.1.1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>boolean issimple(Geometry)</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">SFS §2.1.1.1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Geometry boundary(Geometry)</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">SFS §2.1.1.1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon red"><i class="fa fa-times"></i></span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Functions for testing Spatial Relations between geometric objects</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>boolean equals(Geometry, Geometry)</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">SFS §2.1.1.2</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>boolean disjoint(Geometry, Geometry)</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">SFS §2.1.1.2</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>boolean intersects(Geometry, Geometry)</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">SFS §2.1.1.2</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>boolean touches(Geometry, Geometry)</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">SFS §2.1.1.2</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>boolean crosses(Geometry, Geometry)</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">SFS §2.1.1.2</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>boolean within(Geometry, Geometry)</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">SFS §2.1.1.2</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>boolean contains(Geometry, Geometry)</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">SFS §2.1.1.2</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>boolean overlaps(Geometry, Geometry)</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">SFS §2.1.1.2</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>boolean relate(Geometry, Geometry, String)</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">SFS §2.1.1.2</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon red"><i class="fa fa-times"></i></span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Functions that support Spatial Analysis</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>double distance(Geometry, Geometry)</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">SFS §2.1.1.3</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon red"><i class="fa fa-times"></i></span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Geometry buffer(Geometry, double)</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">SFS §2.1.1.3</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon red"><i class="fa fa-times"></i></span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Geometry convexhull(Geometry)</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">SFS §2.1.1.3</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon red"><i class="fa fa-times"></i></span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Geometry intersection(Geometry, Geometry)</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">SFS §2.1.1.3</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon red"><i class="fa fa-times"></i></span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Geometry geomunion(Geometry, Geometry)</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">SFS §2.1.1.3 (renamed from union)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon red"><i class="fa fa-times"></i></span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Geometry difference(Geometry, Geometry)</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">SFS §2.1.1.3</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon red"><i class="fa fa-times"></i></span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Geometry symdifference(Geometry, Geometry)</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">SFS §2.1.1.3</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon red"><i class="fa fa-times"></i></span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Common non-SFS functions</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>boolean dwithin(Geometry, Geometry, double)</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Returns true if the geometries are within the specified distance of one another</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon red"><i class="fa fa-times"></i></span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon red"><i class="fa fa-times"></i></span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Geometry transform(Geometry, int)</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Returns a new geometry with its coordinates transformed to the SRID referenced by the integer parameter</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon red"><i class="fa fa-times"></i></span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon red"><i class="fa fa-times"></i></span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon red"><i class="fa fa-times"></i></span></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Spatial aggregate Functions</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Geometry extent(Geometry)</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Returns a bounding box that bounds the set of returned geometries</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon green"><i class="fa fa-check"></i></span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon red"><i class="fa fa-times"></i></span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon red"><i class="fa fa-times"></i></span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon red"><i class="fa fa-times"></i></span></p></td>
+</tr>
+</tbody>
+</table>
+<div id="spatial-configuration-dialect-postgis" class="dlist">
+<dl>
+<dt class="hdlist1">Postgis</dt>
+<dd>
+<p>For Postgis from versions 1.3 and later, the best dialect to use is <code>org.hibernate.spatial.dialect.postgis.PostgisDialect</code>.</p>
+<div class="paragraph">
+<p>This translates the HQL spatial functions to the Postgis SQL/MM-compliant functions.
+For older, pre v1.3 versions of Postgis, which are not SQL/MM compliant, the dialect <code>org.hibernate.spatial.dialect.postgis.PostgisNoSQLMM</code> is provided.</p>
+</div>
+</dd>
+</dl>
+</div>
+<div id="spatial-configuration-dialect-mysql" class="dlist">
+<dl>
+<dt class="hdlist1">MySQL</dt>
+<dd>
+<p>There are several dialects for MySQL:</p>
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><code>MySQLSpatialDialect</code></dt>
+<dd>
+<p>a spatially-extended version of Hibernate <code>MySQLDialect</code></p>
+</dd>
+<dt class="hdlist1"><code>MySQLSpatialInnoDBDialect</code></dt>
+<dd>
+<p>a spatially-extended version of Hibernate <code>MySQLInnoDBDialect</code></p>
+</dd>
+<dt class="hdlist1"><code>MySQLSpatial56Dialect</code></dt>
+<dd>
+<p>a spatially-extended version of Hibernate <code>MySQL5DBDialect</code>.</p>
+</dd>
+<dt class="hdlist1"><code>MySQLSpatial5InnoDBDialect</code></dt>
+<dd>
+<p>the same as <code>MySQLSpatial56Dialect</code>, but with support for the InnoDB storage engine.</p>
+</dd>
+</dl>
+</div>
+</dd>
+</dl>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>MySQL versions before 5.6.1 had only limited support for spatial operators.
+Most operators only took account of the minimum bounding rectangles (MBR) of the geometries, and not the geometries themselves.</p>
+</div>
+<div class="paragraph">
+<p>This changed in version 5.6.1 were MySQL introduced <code>ST_*</code> spatial operators.
+The dialects <code>MySQLSpatial56Dialect</code> and <code>MySQLSpatial5InnoDBDialect</code> use these newer, more precise operators.</p>
+</div>
+<div class="paragraph">
+<p>These dialects may therefore produce results that differ from that of the other spatial dialects.</p>
+</div>
+<div class="paragraph">
+<p>For more information, see this page in the MySQL reference guide (esp. the section <a href="https://dev.mysql.com/doc/refman/5.7/en/spatial-relation-functions.html">Functions That Test Spatial Relations Between Geometry Objects</a>)</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div id="spatial-configuration-dialect-oracle" class="dlist">
+<dl>
+<dt class="hdlist1">Oracle10g/11g</dt>
+<dd>
+<p>There is currently only one Oracle spatial dialect: <code>OracleSpatial10gDialect</code> which extends the Hibernate dialect <code>Oracle10gDialect</code>.
+This dialect has been tested on both Oracle 10g and Oracle 11g with the <code>SDO_GEOMETRY</code> spatial database type.</p>
+<div class="paragraph">
+<p>This dialect is the only dialect that can be configured using these Hibernate properties:</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><code>hibernate.spatial.connection_finder</code></dt>
+<dd>
+<p>the fully-qualified classname for the Connection finder for this Dialect (see below).</p>
+</dd>
+</dl>
+</div>
+</dd>
+</dl>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="title">The <code>ConnectionFinder</code> interface</div>
+<div class="paragraph">
+<p>The <code>SDOGeometryType</code> requires access to an <code>OracleConnection</code> object wehen converting a geometry to SDO_GEOMETRY.
+In some environments, however, the <code>OracleConnection</code> is not available (e.g. because a Java EE container or connection pool proxy wraps the connection object in its own <code>Connection</code> implementation).
+A <code>ConnectionFinder</code> knows how to retrieve the <code>OracleConnection</code> from the wrapper or proxy Connection object that is passed into prepared statements.</p>
+</div>
+<div class="paragraph">
+<p>The default implementation will, when the passed object is not already an <code>OracleConnection</code>, attempt to retrieve the <code>OracleConnection</code> by recursive reflection.
+It will search for methods that return <code>Connection</code> objects, execute these methods and check the result.
+If the result is of type <code>OracleConnection</code> the object is returned, otherwise it recurses on it.</p>
+</div>
+<div class="paragraph">
+<p>In may cases this strategy will suffice.
+If not, you can provide your own implementation of this interface on the class path, and configure it in the <code>hibernate.spatial.connection_finder</code> property.
+Note that implementations must be thread-safe and have a default no-args constructor.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">SQL Server</dt>
+<dd>
+<p>The dialect <code>SqlServer2008Dialect</code> supports the <code>GEOMETRY</code> type in SQL Server 2008 and later.</p>
+</dd>
+</dl>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>The <code>GEOGRAPHY</code> type is not currently supported.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">GeoDB (H2)</dt>
+<dd>
+<p>The <code>GeoDBDialect</code> supports the GeoDB a spatial extension of the H2 in-memory database.</p>
+</dd>
+</dl>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>The dialect has been tested with GeoDB version 0.7</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="spatial-types">Types</h3>
+<div class="paragraph">
+<p>Hibernate Spatial comes with the following types:</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">jts_geometry</dt>
+<dd>
+<p>Handled by <code>org.hibernate.spatial.JTSGeometryType</code> it maps a database geometry column type to a <code>com.vividsolutions.jts.geom.Geometry</code> entity property type.</p>
+</dd>
+<dt class="hdlist1">geolatte_geometry</dt>
+<dd>
+<p>Handled by <code>org.hibernate.spatial.GeolatteGeometryType</code>, it maps a database geometry column type to an <code>org.geolatte.geom.Geometry</code> entity property type.</p>
+</dd>
+</dl>
+</div>
+<div class="paragraph">
+<p>It suffices to declare a property as either a JTS or an Geolatte-geom <code>Geometry</code> and Hibernate Spatial will map it using the
+relevant type.</p>
+</div>
+<div class="paragraph">
+<p>Here is an example using JTS:</p>
+</div>
+<div id="spatial-types-mapping-example" class="exampleblock">
+<div class="title">Example 3. Type mapping</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">import com.vividsolutions.jts.geom.Point;
+
+@Entity(name = "Event")
+public static class Event {
+
+    @Id
+    private Long id;
+
+    private String name;
+
+    private Point location;
+
+    //Getters and setters are omitted for brevity
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>We can now treat spatial geometries like any other type.</p>
+</div>
+<div id="spatial-types-point-creation-example" class="exampleblock">
+<div class="title">Example 4. Creating a Point</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">Event event = new Event();
+event.setId( 1L);
+event.setName( "Hibernate ORM presentation");
+Point point = geometryFactory.createPoint( new Coordinate( 10, 5 ) );
+event.setLocation( point );
+
+entityManager.persist( event );</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Spatial Dialects defines many query functions that are available both in HQL and JPQL queries. Below we show how we
+could use the <code>within</code> function to find all objects within a given spatial extent or window.</p>
+</div>
+<div id="spatial-types-query-example" class="exampleblock">
+<div class="title">Example 5. Querying the geometry</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-SQL" data-lang="SQL">Polygon window = geometryFactory.createPolygon( coordinates );
+Event event = entityManager.createQuery(
+    "select e " +
+    "from Event e " +
+    "where within(e.location, :window) = true", Event.class)
+.setParameter("window", window)
+.getSingleResult();</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div id="footer">
+<div id="footer-text">
+Last updated 2016-10-05 09:27:39 +01:00
+</div>
+</div>
+</body>
+</html>

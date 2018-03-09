@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<!--[if IE]><meta http-equiv="X-UA-Compatible" content="IE=edge"><![endif]-->
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="generator" content="Asciidoctor 1.5.2">
+<title>Locking</title>
+<link rel="stylesheet" href="./css/hibernate.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.2.0/css/font-awesome.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prettify/r298/prettify.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prettify/r298/prettify.min.js"></script>
+<script>document.addEventListener('DOMContentLoaded', prettyPrint)</script>
+</head>
+<body class="article">
+<div id="header">
+</div>
+<div id="content">
+<div class="sect1">
+<h2 id="locking">Locking</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>In a relational database, locking refers to actions taken to prevent data from changing between the time it is read and the time is used.</p>
+</div>
+<div class="paragraph">
+<p>Your locking strategy can be either optimistic or pessimistic.</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">Optimistic</dt>
+<dd>
+<p><a href="http://en.wikipedia.org/wiki/Optimistic_locking">Optimistic locking</a> assumes that multiple transactions can complete without affecting each other,
+and that therefore transactions can proceed without locking the data resources that they affect.
+Before committing, each transaction verifies that no other transaction has modified its data.
+If the check reveals conflicting modifications, the committing transaction rolls back.</p>
+</dd>
+<dt class="hdlist1">Pessimistic</dt>
+<dd>
+<p>Pessimistic locking assumes that concurrent transactions will conflict with each other,
+and requires resources to be locked after they are read and only unlocked after the application has finished using the data.</p>
+</dd>
+</dl>
+</div>
+<div class="paragraph">
+<p>Hibernate provides mechanisms for implementing both types of locking in your applications.</p>
+</div>
+<div class="sect2">
+<h3 id="_optimistic">Optimistic</h3>
+<div class="paragraph">
+<p>When your application uses long transactions or conversations that span several database transactions,
+you can store versioning data so that if the same entity is updated by two conversations, the last to commit changes is informed of the conflict,
+and does not override the other conversation&#8217;s work.
+This approach guarantees some isolation, but scales well and works particularly well in <em>read-often-write-sometimes</em> situations.</p>
+</div>
+<div class="paragraph">
+<p>Hibernate provides two different mechanisms for storing versioning information, a dedicated version number or a timestamp.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>A version or timestamp property can never be null for a detached instance.
+Hibernate detects any instance with a null version or timestamp as transient, regardless of other unsaved-value strategies that you specify.
+Declaring a nullable version or timestamp property is an easy way to avoid problems with transitive reattachment in Hibernate,
+especially useful if you use assigned identifiers or composite keys.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="locking-optimistic-version-number">Dedicated version number</h3>
+<div class="paragraph">
+<p>The version number mechanism for optimistic locking is provided through a <code>@Version</code> annotation.</p>
+</div>
+<div id="locking-optimistic-version-number-example" class="exampleblock">
+<div class="title">Example 1. @Version annotation</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">@Version
+private long version;</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Here, the version property is mapped to the <code>version</code> column, and the entity manager uses it to detect conflicting updates,
+and prevent the loss of updates that would otherwise be overwritten by a last-commit-wins strategy.</p>
+</div>
+<div class="paragraph">
+<p>The version column can be any kind of type, as long as you define and implement the appropriate <code>UserVersionType</code>.</p>
+</div>
+<div class="paragraph">
+<p>Your application is forbidden from altering the version number set by Hibernate.
+To artificially increase the version number, see the documentation for properties <code>LockModeType.OPTIMISTIC_FORCE_INCREMENT</code> or
+<code>LockModeType.PESSIMISTIC_FORCE_INCREMENT</code> check in the Hibernate Entity Manager reference documentation.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>If the version number is generated by the database, such as a trigger, use the annotation <code>@org.hibernate.annotations.Generated(GenerationTime.ALWAYS)</code> on the version attribute.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="locking-optimistic-timestamp">Timestamp</h3>
+<div class="paragraph">
+<p>Timestamps are a less reliable way of optimistic locking than version numbers, but can be used by applications for other purposes as well.
+Timestamping is automatically used if you the <code>@Version</code> annotation on a <code>Date</code> or <code>Calendar</code> property type.</p>
+</div>
+<div id="locking-optimistic-version-timestamp-example" class="exampleblock">
+<div class="title">Example 2. Using timestamps for optimistic locking</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">@Version
+private Date version;</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Hibernate can retrieve the timestamp value from the database or the JVM, by reading the value you specify for the <code>@org.hibernate.annotations.Source</code> annotation.
+The value can be either <code>org.hibernate.annotations.SourceType.DB</code> or <code>org.hibernate.annotations.SourceType.VM</code>.
+The default behavior is to use the database, and is also used if you don&#8217;t specify the annotation at all.</p>
+</div>
+<div class="paragraph">
+<p>The timestamp can also be generated by the database instead of Hibernate, if you use the <code>@org.hibernate.annotations.Generated(GenerationTime.ALWAYS)</code> annotation.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="locking-pessimistic">Pessimistic</h3>
+<div class="paragraph">
+<p>Typically, you only need to specify an isolation level for the JDBC connections and let the database handle locking issues.
+If you do need to obtain exclusive pessimistic locks or re-obtain locks at the start of a new transaction, Hibernate gives you the tools you need.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Hibernate always uses the locking mechanism of the database, and never lock objects in memory.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="locking-LockMode"><code>LockMode</code> and <code>LockModeType</code></h3>
+<div class="paragraph">
+<p>Long before JPA 1.0, Hibernate already defined various explicit locking strategies through its <code>LockMode</code> enumeration.
+JPA comes with its own <a href="http://docs.oracle.com/javaee/7/api/javax/persistence/LockModeType.html"><code>LockModeType</code></a> enumeration which defines similar strategies as the Hibernate-native <code>LockMode</code>.</p>
+</div>
+<table class="tableblock frame-all grid-all spread">
+<colgroup>
+<col style="width: %;">
+<col style="width: %;">
+<col style="width: %;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top"><code>LockModeType</code></th>
+<th class="tableblock halign-left valign-top"><code>LockMode</code></th>
+<th class="tableblock halign-left valign-top">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>NONE</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>NONE</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The absence of a lock. All objects switch to this lock mode at the end of a Transaction. Objects associated with the session via a call to <code>update()</code> or <code>saveOrUpdate()</code> also start out in this lock mode.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>READ</code> and <code>OPTIMISTIC</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>READ</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The entity version is checked towards the end of the currently running transaction.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>WRITE</code> and <code>OPTIMISTIC_FORCE_INCREMENT</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>WRITE</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The entity version is incremented automatically even if the entity has not changed.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>PESSIMISTIC_FORCE_INCREMENT</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>PESSIMISTIC_FORCE_INCREMENT</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The entity is locked pessimistically and its version is incremented automatically even if the entity has not changed.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>PESSIMISTIC_READ</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>PESSIMISTIC_READ</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The entity is locked pessimistically using a shared lock, if the database supports such a feature. Otherwise, an explicit lock is used.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>PESSIMISTIC_WRITE</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>PESSIMISTIC_WRITE</code>, <code>UPGRADE</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The entity is locked using an explicit lock.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>PESSIMISTIC_WRITE</code> with a <code>javax.persistence.lock.timeout</code> setting of 0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>UPGRADE_NOWAIT</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The lock acquisition request fails fast if the row s already locked.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>PESSIMISTIC_WRITE</code> with a <code>javax.persistence.lock.timeout</code> setting of -2</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>UPGRADE_SKIPLOCKED</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The lock acquisition request skips the already locked rows. It uses a <code>SELECT &#8230;&#8203; FOR UPDATE SKIP LOCKED</code> in Oracle and PostgreSQL 9.5, or <code>SELECT &#8230;&#8203; with (rowlock, updlock, readpast) in SQL Server</code>.</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>The explicit user request mentioned above occurs as a consequence of any of the following actions:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>a call to <code>Session.load()</code>, specifying a <code>LockMode</code>.</p>
+</li>
+<li>
+<p>a call to <code>Session.lock()</code>.</p>
+</li>
+<li>
+<p>a call to <code>Query.setLockMode()</code>.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>If you call <code>Session.load()</code> with option <code>UPGRADE</code>, <code>UPGRADE_NOWAIT</code> or <code>UPGRADE_SKIPLOCKED</code>,
+and the requested object is not already loaded by the session, the object is loaded using <code>SELECT &#8230;&#8203; FOR UPDATE</code>.</p>
+</div>
+<div class="paragraph">
+<p>If you call <code>load()</code> for an object that is already loaded with a less restrictive lock than the one you request, Hibernate calls <code>lock()</code> for that object.</p>
+</div>
+<div class="paragraph">
+<p><code>Session.lock(</code>) performs a version number check if the specified lock mode is <code>READ</code>, <code>UPGRADE</code>, <code>UPGRADE_NOWAIT</code> or <code>UPGRADE_SKIPLOCKED</code>.
+In the case of <code>UPGRADE</code>, <code>UPGRADE_NOWAIT</code> or <code>UPGRADE_SKIPLOCKED</code>, the <code>SELECT &#8230;&#8203; FOR UPDATE</code> syntax is used.</p>
+</div>
+<div class="paragraph">
+<p>If the requested lock mode is not supported by the database, Hibernate uses an appropriate alternate mode instead of throwing an exception.
+This ensures that applications are portable.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="locking-jpa-query-hints">JPA locking query hints</h3>
+<div class="paragraph">
+<p>JPA 2.0 introduced two query hints:</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">javax.persistence.lock.timeout</dt>
+<dd>
+<p>it gives the number of milliseconds a lock acquisition request will wait before throwing an exception</p>
+</dd>
+<dt class="hdlist1">javax.persistence.lock.scope</dt>
+<dd>
+<p>defines the <a href="http://docs.oracle.com/javaee/7/api/javax/persistence/PessimisticLockScope.html"><em>scope</em></a> of the lock acquisition request.
+The scope can either be <code>NORMAL</code> (default value) or <code>EXTENDED</code>. The <code>EXTENDED</code> scope will cause a lock acquisition request to be passed to other owned table structured (e.g. <code>@Inheritance(strategy=InheritanceType.JOINED)</code>, <code>@ElementCollection</code>)</p>
+</dd>
+</dl>
+</div>
+<div id="locking-jpa-query-hints-timeout-example" class="exampleblock">
+<div class="title">Example 3. <code>javax.persistence.lock.timeout</code> example</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">entityManager.find(
+    Person.class, id, LockModeType.PESSIMISTIC_WRITE,
+    Collections.singletonMap( "javax.persistence.lock.timeout", 200 )
+);</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-SQL" data-lang="SQL">SELECT explicitlo0_.id     AS id1_0_0_,
+       explicitlo0_."name" AS name2_0_0_
+FROM   person explicitlo0_
+WHERE  explicitlo0_.id = 1
+FOR UPDATE wait 2</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Not all JDBC database drivers support setting a timeout value for a locking request.
+If not supported, the Hibernate dialect ignores this query hint.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>The <code>javax.persistence.lock.scope</code> is <a href="https://hibernate.atlassian.net/browse/HHH-9636">not yet supported</a> as specified by the JPA standard.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="locking-buildLockRequest">The <code>buildLockRequest</code> API</h3>
+<div class="paragraph">
+<p>Traditionally, Hibernate offered the <code>Session#lock()</code> method for acquiring an optimistic or a pessimistic lock on a given entity.
+Because varying the locking options was difficult when using a single <code>LockMode</code> parameter, Hibernate has added the <code>Session#buildLockRequest()</code> method API.</p>
+</div>
+<div class="paragraph">
+<p>The following example shows how to obtain shared database lock without waiting for the lock acquisition request.</p>
+</div>
+<div id="locking-buildLockRequest-example" class="exampleblock">
+<div class="title">Example 4. <code>buildLockRequest</code> example</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">Person person = entityManager.find( Person.class, id );
+Session session = entityManager.unwrap( Session.class );
+session
+    .buildLockRequest( LockOptions.NONE )
+    .setLockMode( LockMode.PESSIMISTIC_READ )
+    .setTimeOut( LockOptions.NO_WAIT )
+    .lock( person );</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-SQL" data-lang="SQL">SELECT p.id AS id1_0_0_ ,
+       p.name AS name2_0_0_
+FROM   Person p
+WHERE  p.id = 1
+
+SELECT id
+FROM   Person
+WHERE  id = 1
+FOR    SHARE NOWAIT</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="locking-follow-on">Follow-on-locking</h3>
+<div class="paragraph">
+<p>When using Oracle, the <a href="https://docs.oracle.com/database/121/SQLRF/statements_10002.htm#SQLRF55371"><code>FOR UPDATE</code> exclusive locking clause</a> cannot be used with:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>DISTINCT</code></p>
+</li>
+<li>
+<p><code>GROUP BY</code></p>
+</li>
+<li>
+<p><code>UNION</code></p>
+</li>
+<li>
+<p>inlined views (derived tables), therefore, affecting the legacy Oracle pagination mechanism as well.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>For this reason, Hibernate uses secondary selects to lock the previously fetched entities.</p>
+</div>
+<div id="locking-follow-on-example" class="exampleblock">
+<div class="title">Example 5. Follow-on-locking example</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">List&lt;Person&gt; persons = entityManager.createQuery(
+    "select DISTINCT p from Person p", Person.class)
+.setLockMode( LockModeType.PESSIMISTIC_WRITE )
+.getResultList();</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-SQL" data-lang="SQL">SELECT DISTINCT p.id as id1_0_, p."name" as name2_0_
+FROM Person p
+
+SELECT id
+FROM Person
+WHERE id = 1 FOR UPDATE
+
+SELECT id
+FROM Person
+WHERE id = 1 FOR UPDATE</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>To avoid the N+1 query problem, a separate query can be used to apply the lock using the associated entity identifiers.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div id="locking-follow-on-secondary-query-example" class="exampleblock">
+<div class="title">Example 6. Secondary query entity locking</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">List&lt;Person&gt; persons = entityManager.createQuery(
+    "select DISTINCT p from Person p", Person.class)
+.getResultList();
+
+entityManager.createQuery(
+    "select p.id from Person p where p in :persons")
+.setLockMode( LockModeType.PESSIMISTIC_WRITE )
+.setParameter( "persons", persons )
+.getResultList();</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-SQL" data-lang="SQL">SELECT DISTINCT p.id as id1_0_, p."name" as name2_0_
+FROM Person p
+
+SELECT p.id as col_0_0_
+FROM Person p
+WHERE p.id IN ( 1 , 2 )
+FOR UPDATE</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>The lock request was moved from the original query to a secondary one which takes the previously fetched entities to lock their associated database records.</p>
+</div>
+<div class="paragraph">
+<p>Prior to Hibernate 5.2.1, the the follow-on-locking mechanism was applied uniformly to any locking query executing on Oracle.
+Since 5.2.1, the Oracle Dialect tries to figure out if the current query demand the follow-on-locking mechanism.</p>
+</div>
+<div class="paragraph">
+<p>Even more important is that you can overrule the default follow-on-locking detection logic and explicitly enable or disable it on a per query basis.</p>
+</div>
+<div id="locking-follow-on-explicit-example" class="exampleblock">
+<div class="title">Example 7. Disabling the follow-on-locking mechanism explicitly</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">List&lt;Person&gt; persons = entityManager.createQuery(
+    "select p from Person p", Person.class)
+.setMaxResults( 10 )
+.unwrap( Query.class )
+.setLockOptions(
+    new LockOptions( LockMode.PESSIMISTIC_WRITE )
+        .setFollowOnLocking( false ) )
+.getResultList();</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-SQL" data-lang="SQL">SELECT *
+FROM (
+    SELECT p.id as id1_0_, p."name" as name2_0_
+    FROM Person p
+)
+WHERE rownum &lt;= 10
+FOR UPDATE</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>The follow-on-locking mechanism should be explicitly enabled only if the current executing query fails because the <code>FOR UPDATE</code> clause cannot be applied, meaning that the Dialect resolving mechanism needs to be further improved.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div id="footer">
+<div id="footer-text">
+Last updated 2016-10-05 09:27:39 +01:00
+</div>
+</div>
+</body>
+</html>

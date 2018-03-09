@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<!--[if IE]><meta http-equiv="X-UA-Compatible" content="IE=edge"><![endif]-->
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="generator" content="Asciidoctor 1.5.2">
+<title>Immutability</title>
+<link rel="stylesheet" href="./css/hibernate.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.2.0/css/font-awesome.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prettify/r298/prettify.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prettify/r298/prettify.min.js"></script>
+<script>document.addEventListener('DOMContentLoaded', prettyPrint)</script>
+</head>
+<body class="article">
+<div id="header">
+</div>
+<div id="content">
+<div class="sect2">
+<h3 id="entity-immutability">Immutability</h3>
+<div class="paragraph">
+<p>Immutability can be specified for both entities and collections.</p>
+</div>
+<div class="sect3">
+<h4 id="_entity_immutability">Entity immutability</h4>
+<div class="paragraph">
+<p>If a specific entity is immutable, it is good practice to mark it with the <code>@Immutable</code> annotation.</p>
+</div>
+<div class="exampleblock">
+<div class="title">Example 1. Immutable entity</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">@Entity(name = "Event")
+@Immutable
+public static class Event {
+
+    @Id
+    private Long id;
+
+    private Date createdOn;
+
+    private String message;
+
+    //Getters and setters are omitted for brevity
+
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Internally, Hibernate is going to perform several optimizations, such as:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>reducing memory footprint since there is no need to retain the dehydrated state for the dirty checking mechanism</p>
+</li>
+<li>
+<p>speeding-up the Persistence Context flushing phase since immutable entities can skip the dirty checking process</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Considering the following entity is persisted in the database:</p>
+</div>
+<div class="exampleblock">
+<div class="title">Example 2. Persisting an immutable entity</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">doInJPA( this::entityManagerFactory, entityManager -&gt; {
+    Event event = new Event();
+    event.setId( 1L );
+    event.setCreatedOn( new Date( ) );
+    event.setMessage( "Hibernate User Guide rocks!" );
+
+    entityManager.persist( event );
+} );</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>When loading the entity and trying to change its state,
+Hibernate will skip any modification, therefore no SQL <code>UPDATE</code> statement is executed.</p>
+</div>
+<div class="exampleblock">
+<div class="title">Example 3. The immutable entity ignores any update</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">doInJPA( this::entityManagerFactory, entityManager -&gt; {
+    Event event = entityManager.find( Event.class, 1L );
+    log.info( "Change event message" );
+    event.setMessage( "Hibernate User Guide" );
+} );
+doInJPA( this::entityManagerFactory, entityManager -&gt; {
+    Event event = entityManager.find( Event.class, 1L );
+    assertEquals("Hibernate User Guide rocks!", event.getMessage());
+} );</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-SQL" data-lang="SQL">SELECT e.id AS id1_0_0_,
+       e.createdOn AS createdO2_0_0_,
+       e.message AS message3_0_0_
+FROM   event e
+WHERE  e.id = 1
+
+-- Change event message
+
+SELECT e.id AS id1_0_0_,
+       e.createdOn AS createdO2_0_0_,
+       e.message AS message3_0_0_
+FROM   event e
+WHERE  e.id = 1</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_collection_immutability">Collection immutability</h4>
+<div class="paragraph">
+<p>Just like entities, collections can also be marked with the <code>@Immutable</code> annotation.</p>
+</div>
+<div class="paragraph">
+<p>Considering the following entity mappings:</p>
+</div>
+<div class="exampleblock">
+<div class="title">Example 4. Immutable collection</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">@Entity(name = "Batch")
+public static class Batch {
+
+    @Id
+    private Long id;
+
+    private String name;
+
+    @OneToMany(cascade = CascadeType.ALL)
+    @Immutable
+    private List&lt;Event&gt; events = new ArrayList&lt;&gt;( );
+
+    //Getters and setters are omitted for brevity
+
+}
+
+@Entity(name = "Event")
+@Immutable
+public static class Event {
+
+    @Id
+    private Long id;
+
+    private Date createdOn;
+
+    private String message;
+
+    //Getters and setters are omitted for brevity
+
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>This time, not only the <code>Event</code> entity is immutable, but the <code>Event</code> collection stored by the <code>Batch</code> parent entity.
+Once the immutable collection is created, it can never be modified.</p>
+</div>
+<div class="exampleblock">
+<div class="title">Example 5. Persisting an immutable collection</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">doInJPA( this::entityManagerFactory, entityManager -&gt; {
+    Batch batch = new Batch();
+    batch.setId( 1L );
+    batch.setName( "Change request" );
+
+    Event event1 = new Event();
+    event1.setId( 1L );
+    event1.setCreatedOn( new Date( ) );
+    event1.setMessage( "Update Hibernate User Guide" );
+
+    Event event2 = new Event();
+    event2.setId( 2L );
+    event2.setCreatedOn( new Date( ) );
+    event2.setMessage( "Update Hibernate Getting Started Guide" );
+
+    batch.getEvents().add( event1 );
+    batch.getEvents().add( event2 );
+
+    entityManager.persist( batch );
+} );</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>The <code>Batch</code> entity is mutable. Only the <code>events</code> collection is immutable.</p>
+</div>
+<div class="paragraph">
+<p>For instance, we can still modify the entity name:</p>
+</div>
+<div class="exampleblock">
+<div class="title">Example 6. Changing the mutable entity</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">doInJPA( this::entityManagerFactory, entityManager -&gt; {
+    Batch batch = entityManager.find( Batch.class, 1L );
+    log.info( "Change batch name" );
+    batch.setName( "Proposed change request" );
+} );</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-SQL" data-lang="SQL">SELECT b.id AS id1_0_0_,
+       b.name AS name2_0_0_
+FROM   Batch b
+WHERE  b.id = 1
+
+-- Change batch name
+
+UPDATE batch
+SET    name = 'Proposed change request'
+WHERE  id = 1</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>However, when trying to modify the <code>events</code> collection:</p>
+</div>
+<div class="exampleblock">
+<div class="title">Example 7. Immutable collections cannot be modified</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">try {
+    doInJPA( this::entityManagerFactory, entityManager -&gt; {
+        Batch batch = entityManager.find( Batch.class, 1L );
+        batch.getEvents().clear();
+    } );
+}
+catch ( Exception e ) {
+    log.error( "Immutable collections cannot be modified" );
+}</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-bash" data-lang="bash">Unresolved directive in immutability.adoc - include::extras/immutability/collection-immutability-update-example.log[]</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>While immutable entity changes are simply discarded, modifying an immutable collection end up in a <code>HibernateException</code> being thrown.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+</div>
+<div id="footer">
+<div id="footer-text">
+Last updated 2016-10-26 14:44:36 +01:00
+</div>
+</div>
+</body>
+</html>

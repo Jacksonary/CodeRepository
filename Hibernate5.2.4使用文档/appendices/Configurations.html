@@ -1,0 +1,1800 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<!--[if IE]><meta http-equiv="X-UA-Compatible" content="IE=edge"><![endif]-->
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="generator" content="Asciidoctor 1.5.2">
+<title>Configurations</title>
+<link rel="stylesheet" href="./css/hibernate.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.2.0/css/font-awesome.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prettify/r298/prettify.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prettify/r298/prettify.min.js"></script>
+<script>document.addEventListener('DOMContentLoaded', prettyPrint)</script>
+</head>
+<body class="article">
+<div id="header">
+</div>
+<div id="content">
+<div class="sect1">
+<h2 id="configurations">Configurations</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="configurations-strategy">Strategy configurations</h3>
+<div class="paragraph">
+<p>Many configuration settings define pluggable strategies that Hibernate uses for various purposes.
+The configuration of many of these strategy type settings accept definition in various forms.
+The documentation of such configuration settings refer here.
+The types of forms available in such cases include:</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">short name (if defined)</dt>
+<dd>
+<p>Certain built-in strategy implementations have a corresponding short name.</p>
+</dd>
+<dt class="hdlist1">strategy instance</dt>
+<dd>
+<p>An instance of the strategy implementation to use can be specified</p>
+</dd>
+<dt class="hdlist1">strategy Class reference</dt>
+<dd>
+<p>A <code>java.lang.Class</code> reference of the strategy implementation to use</p>
+</dd>
+<dt class="hdlist1">strategy Class name</dt>
+<dd>
+<p>The class name (<code>java.lang.String</code>) of the strategy implementation to use</p>
+</dd>
+</dl>
+</div>
+</div>
+<div class="sect2">
+<h3 id="configurations-general">General Configuration</h3>
+<table class="tableblock frame-all grid-all spread">
+<colgroup>
+<col style="width: 20%;">
+<col style="width: 20%;">
+<col style="width: 60%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Property</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Example</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Purpose</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.dialect</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>org.hibernate.dialect.
+PostgreSQL94Dialect</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The classname of a Hibernate <code>org.hibernate.dialect.Dialect</code> from which Hibernate can generate SQL optimized for a particular relational database.
+</p><p class="tableblock">In most cases Hibernate can choose the correct <code>org.hibernate.dialect.Dialect</code> implementation based on the JDBC metadata returned by the JDBC driver.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.current_session_context_class</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>jta</code>, <code>thread</code>, <code>managed</code>, or a custom class implementing <code>org.hibernate.context.spi.
+CurrentSessionContext</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Supply a custom strategy for the scoping of the <em>current</em> <code>Session</code>.
+</p><p class="tableblock">The definition of what exactly <em>current</em> means is controlled by the <code>org.hibernate.context.spi.CurrentSessionContext</code> implementation in use.
+</p><p class="tableblock">Note that for backwards compatibility, if a <code>org.hibernate.context.spi.CurrentSessionContext</code> is not configured but JTA is configured this will default to the <code>org.hibernate.context.internal.JTASessionContext</code>.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect2">
+<h3 id="configurations-database-connection">Database connection properties</h3>
+<table class="tableblock frame-all grid-all spread">
+<colgroup>
+<col style="width: 20%;">
+<col style="width: 20%;">
+<col style="width: 60%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Property</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Example</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Purpose</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.connection.driver_class</code> or <code>javax.persistence.jdbc.driver</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>org.postgresql.Driver</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Names the JDBC <code>Driver</code> class name.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.connection.url</code> or <code>javax.persistence.jdbc.url</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>jdbc:postgresql:hibernate_orm_test</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Names the JDBC connection URL.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.connection.username</code> or <code>javax.persistence.jdbc.user</code></p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Names the JDBC connection user name.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.connection.password</code> or <code>javax.persistence.jdbc.password</code></p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Names the JDBC connection password.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.connection.isolation</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>REPEATABLE_READ</code> or
+<code>Connection.TRANSACTION_REPEATABLE_READ</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Names the JDBC connection transaction isolation level.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.connection.autocommit</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code> or <code>false</code> (default value)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Names the JDBC connection autocommit mode.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.connection.pool_size</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">20</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Maximum number of connections for the built-in Hibernate connection pool.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.connection.datasource</code></p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Either a <code>javax.sql.DataSource</code> instance or a JNDI name under which to locate the <code>DataSource</code>.
+</p><p class="tableblock">For JNDI names, ses also <code>hibernate.jndi.class</code>, <code>hibernate.jndi.url</code>, <code>hibernate.jndi</code>.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.connection</code></p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Names a prefix used to define arbitrary JDBC connection properties. These properties are passed along to the JDBC provider when creating a connection.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.connection.provider_class</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>org.hibernate.hikaricp.internal.
+HikariCPConnectionProvider</code></p></td>
+<td class="tableblock halign-left valign-top"><div><div class="paragraph">
+<p>Names the <code>org.hibernate.engine.jdbc.connections.spi.ConnectionProvider</code> to use for obtaining JDBC connections.</p>
+</div>
+<div class="paragraph">
+<p>Can reference:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>an instance of <code>ConnectionProvider</code></p>
+</li>
+<li>
+<p>a <code>Class&lt;? extends ConnectionProvider</code> object reference</p>
+</li>
+<li>
+<p>a fully qualified name of a class implementing <code>ConnectionProvider</code></p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>The term <code>class</code> appears in the setting name due to legacy reasons; however it can accept instances.</p>
+</div></div></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.jndi.class</code></p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Names the JNDI <code>javax.naming.InitialContext</code> class.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.jndi.url</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">java:global/jdbc/default</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Names the JNDI provider/connection url.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.jndi</code></p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Names a prefix used to define arbitrary JNDI <code>javax.naming.InitialContext</code> properties.
+</p><p class="tableblock">These properties are passed along to <code>javax.naming.InitialContext#InitialContext(java.util.Hashtable)</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.connection.acquisition_mode</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>immediate</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Specifies how Hibernate should acquire JDBC connections. The possible values are given by <code>org.hibernate.ConnectionAcquisitionMode</code>.
+</p><p class="tableblock">Should generally only configure this or <code>hibernate.connection.release_mode</code>, not both.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.connection.release_mode</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>auto</code> (default value)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Specifies how Hibernate should release JDBC connections. The possible values are given by the current transaction mode (<code>after_transaction</code> for JDBC transactions and <code>after_statement</code> for JTA transactions).
+</p><p class="tableblock">Should generally only configure this or <code>hibernate.connection.acquisition_mode</code>, not both.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect2">
+<h3 id="configurations-c3p0">c3p0 properties</h3>
+<table class="tableblock frame-all grid-all spread">
+<colgroup>
+<col style="width: 20%;">
+<col style="width: 20%;">
+<col style="width: 60%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Property</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Example</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Purpose</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.c3p0.min_size</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Minimum size of C3P0 connection pool. Refers to <a href="http://www.mchange.com/projects/c3p0/#minPoolSize">c3p0 <code>minPoolSize</code> setting</a>.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.c3p0.max_size</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">5</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Maximum size of C3P0 connection pool. Refers to <a href="http://www.mchange.com/projects/c3p0/#maxPoolSize">c3p0 <code>maxPoolSize</code> setting</a>.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.c3p0.timeout</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">30</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Maximum idle time for C3P0 connection pool. Refers to <a href="http://www.mchange.com/projects/c3p0/#maxIdleTime">c3p0 <code>maxIdleTime</code> setting</a>.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.c3p0.max_statements</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">5</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Maximum size of C3P0 statement cache. Refers to <a href="http://www.mchange.com/projects/c3p0/#maxStatements">c3p0 <code>maxStatements</code> setting</a>.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.c3p0.acquire_increment</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">2</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Number of connections acquired at a time when there&#8217;s no connection available in the pool. Refers to <a href="http://www.mchange.com/projects/c3p0/#acquireIncrement">c3p0 <code>acquireIncrement</code> setting</a>.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.c3p0.idle_test_period</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">5</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Idle time before a C3P0 pooled connection is validated. Refers to <a href="http://www.mchange.com/projects/c3p0/#idleConnectionTestPeriod">c3p0 <code>idleConnectionTestPeriod</code> setting</a>.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.c3p0</code></p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">A setting prefix used to indicate additional c3p0 properties that need to be passed to the underlying c3p0 connection pool.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect2">
+<h3 id="configurations-mapping">Mapping Properties</h3>
+<table class="tableblock frame-all grid-all spread">
+<colgroup>
+<col style="width: 20%;">
+<col style="width: 20%;">
+<col style="width: 60%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Property</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Example</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Purpose</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top" colspan="3"><p class="tableblock">Table qualifying options</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.default_schema</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">A schema name</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Qualify unqualified table names with the given schema or tablespace in generated SQL.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.default_catalog</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">A catalog name</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Qualifies unqualified table names with the given catalog in generated SQL.
+</p><p class="tableblock">A setting to control whether to <code>org.hibernate.engine.internal.StatisticalLoggingSessionEventListener</code> is enabled on all <code>Sessions</code> (unless explicitly disabled for a given <code>Session</code>).
+The default value of this setting is determined by the value for <code>hibernate.generate_statistics</code>, meaning that if collection of statistics is enabled logging of Session metrics is enabled by default too.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top" colspan="3"><p class="tableblock">Identifier options</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.id.new_generator_mappings</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code> (default value) or <code>false</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Setting which indicates whether or not the new <code>org.hibernate.id.IdentifierGenerator</code> are used for <code>AUTO</code>, <code>TABLE</code> and <code>SEQUENCE</code>.
+</p><p class="tableblock">Existing applications may want to disable this (set it <code>false</code>) for upgrade compatibility from 3.x and 4.x to 5.x.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.use_identifier_rollback</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code> or <code>false</code> (default value)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">If true, generated identifier properties are reset to default values when objects are deleted.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.id.optimizer.pooled.preferred</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>none</code>, <code>hilo</code>, <code>legacy-hilo</code>, <code>pooled</code> (default value), <code>pooled-lo</code>, <code>pooled-lotl</code> or a fully-qualified name of the <code>org.hibernate.id.enhanced.Optimizer</code> implementation</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">When a generator specified an increment-size and an optimizer was not explicitly specified, which of the <em>pooled</em> optimizers should be preferred?</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top" colspan="3"><p class="tableblock">Quoting options</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.globally_quoted_identifiers</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code> or <code>false</code> (default value)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Should all database identifiers be quoted.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.globally_quoted_identifiers_skip_column_definitions</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code> or <code>false</code> (default value)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Assuming <code>hibernate.globally_quoted_identifiers</code> is <code>true</code>, this allows the global quoting to skip column-definitions as defined by <code>javax.persistence.Column</code>,
+<code>javax.persistence.JoinColumn</code>, etc, and while it avoids column-definitions being quoted due to global quoting, they can still be explicitly quoted in the annotation/xml mappings.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.auto_quote_keyword</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code> or <code>false</code> (default value)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Specifies whether to automatically quote any names that are deemed keywords.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top" colspan="3"><p class="tableblock">Discriminator options</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.discriminator.implicit_for_joined</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code> or <code>false</code> (default value)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The legacy behavior of Hibernate is to not use discriminators for joined inheritance (Hibernate does not need the discriminator).
+However, some JPA providers do need the discriminator for handling joined inheritance so, in the interest of portability, this capability has been added to Hibernate too.
+</p><p class="tableblock">However, we want to make sure that legacy applications continue to work as well, which puts us in a bind in terms of how to handle <em>implicit</em> discriminator mappings.
+The solution is to assume that the absence of discriminator metadata means to follow the legacy behavior <em>unless</em> this setting is enabled.
+</p><p class="tableblock">With this setting enabled, Hibernate will interpret the absence of discriminator metadata as an indication to use the JPA-defined defaults for these absent annotations.
+</p><p class="tableblock">See Hibernate Jira issue <a href="https://hibernate.atlassian.net/browse/HHH-6911">HHH-6911</a> for additional background info.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.discriminator.ignore_explicit_for_joined</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code> or <code>false</code> (default value)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The legacy behavior of Hibernate is to not use discriminators for joined inheritance (Hibernate does not need the discriminator).
+However, some JPA providers do need the discriminator for handling joined inheritance so, in the interest of portability, this capability has been added to Hibernate too.
+</p><p class="tableblock">Existing applications rely (implicitly or explicitly) on Hibernate ignoring any <code>DiscriminatorColumn</code> declarations on joined inheritance hierarchies.
+This setting allows these applications to maintain the legacy behavior of <code>DiscriminatorColumn</code> annotations being ignored when paired with joined inheritance.
+</p><p class="tableblock">See Hibernate Jira issue <a href="https://hibernate.atlassian.net/browse/HHH-6911">HHH-6911</a> for additional background info.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top" colspan="3"><p class="tableblock">Naming strategies</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.implicit_naming_strategy</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>default</code> (default value), <code>jpa</code>, <code>legacy-jpa</code>, <code>legacy-hbm</code>, <code>component-path</code></p></td>
+<td class="tableblock halign-left valign-top"><div><div class="paragraph">
+<p>Used to specify the <code>org.hibernate.boot.model.naming.ImplicitNamingStrategy</code> class to use.
+The following short names are defined for this setting:</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><code>default</code></dt>
+<dd>
+<p>Uses the <code>org.hibernate.boot.model.naming.ImplicitNamingStrategyJpaCompliantImpl</code></p>
+</dd>
+<dt class="hdlist1"><code>jpa</code></dt>
+<dd>
+<p>Uses the <code>org.hibernate.boot.model.naming.ImplicitNamingStrategyJpaCompliantImpl</code></p>
+</dd>
+<dt class="hdlist1"><code>legacy-jpa</code></dt>
+<dd>
+<p>Uses the <code>org.hibernate.boot.model.naming.ImplicitNamingStrategyLegacyJpaImpl</code></p>
+</dd>
+<dt class="hdlist1"><code>legacy-hbm</code></dt>
+<dd>
+<p>Uses the <code>org.hibernate.boot.model.naming.ImplicitNamingStrategyLegacyHbmImpl</code></p>
+</dd>
+<dt class="hdlist1"><code>component-path</code></dt>
+<dd>
+<p>Uses the <code>org.hibernate.boot.model.naming.ImplicitNamingStrategyComponentPathImpl</code></p>
+</dd>
+</dl>
+</div>
+<div class="paragraph">
+<p>If this property happens to be empty, the fallback is to use <code>default</code> strategy.</p>
+</div></div></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.physical_naming_strategy</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>org.hibernate.boot.model.naming.
+PhysicalNamingStrategyStandardImpl</code> (default value)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Used to specify the <code>org.hibernate.boot.model.naming.PhysicalNamingStrategy</code> class to use.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top" colspan="3"><p class="tableblock">Metadata scanning options</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.archive.scanner</code></p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><div><div class="paragraph">
+<p>Pass an implementation of <code>org.hibernate.boot.archive.scan.spi.Scanner</code>.
+By default, <code>org.hibernate.boot.archive.scan.internal.StandardScanner</code> is used.</p>
+</div>
+<div class="paragraph">
+<p>Accepts either:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>an actual <code>Scanner</code> instance</p>
+</li>
+<li>
+<p>a reference to a Class that implements <code>Scanner</code></p>
+</li>
+<li>
+<p>a fully qualified name of a Class that implements <code>Scanner</code></p>
+</li>
+</ul>
+</div></div></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.archive.interpreter</code></p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><div><div class="paragraph">
+<p>Pass <code>org.hibernate.boot.archive.spi.ArchiveDescriptorFactory</code> to use in the scanning process.</p>
+</div>
+<div class="paragraph">
+<p>Accepts either:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>an actual <code>ArchiveDescriptorFactory</code> instance</p>
+</li>
+<li>
+<p>a reference to a Class that implements <code>ArchiveDescriptorFactory</code></p>
+</li>
+<li>
+<p>a fully qualified name of a Class that implements <code>ArchiveDescriptorFactory</code></p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>See information on <code>org.hibernate.boot.archive.scan.spi.Scanner</code> about expected constructor forms.</p>
+</div></div></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.archive.autodetection</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hbm,class</code> (default value)</p></td>
+<td class="tableblock halign-left valign-top"><div><div class="paragraph">
+<p>Identifies a comma-separate list of values indicating the mapping types we should auto-detect during scanning.</p>
+</div>
+<div class="paragraph">
+<p>Allowable values include:</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><code>class</code></dt>
+<dd>
+<p>scan classes (e.g. <code>.class</code>) to extract entity mapping metadata</p>
+</dd>
+<dt class="hdlist1"><code>hbm</code></dt>
+<dd>
+<p>scan <code>hbm</code> mapping files (e.g. <code>hbm.xml</code>) to extract entity mapping metadata</p>
+</dd>
+</dl>
+</div>
+<div class="paragraph">
+<p>By default both HBM, annotations, and JPA XML mappings are scanned.</p>
+</div>
+<div class="paragraph">
+<p>When using JPA, to disable the automatic scanning of all entity classes, the <code>exclude-unlisted-classes</code> <code>persistence.xml</code> element must be set to false.</p>
+</div></div></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.mapping.precedence</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hbm,class</code> (default value)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Used to specify the order in which metadata sources should be processed.
+Value is a delimited-list whose elements are defined by <code>org.hibernate.cfg.MetadataSourceType</code>.
+</p><p class="tableblock">Default is <code>hbm,class"</code>, therefore <code>hbm.xml</code> files are processed first, followed by annotations (combined with <code>orm.xml</code> mappings).
+</p><p class="tableblock">When using JPA, the XML mapping overrides a conflicting annotation mapping that targets the same entity attribute.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top" colspan="3"><p class="tableblock">JDBC-related options</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.use_nationalized_character_data</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code> or <code>false</code> (default value)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Enable nationalized character support on all string / clob based attribute ( string, char, clob, text etc ).</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.jdbc.lob.non_contextual_creation</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code> or <code>false</code> (default value)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Should we not use contextual LOB creation (aka based on <code>java.sql.Connection#createBlob()</code> et al)? The default value for HANA, H2, and PostgreSQL is <code>true</code>.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.jdbc.time_zone</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">A <code>java.util.TimeZone</code>, a <code>java.time.ZoneId</code> or a <code>String</code> representation of a <code>ZoneId</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Unless specified, the JDBC Driver uses the default JVM time zone. If a different time zone is configured via this setting, the JDBC <a href="https://docs.oracle.com/javase/8/docs/api/java/sql/PreparedStatement.html#setTimestamp-int-java.sql.Timestamp-java.util.Calendar-">PreparedStatement#setTimestamp</a> is going to use a <code>Calendar</code> instance according to the specified time zone.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top" colspan="3"><p class="tableblock">Bean Validation options</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>javax.persistence.validation.factory</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>javax.validation.ValidationFactory</code> implementation</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Specify the  <code>javax.validation.ValidationFactory</code> implementation to use for Bean Validation.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.check_nullability</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code> or <code>false</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Enable nullability checking. Raises an exception if a property marked as not-null is null.
+</p><p class="tableblock">Default to <code>false</code> if Bean Validation is present in the classpath and Hibernate Annotations is used, <code>true</code> otherwise.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top" colspan="3"><p class="tableblock">Misc options</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.create_empty_composites.enabled</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code> or <code>false</code> (default value)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Enable instantiation of composite/embeddable objects when all of its attribute values are <code>null</code>. The default (and historical) behavior is that a <code>null</code> reference will be used to represent the composite when all of its attributes are <code>null</code>.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.entity_dirtiness_strategy</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">fully-qualified class name or an actual <code>CustomEntityDirtinessStrategy</code> instance</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Setting to identify a <code>org.hibernate.CustomEntityDirtinessStrategy</code> to use.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.default_entity_mode</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>pojo</code> (default value) or <code>dynamic-map</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Default <code>EntityMode</code> for entity representation for all sessions opened from this <code>SessionFactory</code>, defaults to <code>pojo</code>.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect2">
+<h3 id="configurations-bytecode-enhancement">Bytecode Enhancement Properties</h3>
+<table class="tableblock frame-all grid-all spread">
+<colgroup>
+<col style="width: 20%;">
+<col style="width: 20%;">
+<col style="width: 60%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Property</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Example</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Purpose</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.enhancer.enableDirtyTracking</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code> or <code>false</code> (default value)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Enable dirty tracking feature in runtime bytecode enhancement.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.enhancer.enableLazyInitialization</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code> or <code>false</code> (default value)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Enable lazy loading feature in runtime bytecode enhancement. This way, even basic types (e.g. <code>@Basic(fetch = FetchType.LAZY</code>)) can be fetched lazily.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.enhancer.enableAssociationManagement</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code> or <code>false</code> (default value)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Enable association management feature in runtime bytecode enhancement which automatically synchronizes a bidirectional association when only one side is changed.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.bytecode.provider</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>javassist</code> (default value)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The <code>org.hibernate.bytecode.spi.BytecodeProvider</code> built-in implementation flavor. Currently, only <code>javassist</code> is supported.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.bytecode.use_reflection_optimizer</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code> or <code>false</code> (default value)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Should we use reflection optimization? The reflection optimizer implements the <code>org.hibernate.bytecode.spi.ReflectionOptimizer</code> interface and improves entity instantiation and property getter/setter calls.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect2">
+<h3 id="configurations-query">Query settings</h3>
+<table class="tableblock frame-all grid-all spread">
+<colgroup>
+<col style="width: 20%;">
+<col style="width: 20%;">
+<col style="width: 60%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Property</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Example</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Purpose</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.query.plan_cache_max_size</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>2048</code> (default value)</p></td>
+<td class="tableblock halign-left valign-top"><div><div class="paragraph">
+<p>The maximum number of entries including:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>org.hibernate.engine.query.spi.HQLQueryPlan</code></p>
+</li>
+<li>
+<p><code>org.hibernate.engine.query.spi.FilterQueryPlan</code></p>
+</li>
+<li>
+<p><code>org.hibernate.engine.query.spi.NativeSQLQueryPlan</code></p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>maintained by <code>org.hibernate.engine.query.spi.QueryPlanCache</code>.</p>
+</div></div></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.query.plan_parameter_metadata_max_size</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>128</code> (default value)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The maximum number of strong references associated with <code>ParameterMetadata</code> maintained by <code>org.hibernate.engine.query.spi.QueryPlanCache</code>.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.order_by.default_null_ordering</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>none</code>, <code>first</code> or <code>last</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Defines precedence of null values in <code>ORDER BY</code> clause. Defaults to <code>none</code> which varies between RDBMS implementation.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.discriminator.force_in_select</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code> or <code>false</code> (default value)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">For entities which do not explicitly say, should we force discriminators into SQL selects?</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.query.substitutions</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true=1,false=0</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">A comma-separated list of token substitutions to use when translating a Hibernate query to SQL.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.query.factory_class</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>org.hibernate.hql.internal.ast.
+ASTQueryTranslatorFactory</code> (default value) or <code>org.hibernate.hql.internal.classic.
+ClassicQueryTranslatorFactory</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Chooses the HQL parser implementation.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.query.jpaql_strict_compliance</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code> or <code>false</code> (default value)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Map from tokens in Hibernate queries to SQL tokens, such as function or literal names.
+</p><p class="tableblock">Should we strictly adhere to JPA Query Language (JPQL) syntax, or more broadly support all of Hibernate&#8217;s superset (HQL)?
+</p><p class="tableblock">Setting this to <code>true</code> may cause valid HQL to throw an exception because it violates the JPQL subset.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.query.startup_check</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code> (default value) or <code>false</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Should named queries be checked during startup?</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.hql.bulk_id_strategy</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">A fully-qualified class name, an instance, or a <code>Class</code> object reference</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Provide a custom <code>org.hibernate.hql.spi.id.MultiTableBulkIdStrategy</code> implementation for handling multi-table bulk HQL operations.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.proc.param_null_passing</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code> or <code>false</code> (default value)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Global setting for whether <code>null</code> parameter bindings should be passed to database procedure/function calls as part of <code>org.hibernate.procedure.ProcedureCall</code> handling.
+Implicitly Hibernate will not pass the <code>null</code>, the intention being to allow any default argument values to be applied.
+</p><p class="tableblock">This defines a global setting, which can then be controlled per parameter via <code>org.hibernate.procedure.ParameterRegistration#enablePassingNulls(boolean)</code>
+</p><p class="tableblock">Values are <code>true</code> (pass the NULLs) or <code>false</code> (do not pass the NULLs).</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.jdbc.log.warnings</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code> or <code>false</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Enable fetching JDBC statement warning for logging. Default value is given by <code>org.hibernate.dialect.Dialect#isJdbcLogWarningsEnabledByDefault()</code>.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.session_factory.statement_inspector</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">A fully-qualified class name, an instance, or a <code>Class</code> object reference</p></td>
+<td class="tableblock halign-left valign-top"><div><div class="paragraph">
+<p>Names a <code>org.hibernate.resource.jdbc.spi.StatementInspector</code> implementation to be applied to every <code>Session</code> created by the current <code>SessionFactory</code>.</p>
+</div>
+<div class="paragraph">
+<p>Can reference</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>StatementInspector</code> instance</p>
+</li>
+<li>
+<p><code>StatementInspector</code> implementation {@link Class} reference</p>
+</li>
+<li>
+<p><code>StatementInspector</code> implementation class name (fully-qualified class name)</p>
+</li>
+</ul>
+</div></div></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect2">
+<h3 id="configurations-batch">Batching properties</h3>
+<table class="tableblock frame-all grid-all spread">
+<colgroup>
+<col style="width: 20%;">
+<col style="width: 20%;">
+<col style="width: 60%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Property</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Example</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Purpose</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.jdbc.batch_size</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">5</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Maximum JDBC batch size. A nonzero value enables batch updates.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.order_inserts</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code> or <code>false</code> (default value)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Forces Hibernate to order SQL inserts by the primary key value of the items being inserted. This preserves batching when using cascading.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.order_updates</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code> or <code>false</code> (default value)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Forces Hibernate to order SQL updates by the primary key value of the items being updated. This preserves batching when using cascading and reduces the likelihood of transaction deadlocks in highly-concurrent systems.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.jdbc.batch_versioned_data</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code>(default value) or <code>false</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Should versioned entities be included in batching?
+</p><p class="tableblock">Set this property to <code>true</code> if your JDBC driver returns correct row counts from executeBatch(). This option is usually safe, but is disabled by default. If enabled, Hibernate uses batched DML for automatically versioned data.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.batch_fetch_style</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>LEGACY</code>(default value)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Names the <code>org.hibernate.loader.BatchFetchStyle</code> to use.
+</p><p class="tableblock">Can specify either the <code>org.hibernate.loader.BatchFetchStyle</code> name (insensitively), or a <code>org.hibernate.loader.BatchFetchStyle</code> instance. <code>LEGACY}</code> is the default value.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.jdbc.batch.builder</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The fully qualified name of an <code>org.hibernate.engine.jdbc.batch.spi.BatchBuilder</code> implementation class type or an actual object instance</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Names the <code>org.hibernate.engine.jdbc.batch.spi.BatchBuilder</code> implementation to use.</p></td>
+</tr>
+</tbody>
+</table>
+<div class="sect3">
+<h4 id="configurations-database-fetch">Fetching properties</h4>
+<table class="tableblock frame-all grid-all spread">
+<colgroup>
+<col style="width: 20%;">
+<col style="width: 20%;">
+<col style="width: 60%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Property</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Example</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Purpose</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.max_fetch_depth</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">A value between <code>0</code> and <code>3</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Sets a maximum depth for the outer join fetch tree for single-ended associations. A single-ended association is a one-to-one or many-to-one assocation. A value of <code>0</code> disables default outer join fetching.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.default_batch_fetch_size</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>4</code>,<code>8</code>, or <code>16</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Default size for Hibernate Batch fetching of associations (lazily fetched associations can be fetched in batches to prevent N+1 query problems).</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.jdbc.fetch_size</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>0</code> or an integer</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">A non-zero value determines the JDBC fetch size, by calling <code>Statement.setFetchSize()</code>.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.jdbc.use_scrollable_resultset</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code> or <code>false</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Enables Hibernate to use JDBC2 scrollable resultsets. This property is only relevant for user-supplied JDBC connections. Otherwise, Hibernate uses connection metadata.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.jdbc.use_streams_for_binary</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code> or <code>false</code> (default value)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Use streams when writing or reading <code>binary</code> or <code>serializable</code> types to or from JDBC. This is a system-level property.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.jdbc.use_get_generated_keys</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code> or <code>false</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Allows Hibernate to use JDBC3 <code>PreparedStatement.getGeneratedKeys()</code> to retrieve natively-generated keys after insert. You need the JDBC3+ driver and JRE1.4+. Disable this property if your driver has problems with the Hibernate identifier generators. By default, it tries to detect the driver capabilities from connection metadata.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.jdbc.wrap_result_sets</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code> or <code>false</code> (default value)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Enable wrapping of JDBC result sets in order to speed up column name lookups for broken JDBC drivers.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.enable_lazy_load_no_trans</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code> or <code>false</code> (default value)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Initialize Lazy Proxies or Collections outside a given Transactional Persistence Context.
+</p><p class="tableblock">Although enabling this configuration can make <code>LazyInitializationException</code> go away, it&#8217;s better to use a fetch plan that guarantees that all properties are properly initialised before the Session is closed.
+</p><p class="tableblock">In reality, you shouldn&#8217;t probably enable this setting anyway.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="configurations-logging">Statement logging and statistics</h3>
+<table class="tableblock frame-all grid-all spread">
+<colgroup>
+<col style="width: 20%;">
+<col style="width: 20%;">
+<col style="width: 60%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Property</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Example</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Purpose</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top" colspan="3"><p class="tableblock">SQL statement logging</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.show_sql</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code> or <code>false</code> (default value)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Write all SQL statements to the console. This is an alternative to setting the log category <code>org.hibernate.SQL</code> to debug.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.format_sql</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code> or <code>false</code> (default value)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Pretty-print the SQL in the log and console.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.use_sql_comments</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code> or <code>false</code> (default value)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">If true, Hibernate generates comments inside the SQL, for easier debugging.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top" colspan="3"><p class="tableblock">Statistics settings</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.generate_statistics</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code> or <code>false</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Causes Hibernate to collect statistics for performance tuning.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.session.events.log</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code> or <code>false</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">A setting to control whether to <code>org.hibernate.engine.internal
+.StatisticalLoggingSessionEventListener</code> is enabled on all <code>Sessions</code> (unless explicitly disabled for a given <code>Session</code>).
+The default value of this setting is determined by the value for <code>hibernate.generate_statistics</code>, meaning that if statistics are enabled, then logging of Session metrics is enabled by default too.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect2">
+<h3 id="configurations-cache">Cache Properties</h3>
+<table class="tableblock frame-all grid-all spread">
+<colgroup>
+<col style="width: 20%;">
+<col style="width: 20%;">
+<col style="width: 60%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Property</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Example</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Purpose</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.cache.region.factory_class</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>org.hibernate.cache.infinispan.
+InfinispanRegionFactory</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The fully-qualified name of the <code>RegionFactory</code> implementation class.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.cache.default_cache_concurrency_strategy</code></p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Setting used to give the name of the default <code>org.hibernate.annotations.CacheConcurrencyStrategy</code> to use when either <code>@javax.persistence.Cacheable</code> or
+<code>@org.hibernate.annotations.Cache</code>.  <code>@org.hibernate.annotations.Cache</code> is used to override the global setting.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.cache.use_minimal_puts</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code> (default value) or <code>false</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Optimizes second-level cache operation to minimize writes, at the cost of more frequent reads. This is most useful for clustered caches and is enabled by default for clustered cache implementations.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.cache.use_query_cache</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code> or <code>false</code> (default value)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Enables the query cache. You still need to set individual queries to be cachable.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.cache.use_second_level_cache</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code> (default value) or <code>false</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Enable/disable the second level cache, which is enabled by default, although the default <code>RegionFactor</code> is <code>NoCachingRegionFactory</code> (meaning there is no actual caching implementation).</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.cache.query_cache_factory</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Fully-qualified classname</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">A custom <code>org.hibernate.cache.spi.QueryCacheFactory</code> interface. The default is the built-in <code>StandardQueryCacheFactory</code>.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.cache.region_prefix</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">A string</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">A prefix for second-level cache region names.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.cache.use_structured_entries</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code> or <code>false</code> (default value)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Forces Hibernate to store data in the second-level cache in a more human-readable format.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.cache.auto_evict_collection_cache</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code> or <code>false</code> (default: false)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Enables the automatic eviction of a bi-directional association&#8217;s collection cache when an element in the <code>ManyToOne</code> collection is added/updated/removed without properly managing the change on the <code>OneToMany</code> side.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.cache.use_reference_entries</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code> or <code>false</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Optimizes second-level cache operation to store immutable entities (aka "reference") which do not have associations into cache directly, this case, lots of disasseble and deep copy operations can be avoid. Default value of this property is <code>false</code>.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.ejb.classcache</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.ejb.classcache
+.org.hibernate.ejb.test.Item</code> = <code>read-write</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Sets the associated entity class cache concurrency strategy for the designated region. Caching configuration should follow the following pattern <code>hibernate.ejb.classcache.&lt;fully.qualified.Classname&gt;</code> usage[, region] where usage is the cache strategy used and region the cache region name.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.ejb.collectioncache</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.ejb.collectioncache
+.org.hibernate.ejb.test.Item.distributors</code> = <code>read-write, RegionName</code>/&gt;</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Sets the associated collection cache concurrency strategy for the designated region. Caching configuration should follow the following pattern <code>hibernate.ejb.collectioncache.&lt;fully.qualified.Classname&gt;.&lt;role&gt;</code> usage[, region] where usage is the cache strategy used and region the cache region name</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect2">
+<h3 id="configurations-transactions">Transactions properties</h3>
+<table class="tableblock frame-all grid-all spread">
+<colgroup>
+<col style="width: 20%;">
+<col style="width: 20%;">
+<col style="width: 60%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Property</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Example</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Purpose</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.transaction.jta.platform</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>JBossAS</code>, <code>BitronixJtaPlatform</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Names the <code>org.hibernate.engine.transaction.jta.platform.spi.JtaPlatform</code> implementation to use for integrating with JTA systems.
+Can reference either a <code>org.hibernate.engine.transaction.jta.platform.spi.JtaPlatform</code> instance or the name of the <code>org.hibernate.engine.transaction.jta.platform.spi.JtaPlatform</code> implementation class</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.jta.prefer_user_transaction</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code> or <code>false</code> (default value)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Should we prefer using the <code>org.hibernate.engine.transaction.jta.platform.spi.JtaPlatform#retrieveUserTransaction</code> over using <code>org.hibernate.engine.transaction.jta.platform.spi.JtaPlatform#retrieveTransactionManager</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.transaction.jta.platform_resolver</code></p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Names the <code>org.hibernate.engine.transaction.jta.platform.spi.JtaPlatformResolver</code> implementation to use.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.jta.cacheTransactionManager</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code> (default value) or <code>false</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">A configuration value key used to indicate that it is safe to cache.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.jta.cacheUserTransaction</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code> or <code>false</code> (default value)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">A configuration value key used to indicate that it is safe to cache.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.transaction.flush_before_completion</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code> or <code>false</code> (default value)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Causes the session be flushed during the before completion phase of the transaction. If possible, use built-in and automatic session context management instead.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.transaction.auto_close_session</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code> or <code>false</code> (default value)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Causes the session to be closed during the after completion phase of the transaction. If possible, use built-in and automatic session context management instead.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.transaction.coordinator_class</code></p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><div><div class="paragraph">
+<p>Names the implementation of <code>org.hibernate.resource.transaction.spi.TransactionCoordinatorBuilder</code> to use for creating
+<code>org.hibernate.resource.transaction.spi.TransactionCoordinator</code> instances.</p>
+</div>
+<div class="paragraph">
+<p>Can be</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>TransactionCoordinatorBuilder</code> instance</p>
+</li>
+<li>
+<p><code>TransactionCoordinatorBuilder</code> implementation <code>Class</code> reference</p>
+</li>
+<li>
+<p><code>TransactionCoordinatorBuilder</code> implementation class name (fully-qualified name) or short name</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>The following short names are defined for this setting:</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><code>jdbc</code></dt>
+<dd>
+<p>Manages transactions via calls to <code>java.sql.Connection</code> (default for non-JPA applications)</p>
+</dd>
+<dt class="hdlist1"><code>jta</code></dt>
+<dd>
+<p>Manages transactions via JTA. See <a href="chapters/bootstrap/Bootstrap.html#bootstrap-jpa-compliant">Java EE bootstrapping</a></p>
+</dd>
+</dl>
+</div>
+<div class="paragraph">
+<p>If a JPA application does not provide a setting for <code>hibernate.transaction.coordinator_class</code>, Hibernate will
+automatically build the proper transaction coordinator based on the transaction type for the persistence unit.</p>
+</div>
+<div class="paragraph">
+<p>If a non-JPA application does not provide a setting for <code>hibernate.transaction.coordinator_class</code>, Hibernate
+will use <code>jdbc</code> as the default. This default will cause problems if the application actually uses JTA-based transactions.
+A non-JPA application that uses JTA-based transactions should explicitly set <code>hibernate.transaction.coordinator_class=jta</code>
+or provide a custom <code>org.hibernate.resource.transaction.TransactionCoordinatorBuilder</code> that builds a
+<code>org.hibernate.resource.transaction.TransactionCoordinator</code> that properly coordinates with JTA-based transactions.</p>
+</div></div></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.jta.track_by_thread</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code> (default value) or <code>false</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">A transaction can be rolled back by another thread ("tracking by thread") and not the original application.
+Examples of this include a JTA transaction timeout handled by a background reaper thread.
+</p><p class="tableblock">The ability to handle this situation requires checking the Thread ID every time Session is called, so enabling this can certainly have a performance impact.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect2">
+<h3 id="configurations-multi-tenancy">Multi-tenancy settings</h3>
+<table class="tableblock frame-all grid-all spread">
+<colgroup>
+<col style="width: 20%;">
+<col style="width: 20%;">
+<col style="width: 60%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Property</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Example</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Purpose</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.multiTenancy</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>NONE</code> (default value), <code>SCHEMA</code>, <code>DATABASE</code>, and <code>DISCRIMINATOR</code> (not implemented yet)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The multi-tenancy strategy in use.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.multi_tenant_connection_provider</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code> or <code>false</code> (default value)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Names a <code>org.hibernate.engine.jdbc.connections.spi.MultiTenantConnectionProvider</code> implementation to use. As <code>MultiTenantConnectionProvider</code> is also a service, can be configured directly through the <code>org.hibernate.boot.registry.StandardServiceRegistryBuilder</code>.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.tenant_identifier_resolver</code></p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><div><div class="paragraph">
+<p>Names a <code>org.hibernate.context.spi.CurrentTenantIdentifierResolver</code> implementation to resolve the resolve the current tenant identifier so that calling <code>SessionFactory#openSession()</code> would get a <code>Session</code> that&#8217;s connected to the right tenant.</p>
+</div>
+<div class="paragraph">
+<p>Can be:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>CurrentTenantIdentifierResolver</code> instance</p>
+</li>
+<li>
+<p><code>CurrentTenantIdentifierResolver</code> implementation <code>Class</code> object reference</p>
+</li>
+<li>
+<p><code>CurrentTenantIdentifierResolver</code> implementation class name</p>
+</li>
+</ul>
+</div></div></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect2">
+<h3 id="configurations-hbmddl">Automatic schema generation</h3>
+<table class="tableblock frame-all grid-all spread">
+<colgroup>
+<col style="width: 20%;">
+<col style="width: 20%;">
+<col style="width: 60%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Property</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Example</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Purpose</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.hbm2ddl.auto</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>none</code> (default value), <code>create-only</code>, <code>drop</code>, <code>create</code>, <code>create-drop</code>, <code>validate</code>, and <code>update</code></p></td>
+<td class="tableblock halign-left valign-top"><div><div class="paragraph">
+<p>Setting to perform <code>SchemaManagementTool</code> actions automatically as part of the <code>SessionFactory</code> lifecycle.
+Valid options are defined by the <code>externalHbm2ddlName</code> value of the <code>org.hibernate.tool.schema.Action</code> enum:</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><code>none</code></dt>
+<dd>
+<p>No action will be performed.</p>
+</dd>
+<dt class="hdlist1"><code>create-only</code></dt>
+<dd>
+<p>Database creation will be generated.</p>
+</dd>
+<dt class="hdlist1"><code>drop</code></dt>
+<dd>
+<p>Database dropping will be generated.</p>
+</dd>
+<dt class="hdlist1"><code>create</code></dt>
+<dd>
+<p>Database dropping will be generated followed by database creation.</p>
+</dd>
+<dt class="hdlist1"><code>create-drop</code></dt>
+<dd>
+<p>Drop the schema and recreate it on SessionFactory startup.  Additionally, drop the schema on SessionFactory shutdown.</p>
+</dd>
+<dt class="hdlist1"><code>validate</code></dt>
+<dd>
+<p>Validate the database schema</p>
+</dd>
+<dt class="hdlist1"><code>update</code></dt>
+<dd>
+<p>Update the database schema</p>
+</dd>
+</dl>
+</div></div></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>javax.persistence.schema-generation.database.action</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>none</code> (default value), <code>create-only</code>, <code>drop</code>, <code>create</code>, <code>create-drop</code>, <code>validate</code>, and <code>update</code></p></td>
+<td class="tableblock halign-left valign-top"><div><div class="paragraph">
+<p>Setting to perform <code>SchemaManagementTool</code> actions automatically as part of the <code>SessionFactory</code> lifecycle.
+Valid options are defined by the <code>externalJpaName</code> value of the <code>org.hibernate.tool.schema.Action</code> enum:</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><code>none</code></dt>
+<dd>
+<p>No action will be performed.</p>
+</dd>
+<dt class="hdlist1"><code>create</code></dt>
+<dd>
+<p>Database creation will be generated.</p>
+</dd>
+<dt class="hdlist1"><code>drop</code></dt>
+<dd>
+<p>Database dropping will be generated.</p>
+</dd>
+<dt class="hdlist1"><code>drop-and-create</code></dt>
+<dd>
+<p>Database dropping will be generated followed by database creation.</p>
+</dd>
+</dl>
+</div></div></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>javax.persistence.schema-generation.scripts.action</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>none</code> (default value), <code>create-only</code>, <code>drop</code>, <code>create</code>, <code>create-drop</code>, <code>validate</code>, and <code>update</code></p></td>
+<td class="tableblock halign-left valign-top"><div><div class="paragraph">
+<p>Setting to perform <code>SchemaManagementTool</code> actions writing the commands into a DDL script file.
+Valid options are defined by the <code>externalJpaName</code> value of the <code>org.hibernate.tool.schema.Action</code> enum:</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><code>none</code></dt>
+<dd>
+<p>No action will be performed.</p>
+</dd>
+<dt class="hdlist1"><code>create</code></dt>
+<dd>
+<p>Database creation will be generated.</p>
+</dd>
+<dt class="hdlist1"><code>drop</code></dt>
+<dd>
+<p>Database dropping will be generated.</p>
+</dd>
+<dt class="hdlist1"><code>drop-and-create</code></dt>
+<dd>
+<p>Database dropping will be generated followed by database creation.</p>
+</dd>
+</dl>
+</div></div></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>javax.persistence.schema-generation-connection</code></p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Allows passing a specific <code>java.sql.Connection</code> instance to be used by <code>SchemaManagementTool</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>javax.persistence.database-product-name</code></p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Specifies the name of the database provider in cases where a Connection to the underlying database is not available (aka, mainly in generating scripts).
+In such cases, a value for this setting <em>must</em> be specified.
+</p><p class="tableblock">The value of this setting is expected to match the value returned by <code>java.sql.DatabaseMetaData#getDatabaseProductName()</code> for the target database.
+</p><p class="tableblock">Additionally, specifying <code>javax.persistence.database-major-version</code> and/or <code>javax.persistence.database-minor-version</code> may be required to understand exactly how to generate the required schema commands.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>javax.persistence.database-major-version</code></p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Specifies the major version of the underlying database, as would be returned by <code>java.sql.DatabaseMetaData#getDatabaseMajorVersion</code> for the target database.
+</p><p class="tableblock">This value is used to help more precisely determine how to perform schema generation tasks for the underlying database in cases where <code>javax.persistence.database-product-name</code> does not provide enough distinction.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>javax.persistence.database-minor-version</code></p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Specifies the minor version of the underlying database, as would be returned by <code>java.sql.DatabaseMetaData#getDatabaseMinorVersion</code> for the target database.
+</p><p class="tableblock">This value is used to help more precisely determine how to perform schema generation tasks for the underlying database in cases where <code>javax.persistence.database-product-name</code> and <code>javax.persistence.database-major-version</code> does not provide enough distinction.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>javax.persistence.schema-generation.create-source</code></p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><div><div class="paragraph">
+<p>Specifies whether schema generation commands for schema creation are to be determine based on object/relational mapping metadata, DDL scripts, or a combination of the two.
+See <code>org.hibernate.tool.schema.SourceType</code> for valid set of values.</p>
+</div>
+<div class="paragraph">
+<p>If no value is specified, a default is assumed as follows:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>if source scripts are specified (per <code>javax.persistence.schema-generation.create-script-source</code>), then <code>scripts</code> is assumed</p>
+</li>
+<li>
+<p>otherwise, <code>metadata</code> is assumed</p>
+</li>
+</ul>
+</div></div></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>javax.persistence.schema-generation.drop-source</code></p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><div><div class="paragraph">
+<p>Specifies whether schema generation commands for schema dropping are to be determine based on object/relational mapping metadata, DDL scripts, or a combination of the two.
+See <code>org.hibernate.tool.schema.SourceType</code> for valid set of values.</p>
+</div>
+<div class="paragraph">
+<p>If no value is specified, a default is assumed as follows:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>if source scripts are specified (per <code>javax.persistence.schema-generation.create-script-source</code>), then <code>scripts</code> is assumed</p>
+</li>
+<li>
+<p>otherwise, <code>metadata</code> is assumed</p>
+</li>
+</ul>
+</div></div></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>javax.persistence.schema-generation.create-script-source</code></p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Specifies the <code>create</code> script file as either a <code>java.io.Reader</code> configured for reading of the DDL script file or a string designating a file <code>java.net.URL</code> for the DDL script.
+</p><p class="tableblock">Hibernate historically also accepted <code>hibernate.hbm2ddl.import_files</code> for a similar purpose, but <code>javax.persistence.schema-generation.create-script-source</code> should be preferred over <code>hibernate.hbm2ddl.import_files</code>.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>javax.persistence.schema-generation.drop-script-source</code></p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Specifies the <code>drop</code> script file as either a <code>java.io.Reader</code> configured for reading of the DDL script file or a string designating a file <code>java.net.URL</code> for the DDL script.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>javax.persistence.schema-generation.scripts.create-target</code></p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">For cases where the <code>javax.persistence.schema-generation.scripts.action</code> value indicates that schema creation commands should be written to DDL script file, <code>javax.persistence.schema-generation.scripts.create-target</code> specifies either a <code>java.io.Writer</code> configured for output of the DDL script or a string specifying the file URL for the DDL script.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>javax.persistence.schema-generation.scripts.drop-target</code></p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">For cases where the <code>javax.persistence.schema-generation.scripts.action</code> value indicates that schema dropping commands should be written to DDL script file, <code>javax.persistence.schema-generation.scripts.drop-target</code> specifies either a <code>java.io.Writer</code> configured for output of the DDL script or a string specifying the file URL for the DDL script.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>javax.persistence.hibernate.hbm2ddl.import_files</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>import.sql</code> (default value)</p></td>
+<td class="tableblock halign-left valign-top"><div><div class="paragraph">
+<p>Comma-separated names of the optional files containing SQL DML statements executed during the <code>SessionFactory</code> creation.
+File order matters, the statements of a give file are executed before the statements of the following one.</p>
+</div>
+<div class="paragraph">
+<p>These statements are only executed if the schema is created, meaning that <code>hibernate.hbm2ddl.auto</code> is set to <code>create</code>, <code>create-drop</code>, or <code>update</code>.
+<code>javax.persistence.schema-generation.create-script-source</code> / <code>javax.persistence.schema-generation.drop-script-source</code> should be preferred.</p>
+</div></div></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>javax.persistence.sql-load-script-source</code></p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">JPA variant of <code>hibernate.hbm2ddl.import_files</code>. Specifies a <code>java.io.Reader</code> configured for reading of the SQL load script or a string designating the file <code>java.net.URL</code> for the SQL load script.
+A "SQL load script" is a script that performs some database initialization (INSERT, etc).</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.hbm2ddl.import_files_sql_extractor</code></p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Reference to the <code>org.hibernate.tool.hbm2ddl.ImportSqlCommandExtractor</code> implementation class to use for parsing source/import files as defined by <code>javax.persistence.schema-generation.create-script-source</code>,
+<code>javax.persistence.schema-generation.drop-script-source</code> or <code>hibernate.hbm2ddl.import_files</code>.
+</p><p class="tableblock">Reference may refer to an instance, a Class implementing <code>ImportSqlCommandExtractor</code> of the fully-qualified name of the <code>ImportSqlCommandExtractor</code> implementation.
+If the fully-qualified name is given, the implementation must provide a no-arg constructor.
+</p><p class="tableblock">The default value is <code>org.hibernate.tool.hbm2ddl.SingleLineSqlCommandExtractor</code>.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.hbm2dll.create_namespaces</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code> or <code>false</code> (default value)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Specifies whether to automatically create also the database schema/catalog.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>javax.persistence.create-database-schemas</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code> or <code>false</code> (default value)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The JPA variant of <code>hibernate.hbm2dll.create_namespaces</code>. Specifies whether the persistence provider is to create the database schema(s) in addition to creating database objects (tables, sequences, constraints, etc).
+The value of this boolean property should be set to <code>true</code> if the persistence provider is to create schemas in the database or to generate DDL that contains "CREATE SCHEMA" commands.
+If this property is not supplied (or is explicitly <code>false</code>), the provider should not attempt to create database schemas.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.hbm2ddl.schema_filter_provider</code></p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Used to specify the <code>org.hibernate.tool.schema.spi.SchemaFilterProvider</code> to be used by <code>create</code>, <code>drop</code>, <code>migrate</code>, and <code>validate</code> operations on the database schema.
+<code>SchemaFilterProvider</code> provides filters that can be used to limit the scope of these operations to specific namespaces, tables and sequences. All objects are included by default.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.hbm2ddl.jdbc_metadata_extraction_strategy</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>grouped</code> (default value) or <code>individually</code></p></td>
+<td class="tableblock halign-left valign-top"><div><div class="paragraph">
+<p>Setting to choose the strategy used to access the JDBC Metadata.
+Valid options are defined by the <code>strategy</code> value of the <code>org.hibernate.tool.schema.JdbcMetadaAccessStrategy</code> enum:</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><code>grouped</code></dt>
+<dd>
+<p><code>org.hibernate.tool.schema.spi.SchemaMigrator</code> and <code>org.hibernate.tool.schema.spi.SchemaValidator</code> execute a single <code>java.sql.DatabaseMetaData#getTables(String, String, String, String[])</code> call to retrieve all the database table in order to determine if all the <code>javax.persistence.Entity</code> have a corresponding mapped database tables.</p>
+</dd>
+<dt class="hdlist1"><code>individually</code></dt>
+<dd>
+<p><code>org.hibernate.tool.schema.spi.SchemaMigrator</code> and <code>org.hibernate.tool.schema.spi.SchemaValidator</code> execute one <code>java.sql.DatabaseMetaData#getTables(String, String, String, String[])</code> call for each <code>javax.persistence.Entity</code> in order to determine if a corresponding database table exists.</p>
+</dd>
+</dl>
+</div></div></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.hbm2ddl.delimiter</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>;</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Identifies the delimiter to use to separate schema management statements in script outputs.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.schema_management_tool</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">A schema name</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Used to specify the <code>org.hibernate.tool.schema.spi.SchemaManagementTool</code> to use for performing schema management. The default is to use <code>org.hibernate.tool.schema.internal.HibernateSchemaManagementTool</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.synonyms</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code> or <code>false</code> (default value)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">If enabled, allows schema update and validation to support synonyms. Due to the possibility that this would return duplicate tables (especially in Oracle), this is disabled by default.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.hbm2dll.extra_physical_table_types</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>BASE TABLE</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Identifies a comma-separated list of values to specify extra table types, other than the default <code>TABLE</code> value, to recognize as defining a physical table by schema update, creation and validation.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.schema_update.unique_constraint_strategy</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>DROP_RECREATE_QUIETLY</code>, <code>RECREATE_QUIETLY</code>, <code>SKIP</code></p></td>
+<td class="tableblock halign-left valign-top"><div><div class="paragraph">
+<p>Unique columns and unique keys both use unique constraints in most dialects.
+<code>SchemaUpdate</code> needs to create these constraints, but DBs support for finding existing constraints is extremely inconsistent.
+Further, non-explicitly-named unique constraints use randomly generated characters.</p>
+</div>
+<div class="paragraph">
+<p>Therefore, the <code>org.hibernate.tool.hbm2ddl.UniqueConstraintSchemaUpdateStrategy</code> offers the following options:</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><code>DROP_RECREATE_QUIETLY</code></dt>
+<dd>
+<p>Default option.
+Attempt to drop, then (re-)create each unique constraint. Ignore any exceptions being thrown.</p>
+</dd>
+<dt class="hdlist1"><code>RECREATE_QUIETLY</code></dt>
+<dd>
+<p>Attempts to (re-)create unique constraints, ignoring exceptions thrown if the constraint already existed</p>
+</dd>
+<dt class="hdlist1"><code>SKIP</code></dt>
+<dd>
+<p>Does not attempt to create unique constraints on a schema update.</p>
+</dd>
+</dl>
+</div></div></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.hbm2ddl.charset_name</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Charset.defaultCharset()</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Defines the charset (encoding) used for all input/output schema generation resources. By default, Hibernate uses the default charset given by <code>Charset.defaultCharset()</code>. This configuration property allows you to override the default JVM setting so that you can specify which encoding is used when reading and writing schema generation resources (e.g. File, URL).</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect2">
+<h3 id="configurations-exception-handling">Exception handling</h3>
+<table class="tableblock frame-all grid-all spread">
+<colgroup>
+<col style="width: 20%;">
+<col style="width: 20%;">
+<col style="width: 60%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Property</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Example</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Purpose</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.jdbc.sql_exception_converter</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Fully-qualified name of class implementing <code>SQLExceptionConverter</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The <code>org.hibernate.exception.spi.SQLExceptionConverter</code> to use for converting <code>SQLExceptions</code> to Hibernate&#8217;s <code>JDBCException</code> hierarchy. The default is to use the configured <code>org.hibernate.dialect.Dialect&#8217;s preferred `SQLExceptionConverter</code>.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect2">
+<h3 id="configurations-session-events">Session events</h3>
+<table class="tableblock frame-all grid-all spread">
+<colgroup>
+<col style="width: 20%;">
+<col style="width: 20%;">
+<col style="width: 60%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Property</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Example</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Purpose</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.session.events.auto</code></p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Fully qualified class name implementing the <code>SessionEventListener</code> interface.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.session_factory.interceptor</code> or <code>hibernate.ejb.interceptor</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>org.hibernate.EmptyInterceptor</code> (default value)</p></td>
+<td class="tableblock halign-left valign-top"><div><div class="paragraph">
+<p>Names a <code>org.hibernate.Interceptor</code> implementation to be applied to every <code>Session</code> created by the current <code>org.hibernate.SessionFactory</code></p>
+</div>
+<div class="paragraph">
+<p>Can reference:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>Interceptor</code> instance</p>
+</li>
+<li>
+<p><code>Interceptor</code> implementation <code>Class</code> object reference</p>
+</li>
+<li>
+<p><code>Interceptor</code> implementation class name</p>
+</li>
+</ul>
+</div></div></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.ejb.interceptor.session_scoped</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">fully-qualified class name or class reference</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">An optional Hibernate interceptor.
+</p><p class="tableblock">The interceptor instance is specific to a given Session instance (and hence is not thread-safe) has to implement <code>org.hibernate.Interceptor</code> and have a no-arg constructor.
+</p><p class="tableblock">This property can not be combined with <code>hibernate.ejb.interceptor</code>.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.ejb.session_factory_observer</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">fully-qualified class name or class reference</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Specifies a <code>SessionFactoryObserver</code> to be applied to the SessionFactory. The class must have a no-arg constructor.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.ejb.event</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.ejb.event.pre-load</code> = <code>com.acme.SecurityListener,com.acme.AuditListener</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Event listener list for a given event type. The list of event listeners is a comma separated fully qualified class name list.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect2">
+<h3 id="configurations-jmx">JMX settings</h3>
+<table class="tableblock frame-all grid-all spread">
+<colgroup>
+<col style="width: 20%;">
+<col style="width: 20%;">
+<col style="width: 60%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Property</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Example</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Purpose</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.jmx.enabled</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code> or <code>false</code> (default value)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Enable JMX.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.jmx.usePlatformServer</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code> or <code>false</code> (default value)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Uses the platform MBeanServer as returned by <code>ManagementFactory#getPlatformMBeanServer()</code>.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.jmx.agentId</code></p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The agent identifier of the associated <code>MBeanServer</code>.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.jmx.defaultDomain</code></p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The domain name of the associated <code>MBeanServer</code>.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.jmx.sessionFactoryName</code></p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The <code>SessionFactory</code> name appended to the object name the Manageable Bean is registered with. If null, the <code>hibernate.session_factory_name</code> configuration value is used.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">`org.hibernate.core</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The default object domain appended to the object name the Manageable Bean is registered with.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect2">
+<h3 id="configurations-jacc">JACC settings</h3>
+<table class="tableblock frame-all grid-all spread">
+<colgroup>
+<col style="width: 20%;">
+<col style="width: 20%;">
+<col style="width: 60%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Property</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Example</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Purpose</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.jacc.enabled</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code> or <code>false</code> (default value)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Is JACC enabled?</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.jacc</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.jacc.allowed.org.jboss.ejb3.test.jacc.AllEntity</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The property name defines the role (e.g. <code>allowed</code>) and the entity class name (e.g. <code>org.jboss.ejb3.test.jacc.AllEntity</code>), while the property value defines the authorized actions (e.g. <code>insert,update,read</code>).</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.jacc_context_id</code></p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">A String identifying the policy context whose PolicyConfiguration interface is to be returned. The value passed to this parameter must not be null.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect2">
+<h3 id="configurations-misc">ClassLoaders properties</h3>
+<table class="tableblock frame-all grid-all spread">
+<colgroup>
+<col style="width: 20%;">
+<col style="width: 20%;">
+<col style="width: 60%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Property</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Example</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Purpose</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.classLoaders</code></p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Used to define a <code>java.util.Collection&lt;ClassLoader&gt;</code> or the <code>ClassLoader</code> instance Hibernate should use for class-loading and resource-lookups.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.classLoader.application</code></p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Names the <code>ClassLoader</code> used to load user application classes.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.classLoader.resources</code></p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Names the <code>ClassLoader</code> Hibernate should use to perform resource loading.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.classLoader.hibernate</code></p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Names the <code>ClassLoader</code> responsible for loading Hibernate classes.  By default this is the <code>ClassLoader</code> that loaded this class.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.classLoader.environment</code></p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Names the <code>ClassLoader</code> used when Hibernate is unable to locates classes on the <code>hibernate.classLoader.application</code> or <code>hibernate.classLoader.hibernate</code>.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect2">
+<h3 id="configurations-misc">Miscellaneous properties</h3>
+<table class="tableblock frame-all grid-all spread">
+<colgroup>
+<col style="width: 20%;">
+<col style="width: 20%;">
+<col style="width: 60%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Property</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Example</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Purpose</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.dialect_resolvers</code></p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Names any additional <code>org.hibernate.engine.jdbc.dialect.spi.DialectResolver</code> implementations to  register with the standard <code>org.hibernate.engine.jdbc.dialect.spi.DialectFactory</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.session_factory_name</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">A JNDI name</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Setting used to name the Hibernate <code>SessionFactory</code>.
+Naming the <code>SessionFactory</code> allows for it to be properly serialized across JVMs as long as the same name is used on each JVM.
+</p><p class="tableblock">If <code>hibernate.session_factory_name_is_jndi</code> is set to <code>true</code>, this is also the name under which the <code>SessionFactory</code> is bound into JNDI on startup and from which it can be obtained from JNDI.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.session_factory_name_is_jndi</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code> (default value) or <code>false</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Does the value defined by <code>hibernate.session_factory_name</code> represent a JNDI namespace into which the <code>org.hibernate.SessionFactory</code> should be bound and made accessible?
+</p><p class="tableblock">Defaults to <code>true</code> for backwards compatibility. Set this to <code>false</code> if naming a SessionFactory is needed for serialization purposes, but no writable JNDI context exists in the runtime environment or if the user simply does not want JNDI to be used.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.ejb.entitymanager_factory_name</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">By default, the persistence unit name is used, otherwise a randomly generated UUID</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Internally, Hibernate keeps track of all <code>EntityManagerFactory</code> instances using the <code>EntityManagerFactoryRegistry</code>. The name is used as a key to identify a given <code>EntityManagerFactory</code> reference.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.ejb.cfgfile</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.cfg.xml</code> (default value)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">XML configuration file to use to configure Hibernate.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.ejb.discard_pc_on_close</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code> or <code>false</code> (default value)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">If true, the persistence context will be discarded (think <code>clear()</code> when the method is called.
+Otherwise, the persistence context will stay alive till the transaction completion: all objects will remain managed, and any change will be synchronized with the database (default to false, ie wait for transaction completion).</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.ejb.metamodel.population</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>enabled</code> or <code>disabled</code>, or <code>ignoreUnsupported</code> (default value)</p></td>
+<td class="tableblock halign-left valign-top"><div><div class="paragraph">
+<p>Setting that indicates whether to build the JPA types.</p>
+</div>
+<div class="paragraph">
+<p>Accepts three values:</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">enabled</dt>
+<dd>
+<p>Do the build</p>
+</dd>
+<dt class="hdlist1">disabled</dt>
+<dd>
+<p>Do not do the build</p>
+</dd>
+<dt class="hdlist1">ignoreUnsupported</dt>
+<dd>
+<p>Do the build, but ignore any non-JPA features that would otherwise result in a failure (e.g. <code>@Any</code> annotation).</p>
+</dd>
+</dl>
+</div></div></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.jpa.static_metamodel.population</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>enabled</code> or <code>disabled</code>, or <code>skipUnsupported</code> (default value)</p></td>
+<td class="tableblock halign-left valign-top"><div><div class="paragraph">
+<p>Setting that controls whether we seek out JPA <em>static metamodel</em> classes and populate them.</p>
+</div>
+<div class="paragraph">
+<p>Accepts three values:</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">enabled</dt>
+<dd>
+<p>Do the population</p>
+</dd>
+<dt class="hdlist1">disabled</dt>
+<dd>
+<p>Do not do the population</p>
+</dd>
+<dt class="hdlist1">skipUnsupported</dt>
+<dd>
+<p>Do the population, but ignore any non-JPA features that would otherwise result in the population failing (e.g. <code>@Any</code> annotation).</p>
+</dd>
+</dl>
+</div></div></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.delay_cdi_access</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code> or <code>false</code> (default value)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Defines delayed access to CDI <code>BeanManager</code>. Starting in 5.1 the preferred means for CDI bootstrapping is through <code>org.hibernate.jpa.event.spi.jpa.ExtendedBeanManager</code>.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.allow_update_outside_transaction</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code> or <code>false</code> (default value)</p></td>
+<td class="tableblock halign-left valign-top"><div><div class="paragraph">
+<p>Setting that allows to perform update operations outside of a transaction boundary.</p>
+</div>
+<div class="paragraph">
+<p>Accepts two values:</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">true</dt>
+<dd>
+<p>allows to flush an update out of a transaction</p>
+</dd>
+<dt class="hdlist1">false</dt>
+<dd>
+<p>does not allow</p>
+</dd>
+</dl>
+</div></div></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.collection_join_subquery</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code> (default value) or <code>false</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Setting which indicates whether or not the new JOINS over collection tables should be rewritten to subqueries.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.allow_refresh_detached_entity</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code> (default value when using Hibernate native bootstrapping) or <code>false</code> (default value when using JPA bootstrapping)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Setting that allows to call <code>javax.persistence.EntityManager#refresh()</code> or <code>org.hibernate.Session#refresh()</code> on a detached instance even when the <code>org.hibernate.Session</code> is obtained from a JPA <code>javax.persistence.EntityManager</code>.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hibernate.event.merge.entity_copy_observer</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>disallow</code> (default value), <code>allow</code>, <code>log</code> (testing purpose only) or fully-qualified class name</p></td>
+<td class="tableblock halign-left valign-top"><div><div class="paragraph">
+<p>Setting that specifies how Hibernate will respond when multiple representations of the same persistent entity ("entity copy") is detected while merging.</p>
+</div>
+<div class="paragraph">
+<p>The possible values are:</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">disallow (the default)</dt>
+<dd>
+<p>throws <code>IllegalStateException</code> if an entity copy is detected</p>
+</dd>
+<dt class="hdlist1">allow</dt>
+<dd>
+<p>performs the merge operation on each entity copy that is detected</p>
+</dd>
+<dt class="hdlist1">log</dt>
+<dd>
+<p>(provided for testing only) performs the merge operation on each entity copy that is detected and logs information about the entity copies.
+This setting requires DEBUG logging be enabled for <code>org.hibernate.event.internal.EntityCopyAllowedLoggedObserver</code>.</p>
+</dd>
+</dl>
+</div>
+<div class="paragraph">
+<p>In addition, the application may customize the behavior by providing an implementation of <code>org.hibernate.event.spi.EntityCopyObserver</code> and setting <code>hibernate.event.merge.entity_copy_observer</code> to the class name.
+When this property is set to <code>allow</code> or <code>log</code>, Hibernate will merge each entity copy detected while cascading the merge operation.
+In the process of merging each entity copy, Hibernate will cascade the merge operation from each entity copy to its associations with <code>cascade=CascadeType.MERGE</code> or <code>CascadeType.ALL</code>.
+The entity state resulting from merging an entity copy will be overwritten when another entity copy is merged.</p>
+</div>
+<div class="paragraph">
+<p>For more details, check out the <a href="chapters/pc/PersistenceContext.html#pc-merge-gotchas">Merge gotchas</a> section.</p>
+</div></div></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+<div id="footer">
+<div id="footer-text">
+Last updated 2016-10-26 14:44:36 +01:00
+</div>
+</div>
+</body>
+</html>

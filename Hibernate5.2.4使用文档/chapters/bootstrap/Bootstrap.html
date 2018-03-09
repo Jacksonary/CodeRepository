@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<!--[if IE]><meta http-equiv="X-UA-Compatible" content="IE=edge"><![endif]-->
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="generator" content="Asciidoctor 1.5.2">
+<title>Bootstrap</title>
+<link rel="stylesheet" href="./css/hibernate.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.2.0/css/font-awesome.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prettify/r298/prettify.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prettify/r298/prettify.min.js"></script>
+<script>document.addEventListener('DOMContentLoaded', prettyPrint)</script>
+</head>
+<body class="article">
+<div id="header">
+</div>
+<div id="content">
+<div class="sect1">
+<h2 id="bootstrap">Bootstrap</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The term bootstrapping refers to initializing and starting a software component.
+In Hibernate, we are specifically talking about the process of building a fully functional <code>SessionFactory</code> instance or <code>EntityManagerFactory</code> instance, for JPA.
+The process is very different for each.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>This chapter will not focus on all the possibilities of bootstrapping.
+Those will be covered in each specific more-relevant chapters later on.
+Instead, we focus here on the API calls needed to perform the bootstrapping.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>During the bootstrap process, you might want to customize Hibernate behavior so make sure you check the <a href="appendices/Configurations.html#configurations">Configurations</a> section as well.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="sect2">
+<h3 id="bootstrap-jpa">JPA Bootstrapping</h3>
+<div class="paragraph">
+<p>Bootstrapping Hibernate as a JPA provider can be done in a JPA-spec compliant manner or using a proprietary bootstrapping approach.
+The standardized approach has some limitations in certain environments, but aside from those, it is <strong>highly</strong> recommended that you use JPA-standardized bootstrapping.</p>
+</div>
+<div class="sect3">
+<h4 id="bootstrap-jpa-compliant">JPA-compliant bootstrapping</h4>
+<div class="paragraph">
+<p>In JPA, we are ultimately interested in bootstrapping a <code>javax.persistence.EntityManagerFactory</code> instance.
+The JPA specification defines two primary standardized bootstrap approaches depending on how the application intends to access the <code>javax.persistence.EntityManager</code> instances from an <code>EntityManagerFactory</code>.</p>
+</div>
+<div class="paragraph">
+<p>It uses the terms <em>EE</em> and <em>SE</em> for these two approaches, but those terms are very misleading in this context.
+What the JPA spec calls EE bootstrapping implies the existence of a container (EE, OSGi, etc), who&#8217;ll manage and inject the persistence context on behalf of the application.
+What it calls SE bootstrapping is everything else. We will use the terms container-bootstrapping and application-bootstrapping in this guide.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>If you would like additional details on accessing and using <code>EntityManager</code> instances, sections 7.6 and 7.7 of the JPA 2.1 specification cover container-managed and application-managed <code>EntityManagers</code>, respectively.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>For compliant container-bootstrapping, the container will build an <code>EntityManagerFactory</code> for each persistent-unit defined in the <code>META-INF/persistence.xml</code> configuration file
+and make that available to the application for injection via the <code>javax.persistence.PersistenceUnit</code> annotation or via JNDI lookup.</p>
+</div>
+<div id="bootstrap-jpa-compliant-PersistenceUnit-example" class="exampleblock">
+<div class="title">Example 1. Injecting a EntityManagerFactory</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">@PersistenceUnit
+private EntityManagerFactory emf;</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>The <code>META-INF/persistence.xml</code> file looks as follows:</p>
+</div>
+<div id="bootstrap-jpa-compliant-persistence-xml-example" class="exampleblock">
+<div class="title">Example 2. META-INF/persistence.xml configuration file</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">&lt;persistence xmlns="http://xmlns.jcp.org/xml/ns/persistence"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/persistence
+             http://xmlns.jcp.org/xml/ns/persistence/persistence_2_1.xsd"
+             version="2.1"&gt;
+
+    &lt;persistence-unit name="CRM"&gt;
+        &lt;description&gt;
+            Persistence unit for Hibernate User Guide
+        &lt;/description&gt;
+
+        &lt;provider&gt;org.hibernate.jpa.HibernatePersistenceProvider&lt;/provider&gt;
+
+        &lt;class&gt;org.hibernate.documentation.userguide.Document&lt;/class&gt;
+
+        &lt;properties&gt;
+            &lt;property name="javax.persistence.jdbc.driver"
+                      value="org.h2.Driver" /&gt;
+
+            &lt;property name="javax.persistence.jdbc.url"
+                      value="jdbc:h2:mem:db1;DB_CLOSE_DELAY=-1;MVCC=TRUE" /&gt;
+
+            &lt;property name="javax.persistence.jdbc.user"
+                      value="sa" /&gt;
+
+            &lt;property name="javax.persistence.jdbc.password"
+                      value="" /&gt;
+
+            &lt;property name="hibernate.show_sql"
+                      value="true" /&gt;
+
+            &lt;property name="hibernate.hbm2ddl.auto"
+                      value="update" /&gt;
+        &lt;/properties&gt;
+
+    &lt;/persistence-unit&gt;
+
+&lt;/persistence&gt;</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>For compliant application-bootstrapping, rather than the container building the <code>EntityManagerFactory</code> for the application, the application builds the <code>EntityManagerFactory</code> itself using the <code>javax.persistence.Persistence</code> bootstrap class.
+The application creates an <code>EntityManagerFactory</code> by calling the <code>createEntityManagerFactory</code> method:</p>
+</div>
+<div id="bootstrap-jpa-compliant-EntityManagerFactory-example" class="exampleblock">
+<div class="title">Example 3. Application bootstrapped EntityManagerFactory</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">// Create an EMF for our CRM persistence-unit.
+EntityManagerFactory emf = Persistence.createEntityManagerFactory( "CRM" );</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>If you don&#8217;t want to provide a <code>persistence.xml</code> configuration file, JPA allows you to provide all the configuration options in a
+<a href="http://docs.oracle.com/javaee/7/api/javax/persistence/spi/PersistenceUnitInfo.html">PersistenceUnitInfo</a> implementation and call
+<a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/jpa/HibernatePersistenceProvider.html#createContainerEntityManagerFactory-javax.persistence.spi.PersistenceUnitInfo-java.util.Map-">HibernatePersistenceProvider.html#createContainerEntityManagerFactory</a>.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect3">
+<h4 id="bootstrap-jpa-xml-files">Externalizing XML mapping files</h4>
+<div class="paragraph">
+<p>JPA offers two mapping options:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>annotations</p>
+</li>
+<li>
+<p>XML mappings</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Although annotations are much more common, there are projects were XML mappings are preferred.
+You can even mix annotations and XML mappings so that you can override annotation mappings with XML configurations that can be easily changed without recompiling the project source code.
+This is possible because if there are two conflicting mappings, the XML mappings takes precedence over its annotation counterpart.</p>
+</div>
+<div class="paragraph">
+<p>The JPA specifications requires the XML mappings to be located on the class path:</p>
+</div>
+<div class="quoteblock">
+<blockquote>
+<div class="paragraph">
+<p>An object/relational mapping XML file named <code>orm.xml</code> may be specified in the <code>META-INF</code> directory in the root of the persistence unit or in the <code>META-INF</code> directory of any jar file referenced by the <code>persistence.xml</code>.</p>
+</div>
+<div class="paragraph">
+<p>Alternatively, or in addition, one or more mapping files may be referenced by the mapping-file elements of the persistence-unit element. These mapping files may be present anywhere on the class path.</p>
+</div>
+</blockquote>
+<div class="attribution">
+&#8212; Section 8.2.1.6.2 of the JPA 2.1 Specification
+</div>
+</div>
+<div class="paragraph">
+<p>Therefore, the mapping files can reside in the application jar artifacts, or they can be stored in an external folder location with the cogitation that that location be included in the class path.</p>
+</div>
+<div class="paragraph">
+<p>Hibernate is more lenient in this regard so you can use any external location even outside of the application configured class path.</p>
+</div>
+<div id="bootstrap-jpa-compliant-persistence-xml-external-mappings-example" class="exampleblock">
+<div class="title">Example 4. META-INF/persistence.xml configuration file for external XML mappings</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">&lt;persistence xmlns="http://xmlns.jcp.org/xml/ns/persistence"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/persistence
+             http://xmlns.jcp.org/xml/ns/persistence/persistence_2_1.xsd"
+             version="2.1"&gt;
+
+    &lt;persistence-unit name="CRM"&gt;
+        &lt;description&gt;
+            Persistence unit for Hibernate User Guide
+        &lt;/description&gt;
+
+        &lt;provider&gt;org.hibernate.jpa.HibernatePersistenceProvider&lt;/provider&gt;
+
+        &lt;mapping-file&gt;file:///etc/opt/app/mappings/orm.xml&lt;/mapping-file&gt;
+
+        &lt;properties&gt;
+            &lt;property name="javax.persistence.jdbc.driver"
+                      value="org.h2.Driver" /&gt;
+
+            &lt;property name="javax.persistence.jdbc.url"
+                      value="jdbc:h2:mem:db1;DB_CLOSE_DELAY=-1;MVCC=TRUE" /&gt;
+
+            &lt;property name="javax.persistence.jdbc.user"
+                      value="sa" /&gt;
+
+            &lt;property name="javax.persistence.jdbc.password"
+                      value="" /&gt;
+
+            &lt;property name="hibernate.show_sql"
+                      value="true" /&gt;
+
+            &lt;property name="hibernate.hbm2ddl.auto"
+                      value="update" /&gt;
+        &lt;/properties&gt;
+
+    &lt;/persistence-unit&gt;
+
+&lt;/persistence&gt;</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>In the <code>persistence.xml</code> configuration file above, the <code>orm.xml</code> XML file containing all JPA entity mappings is located in the <code>/etc/opt/app/mappings/</code> folder.</p>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="bootstrap-native">Native Bootstrapping</h3>
+<div class="paragraph">
+<p>This section discusses the process of bootstrapping a Hibernate <code>SessionFactory</code>.
+Specifically it discusses the bootstrapping APIs as redesigned in 5.0.
+For a discussion of the legacy bootstrapping API, see <a href="appendices/Legacy_Bootstrap.html#appendix-legacy-bootstrap">Legacy Bootstrapping</a></p>
+</div>
+<div class="sect3">
+<h4 id="bootstrap-native-registry">Building the ServiceRegistry</h4>
+<div class="paragraph">
+<p>The first step in native bootstrapping is the building of a <code>ServiceRegistry</code> holding the services Hibernate will need during bootstrapping and at run time.</p>
+</div>
+<div class="paragraph">
+<p>Actually, we are concerned with building 2 different ServiceRegistries.
+First is the <code>org.hibernate.boot.registry.BootstrapServiceRegistry</code>.
+The <code>BootstrapServiceRegistry</code> is intended to hold services that Hibernate needs at both bootstrap and run time.
+This boils down to 3 services:</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><code>org.hibernate.boot.registry.classloading.spi.ClassLoaderService</code></dt>
+<dd>
+<p>which controls how Hibernate interacts with `ClassLoader`s</p>
+</dd>
+<dt class="hdlist1"><code>org.hibernate.integrator.spi.IntegratorService</code></dt>
+<dd>
+<p>which controls the management and discovery of <code>org.hibernate.integrator.spi.Integrator</code> instances.</p>
+</dd>
+<dt class="hdlist1"><code>org.hibernate.boot.registry.selector.spi.StrategySelector</code></dt>
+<dd>
+<p>which control how Hibernate resolves implementations of various strategy contracts.
+This is a very powerful service, but a full discussion of it is beyond the scope of this guide.</p>
+</dd>
+</dl>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>If you are ok with the default behavior of Hibernate in regards to these <code>BootstrapServiceRegistry</code> services
+(which is quite often the case, especially in stand-alone environments), then building the <code>BootstrapServiceRegistry</code> can be skipped.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>If you wish to alter how the <code>BootstrapServiceRegistry</code> is built, that is controlled through the <code>org.hibernate.boot.registry.BootstrapServiceRegistryBuilder:</code></p>
+</div>
+<div id="bootstrap-bootstrap-native-registry-BootstrapServiceRegistry-example" class="exampleblock">
+<div class="title">Example 5. Controlling <code>BootstrapServiceRegistry</code> building</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">BootstrapServiceRegistryBuilder bootstrapRegistryBuilder =
+    new BootstrapServiceRegistryBuilder();
+// add a custom ClassLoader
+bootstrapRegistryBuilder.applyClassLoader( customClassLoader );
+// manually add an Integrator
+bootstrapRegistryBuilder.applyIntegrator( customIntegrator );
+
+BootstrapServiceRegistry bootstrapRegistry = bootstrapRegistryBuilder.build();</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>The services of the <code>BootstrapServiceRegistry</code> cannot be extended (added to) nor overridden (replaced).</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>The second ServiceRegistry is the <code>org.hibernate.boot.registry.StandardServiceRegistry</code>.
+You will almost always need to configure the <code>StandardServiceRegistry</code>, which is done through <code>org.hibernate.boot.registry.StandardServiceRegistryBuilder</code>:</p>
+</div>
+<div id="bootstrap-bootstrap-native-registry-StandardServiceRegistryBuilder-example" class="exampleblock">
+<div class="title">Example 6. Building a <code>BootstrapServiceRegistryBuilder</code></div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">// An example using an implicitly built BootstrapServiceRegistry
+StandardServiceRegistryBuilder standardRegistryBuilder =
+    new StandardServiceRegistryBuilder();
+
+// An example using an explicitly built BootstrapServiceRegistry
+BootstrapServiceRegistry bootstrapRegistry =
+    new BootstrapServiceRegistryBuilder().build();
+
+StandardServiceRegistryBuilder standardRegistryBuilder =
+    new StandardServiceRegistryBuilder( bootstrapRegistry );</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>A <code>StandardServiceRegistry</code> is also highly configurable via the StandardServiceRegistryBuilder API.
+See the <code>StandardServiceRegistryBuilder</code> <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/boot/registry/StandardServiceRegistryBuilder.html">Javadocs</a> for more details.</p>
+</div>
+<div class="paragraph">
+<p>Some specific methods of interest:</p>
+</div>
+<div id="bootstrap-bootstrap-native-registry-MetadataSources-example" class="exampleblock">
+<div class="title">Example 7. Configuring a <code>MetadataSources</code></div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">ServiceRegistry standardRegistry =
+        new StandardServiceRegistryBuilder().build();
+
+MetadataSources sources = new MetadataSources( standardRegistry );
+
+// alternatively, we can build the MetadataSources without passing
+// a service registry, in which case it will build a default
+// BootstrapServiceRegistry to use.  But the approach shown
+// above is preferred
+// MetadataSources sources = new MetadataSources();
+
+// add a class using JPA/Hibernate annotations for mapping
+sources.addAnnotatedClass( MyEntity.class );
+
+// add the name of a class using JPA/Hibernate annotations for mapping.
+// differs from above in that accessing the Class is deferred which is
+// important if using runtime bytecode-enhancement
+sources.addAnnotatedClassName( "org.hibernate.example.Customer" );
+
+// Read package-level metadata.
+sources.addPackage( "hibernate.example" );
+
+// Read package-level metadata.
+sources.addPackage( MyEntity.class.getPackage() );
+
+// Adds the named hbm.xml resource as a source: which performs the
+// classpath lookup and parses the XML
+sources.addResource( "org/hibernate/example/Order.hbm.xml" );
+
+// Adds the named JPA orm.xml resource as a source: which performs the
+// classpath lookup and parses the XML
+sources.addResource( "org/hibernate/example/Product.orm.xml" );
+
+// Read all mapping documents from a directory tree.
+// Assumes that any file named *.hbm.xml is a mapping document.
+sources.addDirectory( new File( ".") );
+
+// Read mappings from a particular XML file
+sources.addFile( new File( "./mapping.xml") );
+
+// Read all mappings from a jar file.
+// Assumes that any file named *.hbm.xml is a mapping document.
+sources.addJar( new File( "./entities.jar") );
+
+// Read a mapping as an application resource using the convention that a class named foo.bar.MyEntity is
+// mapped by a file named foo/bar/MyEntity.hbm.xml which can be resolved as a classpath resource.
+sources.addClass( MyEntity.class );</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="bootstrap-event-listener-registration">Event Listener registration</h4>
+<div class="paragraph">
+<p>The main use cases for an <code>org.hibernate.integrator.spi.Integrator</code> right now are registering event listeners and providing services (see <code>org.hibernate.integrator.spi.ServiceContributingIntegrator</code>).
+With 5.0 we plan on expanding that to allow altering the metamodel describing the mapping between object and relational models.</p>
+</div>
+<div id="bootstrap-event-listener-registration-example" class="exampleblock">
+<div class="title">Example 8. Configuring an event listener</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">public class MyIntegrator implements org.hibernate.integrator.spi.Integrator {
+
+    @Override
+    public void integrate(
+            Metadata metadata,
+            SessionFactoryImplementor sessionFactory,
+            SessionFactoryServiceRegistry serviceRegistry) {
+
+        // As you might expect, an EventListenerRegistry is the thing with which event
+        // listeners are registered
+        // It is a service so we look it up using the service registry
+        final EventListenerRegistry eventListenerRegistry =
+            serviceRegistry.getService( EventListenerRegistry.class );
+
+        // If you wish to have custom determination and handling of "duplicate" listeners,
+        // you would have to add an implementation of the
+        // org.hibernate.event.service.spi.DuplicationStrategy contract like this
+        eventListenerRegistry.addDuplicationStrategy( new CustomDuplicationStrategy() );
+
+        // EventListenerRegistry defines 3 ways to register listeners:
+
+        // 1) This form overrides any existing registrations with
+        eventListenerRegistry.setListeners( EventType.AUTO_FLUSH,
+                                            DefaultAutoFlushEventListener.class );
+
+        // 2) This form adds the specified listener(s) to the beginning of the listener chain
+        eventListenerRegistry.prependListeners( EventType.PERSIST,
+                                                DefaultPersistEventListener.class );
+
+        // 3) This form adds the specified listener(s) to the end of the listener chain
+        eventListenerRegistry.appendListeners( EventType.MERGE,
+                                               DefaultMergeEventListener.class );
+    }
+
+    @Override
+    public void disintegrate(
+            SessionFactoryImplementor sessionFactory,
+            SessionFactoryServiceRegistry serviceRegistry) {
+
+    }
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="bootstrap-native-metadata">Building the Metadata</h4>
+<div class="paragraph">
+<p>The second step in native bootstrapping is the building of a <code>org.hibernate.boot.Metadata</code> object containing the parsed representations of an application domain model and its mapping to a database.
+The first thing we obviously need to build a parsed representation is the source information to be parsed (annotated classes, <code>hbm.xml</code> files, <code>orm.xml</code> files).
+This is the purpose of <code>org.hibernate.boot.MetadataSources</code>:</p>
+</div>
+<div class="paragraph">
+<p><code>MetadataSources</code> has many other methods as well, explore its API and <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/boot/MetadataSources.html">Javadocs</a> for more information.
+Also, all methods on <code>MetadataSources</code> offer fluent-style call chaining::</p>
+</div>
+<div id="bootstrap-native-metadata-source-example" class="exampleblock">
+<div class="title">Example 9. Configuring a <code>MetadataSources</code> with method chaining</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">ServiceRegistry standardRegistry =
+        new StandardServiceRegistryBuilder().build();
+
+MetadataSources sources = new MetadataSources( standardRegistry )
+    .addAnnotatedClass( MyEntity.class )
+    .addAnnotatedClassName( "org.hibernate.example.Customer" )
+    .addResource( "org/hibernate/example/Order.hbm.xml" )
+    .addResource( "org/hibernate/example/Product.orm.xml" );</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Once we have the sources of mapping information defined, we need to build the <code>Metadata</code> object.
+If you are ok with the default behavior in building the Metadata then you can simply call the <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/boot/MetadataSources.html#buildMetadata--"><code>buildMetadata</code></a> method of the <code>MetadataSources</code>.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Notice that a <code>ServiceRegistry</code> can be passed at a number of points in this bootstrapping process.
+The suggested approach is to build a <code>StandardServiceRegistry</code> yourself and pass that along to the <code>MetadataSources</code> constructor.
+From there, <code>MetadataBuilder</code>, <code>Metadata</code>, <code>SessionFactoryBuilder</code> and <code>SessionFactory</code> will all pick up that same <code>StandardServiceRegistry</code>.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>However, if you wish to adjust the process of building <code>Metadata</code> from <code>MetadataSources</code>,
+you will need to use the <code>MetadataBuilder</code> as obtained via <code>MetadataSources#getMetadataBuilder</code>.
+<code>MetadataBuilder</code> allows a lot of control over the <code>Metadata</code> building process.
+See its <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/boot/MetadataBuilder.html">Javadocs</a> for full details.</p>
+</div>
+<div id="bootstrap-native-metadata-builder-example" class="exampleblock">
+<div class="title">Example 10. Building Metadata via <code>MetadataBuilder</code></div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">ServiceRegistry standardRegistry =
+    new StandardServiceRegistryBuilder().build();
+
+MetadataSources sources = new MetadataSources( standardRegistry );
+
+MetadataBuilder metadataBuilder = sources.getMetadataBuilder();
+
+// Use the JPA-compliant implicit naming strategy
+metadataBuilder.applyImplicitNamingStrategy(
+    ImplicitNamingStrategyJpaCompliantImpl.INSTANCE );
+
+// specify the schema name to use for tables, etc when none is explicitly specified
+metadataBuilder.applyImplicitSchemaName( "my_default_schema" );
+
+// specify a custom Attribute Converter
+metadataBuilder.applyAttributeConverter( myAttributeConverter );
+
+Metadata metadata = metadataBuilder.build();</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="bootstrap-native-SessionFactory">Building the SessionFactory</h4>
+<div class="paragraph">
+<p>The final step in native bootstrapping is to build the <code>SessionFactory</code> itself.
+Much like discussed above, if you are ok with the default behavior of building a <code>SessionFactory</code> from a <code>Metadata</code> reference, you can simply call the <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/boot/Metadata.html#buildSessionFactory--"><code>buildSessionFactory</code></a> method on the <code>Metadata</code> object.</p>
+</div>
+<div class="paragraph">
+<p>However, if you would like to adjust that building process you will need to use <code>SessionFactoryBuilder</code> as obtained via [<code>Metadata#getSessionFactoryBuilder</code>. Again, see its <a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/boot/Metadata.html#getSessionFactoryBuilder--">Javadocs</a> for more details.</p>
+</div>
+<div id="bootstrap-native-SessionFactory-example" class="exampleblock">
+<div class="title">Example 11. Native Bootstrapping - Putting it all together</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">StandardServiceRegistry standardRegistry = new StandardServiceRegistryBuilder()
+    .configure( "org/hibernate/example/hibernate.cfg.xml" )
+    .build();
+
+Metadata metadata = new MetadataSources( standardRegistry )
+    .addAnnotatedClass( MyEntity.class )
+    .addAnnotatedClassName( "org.hibernate.example.Customer" )
+    .addResource( "org/hibernate/example/Order.hbm.xml" )
+    .addResource( "org/hibernate/example/Product.orm.xml" )
+    .getMetadataBuilder()
+    .applyImplicitNamingStrategy( ImplicitNamingStrategyJpaCompliantImpl.INSTANCE )
+    .build();
+
+SessionFactory sessionFactory = metadata.getSessionFactoryBuilder()
+    .applyBeanManager( getBeanManager() )
+    .build();</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>The bootstrapping API is quite flexible, but in most cases it makes the most sense to think of it as a 3 step process:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Build the <code>StandardServiceRegistry</code></p>
+</li>
+<li>
+<p>Build the <code>Metadata</code></p>
+</li>
+<li>
+<p>Use those 2 to build the <code>SessionFactory</code></p>
+</li>
+</ol>
+</div>
+<div id="bootstrap-native-SessionFactoryBuilder-example" class="exampleblock">
+<div class="title">Example 12. Building <code>SessionFactory</code> via <code>SessionFactoryBuilder</code></div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-JAVA" data-lang="JAVA">StandardServiceRegistry standardRegistry = new StandardServiceRegistryBuilder()
+        .configure( "org/hibernate/example/hibernate.cfg.xml" )
+        .build();
+
+Metadata metadata = new MetadataSources( standardRegistry )
+    .addAnnotatedClass( MyEntity.class )
+    .addAnnotatedClassName( "org.hibernate.example.Customer" )
+    .addResource( "org/hibernate/example/Order.hbm.xml" )
+    .addResource( "org/hibernate/example/Product.orm.xml" )
+    .getMetadataBuilder()
+    .applyImplicitNamingStrategy( ImplicitNamingStrategyJpaCompliantImpl.INSTANCE )
+    .build();
+
+SessionFactoryBuilder sessionFactoryBuilder = metadata.getSessionFactoryBuilder();
+
+// Supply an SessionFactory-level Interceptor
+sessionFactoryBuilder.applyInterceptor( new CustomSessionFactoryInterceptor() );
+
+// Add a custom observer
+sessionFactoryBuilder.addSessionFactoryObservers( new CustomSessionFactoryObserver() );
+
+// Apply a CDI BeanManager ( for JPA event listeners )
+sessionFactoryBuilder.applyBeanManager( getBeanManager() );
+
+SessionFactory sessionFactory = sessionFactoryBuilder.build();</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div id="footer">
+<div id="footer-text">
+Last updated 2016-10-26 14:44:36 +01:00
+</div>
+</div>
+</body>
+</html>

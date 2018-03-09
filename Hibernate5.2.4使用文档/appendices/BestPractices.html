@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<!--[if IE]><meta http-equiv="X-UA-Compatible" content="IE=edge"><![endif]-->
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="generator" content="Asciidoctor 1.5.2">
+<title>Performance Tuning and Best Practices</title>
+<link rel="stylesheet" href="./css/hibernate.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.2.0/css/font-awesome.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prettify/r298/prettify.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prettify/r298/prettify.min.js"></script>
+<script>document.addEventListener('DOMContentLoaded', prettyPrint)</script>
+</head>
+<body class="article">
+<div id="header">
+</div>
+<div id="content">
+<div class="sect1">
+<h2 id="best-practices">Performance Tuning and Best Practices</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Every enterprise system is unique. However, having a very efficient data access layer is a common requirement for many enterprise applications.
+Hibernate comes with a great variety of features that can help you tune the data access layer.</p>
+</div>
+<div class="sect2">
+<h3 id="best-practices-schema">Schema management</h3>
+<div class="paragraph">
+<p>Although Hibernate provides the <code>update</code> option for the <code>hibernate.hbm2ddl.auto</code> configuration property,
+this feature is not suitable for a production environment.</p>
+</div>
+<div class="paragraph">
+<p>An automated schema migration tool (e.g. <a href="https://flywaydb.org/">Flyway</a>, <a href="http://www.liquibase.org/">Liquibase</a>) allows you to use any database-specific DDL feature (e.g. Rules, Triggers, Partitioned Tables).
+Every migration should have an associated script, which is stored on the Version Control System, along with the application source code.</p>
+</div>
+<div class="paragraph">
+<p>When the application is deployed on a production-like QA environment, and the deploy worked as expected, then pushing the deploy to a production environment should be straightforward since the latest schema migration was already tested.</p>
+</div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>You should always use an automatic schema migration tool and have all the migration scripts stored in the Version Control System.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="best-practices-logging">Logging</h3>
+<div class="paragraph">
+<p>Whenever you&#8217;re using a framework that generates SQL statements on your behalf, you have to ensure that the generated statements are the ones that you intended in the first place.</p>
+</div>
+<div class="paragraph">
+<p>There are several alternatives to logging statements.
+You can log statements by configuring the underlying logging framework.
+For Log4j, you can use the following appenders:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">### log just the SQL
+log4j.logger.org.hibernate.SQL=debug
+
+### log JDBC bind parameters ###
+log4j.logger.org.hibernate.type=trace
+log4j.logger.org.hibernate.type.descriptor.sql=trace</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>However, there are some other alternatives like using datasource-proxy or p6spy.
+The advantage of using a JDBC <code>Driver</code> or <code>DataSource</code> Proxy is that you can go beyond simple SQL logging:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>statement execution time</p>
+</li>
+<li>
+<p>JDBC batching logging</p>
+</li>
+<li>
+<p><a href="https://github.com/vladmihalcea/flexy-pool">database connection monitoring</a></p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Another advantage of using a <code>DataSource</code> proxy is that you can assert the number of executed statements at test time.
+This way, you can have the integration tests fail when a N+1 query issue is automatically detected.</p>
+</div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>While simple statement logging is fine, using <a href="https://github.com/ttddyy/datasource-proxy">datasource-proxy</a> or <a href="https://github.com/p6spy/p6spy">p6spy</a> is even better.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="best-practices-jdbc-batching">JDBC batching</h3>
+<div class="paragraph">
+<p>JDBC allows us to batch multiple SQL statements and to send them to the database server into a single request.
+This saves database roundtrips, and so it <a href="https://leanpub.com/high-performance-java-persistence/read#jdbc-batch-updates">reduces response time significantly</a>.</p>
+</div>
+<div class="paragraph">
+<p>Not only <code>INSERT</code> and <code>UPDATE</code> statements, but even <code>DELETE</code> statements can be batched as well.
+For <code>INSERT</code> and <code>UPDATE</code> statements, make sure that you have all the right configuration properties in place, like ordering inserts and updates and activating batching for versioned data.
+Check out this article for more details on this topic.</p>
+</div>
+<div class="paragraph">
+<p>For <code>DELETE</code> statements, there is no option to order parent and child statements, so cascading can interfere with the JDBC batching process.</p>
+</div>
+<div class="paragraph">
+<p>Unlike any other framework which doesn&#8217;t automate SQL statement generation, Hibernate makes it very easy to activate JDBC-level batching as indicated in the <a href="chapters/batch/Batching.html#batch">Batching chapter</a>.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="best-practices-mapping">Mapping</h3>
+<div class="paragraph">
+<p>Choosing the right mappings is very important for a high-performance data access layer.
+From the identifier generators to associations, there are many options to choose from, yet not all choices are equal from a performance perspective.</p>
+</div>
+<div class="sect3">
+<h4 id="best-practices-mapping-identifiers">Identifiers</h4>
+<div class="paragraph">
+<p>When it comes to identifiers, you can either choose a natural id or a synthetic key.</p>
+</div>
+<div class="paragraph">
+<p>For natural identifiers, the <strong>assigned</strong> identifier generator is the right choice.</p>
+</div>
+<div class="paragraph">
+<p>For synthetic keys, the application developer can either choose a randomly generates fixed-size sequence (e.g. UUID) or a natural identifier.
+Natural identifiers are very practical, being more compact than their UUID counterparts, so there are multiple generators to choose from:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>IDENTITY</code></p>
+</li>
+<li>
+<p><code>SEQUENCE</code></p>
+</li>
+<li>
+<p><code>TABLE</code></p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Although the <code>TABLE</code> generator addresses the portability concern, in reality, it performs poorly because it requires emulating a database sequence using a separate transaction and row-level locks.
+For this reason, the choice is usually between <code>IDENTITY</code> and <code>SEQUENCE</code>.</p>
+</div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>If the underlying database supports sequences, you should always use them for your Hibernate entity identifiers.</p>
+</div>
+<div class="paragraph">
+<p>Only if the relational database does not support sequences (e.g. MySQL 5.7), you should use the <code>IDENTITY</code> generators.
+However, you should keep in mind that the <code>IDENTITY</code> generators disables JDBC batching for <code>INSERT</code> statements.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>If you&#8217;re using the <code>SEQUENCE</code> generator, then you should be using the enhanced identifier generators that were enabled by default in Hibernate 5.
+The <strong>pooled</strong> and the <strong>pooled-lo</strong> optimizers are very useful to reduce the number of database roundtrips when writing multiple entities per database transaction.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="best-practices-mapping-associations">Associations</h4>
+<div class="paragraph">
+<p>JPA offers four entity association types:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>@ManyToOne</code></p>
+</li>
+<li>
+<p><code>@OneToOne</code></p>
+</li>
+<li>
+<p><code>@OneToMany</code></p>
+</li>
+<li>
+<p><code>@ManyToMany</code></p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>And an <code>@ElementCollection</code> for collections of embeddables.</p>
+</div>
+<div class="paragraph">
+<p>Because object associations can be bidirectional, there are many possible combinations of associations.
+However, not every possible association type is efficient from a database perspective.</p>
+</div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>The closer the association mapping is to the underlying database relationship, the better it will perform.</p>
+</div>
+<div class="paragraph">
+<p>On the other hand, the more exotic the association mapping, the better the chance of being inefficient.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Therefore, the <code>@ManyToOne</code> and the <code>@OneToOne</code> child-side association are best to represent a <code>FOREIGN KEY</code> relationship.</p>
+</div>
+<div class="paragraph">
+<p>The parent-side <code>@OneToOne</code> association requires bytecode enhancement
+so that the association can be loaded lazily. Otherwise, the parent-side is always fetched even if the association is marked with <code>FetchType.LAZY</code>.</p>
+</div>
+<div class="paragraph">
+<p>For this reason, it&#8217;s best to map <code>@OneToOne</code> association using <code>@MapsId</code> so that the <code>PRIMARY KEY</code> is shared between the child and the parent entities.
+When using <code>@MapsId</code>, the parent-side becomes redundant since the child-entity can be easily fetched using the parent entity identifier.</p>
+</div>
+<div class="paragraph">
+<p>For collections, the association can be either:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>unidirectional</p>
+</li>
+<li>
+<p>bidirectional</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>For unidirectional collections, <code>Sets</code> are the best choice because they generate the most efficient SQL statements.
+Unidirectional <code>Lists</code> are less efficient than a <code>@ManyToOne</code> association.</p>
+</div>
+<div class="paragraph">
+<p>Bidirectional associations are usually a better choice because the <code>@ManyToOne</code> side controls the association.</p>
+</div>
+<div class="paragraph">
+<p>Embeddable collections (<code>`@ElementCollection</code>) are unidirectional associations, hence <code>Sets</code> are the most efficient, followed by ordered <code>Lists</code>, whereas bags (unordered <code>Lists</code>) are the least efficient.</p>
+</div>
+<div class="paragraph">
+<p>The <code>@ManyToMany</code> annotation is rarely a good choice because it treats both sides as unidirectional associations.</p>
+</div>
+<div class="paragraph">
+<p>For this reason, it&#8217;s much better to map the link table as depicted in the <a href="chapters/domain/associations.html#associations-many-to-many-bidirectional-with-link-entity-lifecycle-example">Bidirectional many-to-many with link entity lifecycle</a> section.
+Each <code>FOREIGN KEY</code> column will be mapped as a <code>@ManyToOne</code> association.
+On each parent-side, a bidirectional <code>@OneToMany</code> association is going to map to the aforementioned <code>@ManyToOne</code> relationship in the link entity.</p>
+</div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Just because you have support for collections, it does not mean that you have to turn any one-to-many database relationship into a collection.</p>
+</div>
+<div class="paragraph">
+<p>Sometimes, a <code>@ManyToOne</code> association is sufficient, and the collection can be simply replaced by an entity query which is easier to paginate or filter.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="best-practices-inheritance">Inheritance</h3>
+<div class="paragraph">
+<p>JPA offers <code>SINGLE_TABLE</code>, <code>JOINED</code>, and <code>TABLE_PER_CLASS</code> to deal with inheritance mapping, and each of these strategies has advantages and disadvantages.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>SINGLE_TABLE</code> performs the best in terms of executed SQL statements. However, you cannot use <code>NOT NULL</code> constraints on the column-level. You can still use triggers and rules to enforce such constraints, but it&#8217;s not as straightforward.</p>
+</li>
+<li>
+<p><code>JOINED</code> addresses the data integrity concerns because every subclass is associated with a different table.
+Polymorphic queries or <code>`@OneToMany</code> base class associations don&#8217;t perform very well with this strategy.
+However, polymorphic @ManyToOne` associations are fine, and they can provide a lot of value.</p>
+</li>
+<li>
+<p><code>TABLE_PER_CLASS</code> should be avoided since it does not render efficient SQL statements.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="best-practices-fetching">Fetching</h3>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Fetching too much data is the number one performance issue for the vast majority of JPA applications.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Hibernate supports both entity queries (JPQL/HQL and Criteria API) and native SQL statements.
+Entity queries are useful only if you need to modify the fetched entities, therefore benefiting from the automatic dirty checking mechanism.</p>
+</div>
+<div class="paragraph">
+<p>For read-only transactions, you should fetch DTO projections because they allow you to select just as many columns as you need to fulfill a certain business use case.
+This has many benefits like reducing the load on the currently running Persistence Context because DTO projections don&#8217;t need to be managed.</p>
+</div>
+<div class="sect3">
+<h4 id="best-practices-fetching-associations">Fetching associations</h4>
+<div class="paragraph">
+<p>Related to associations, there are two major fetch strategies:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>EAGER</code></p>
+</li>
+<li>
+<p><code>LAZY</code></p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p><code>EAGER</code> fetching is almost always a bad choice.</p>
+</div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Prior to JPA, Hibernate used to have all associations as <code>LAZY</code> by default.
+However, when JPA 1.0 specification emerged, it was thought that not all providers would use Proxies. Hence, the <code>@ManyToOne</code> and the <code>@OneToOne</code> associations are now <code>EAGER</code> by default.</p>
+</div>
+<div class="paragraph">
+<p>The <code>EAGER</code> fetching strategy cannot be overwritten on a per query basis, so the association is always going to be retrieved even if you don&#8217;t need it.
+More, if you forget to <code>JOIN FETCH</code> an <code>EAGER</code> association in a JPQL query, Hibernate will initialize it with a secondary statement, which in turn can lead to N+1 query issues.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>So, <code>EAGER</code> fetching is to be avoided. For this reason, it&#8217;s better if all associations are marked as <code>LAZY</code> by default.</p>
+</div>
+<div class="paragraph">
+<p>However, <code>LAZY</code> associations must be initialized prior to being accessed. Otherwise, a <code>LazyInitializationException</code> is thrown.
+There are good and bad ways to treat the <code>LazyInitializationException</code>.</p>
+</div>
+<div class="paragraph">
+<p>The best way to deal with <code>LazyInitializationException</code> is to fetch all the required associations prior to closing the Persistence Context.
+The <code>JOIN FETCH</code> directive is good for <code>@ManyToOne</code> and <code>OneToOne</code> associations, and for at most one collection (e.g. <code>@OneToMany</code> or <code>@ManyToMany</code>).
+If you need to fetch multiple collections, to avoid a Cartesian Product, you should use secondary queries which are triggered either by navigating the <code>LAZY</code> association or by calling <code>Hibernate#initialize(proxy)</code> method.</p>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="best-practices-caching">Caching</h3>
+<div class="paragraph">
+<p>Hibernate has two caching layers:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>the first-level cache (Persistence Context) which is a application-level repeatable reads.</p>
+</li>
+<li>
+<p>the second-level cache which, unlike application-level caches, it doesn&#8217;t store entity aggregates but normalized dehydrated entity entries.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>The first-level cache is not a caching solution "per se", being more useful for ensuring <code>READ COMMITTED</code> isolation level.</p>
+</div>
+<div class="paragraph">
+<p>While the first-level cache is short lived, being cleared when the underlying <code>EntityManager</code> is closed, the second-level cache is tied to an <code>EntityManagerFactory</code>.
+Some second-level caching providers offer support for clusters. Therefore, a node needs only to store a subset of the whole cached data.</p>
+</div>
+<div class="paragraph">
+<p>Although the second-level cache can reduce transaction response time since entities are retrieved from the cache rather than from the database,
+there are other options to achieve the same goal,
+and you should consider these alternatives prior to jumping to a second-level cache layer:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>tuning the underlying database cache so that the working set fits into memory, therefore reducing Disk I/O traffic.</p>
+</li>
+<li>
+<p>optimizing database statements through JDBC batching, statement caching, indexing can reduce the average response time, therefore increasing throughput as well.</p>
+</li>
+<li>
+<p>database replication is also a very valuable option to increase read-only transaction throughput</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>After properly tuning the database, to further reduce the average response time and increase the system throughput, application-level caching becomes inevitable.</p>
+</div>
+<div class="paragraph">
+<p>Topically, a key-value application-level cache like <a href="https://memcached.org/">Memcached</a> or <a href="http://redis.io/">Redis</a> is a common choice to store data aggregates.
+If you can duplicate all data in the key-value store, you have the option of taking down the database system for maintenance without completely loosing availability since read-only traffic can still be served from the cache.</p>
+</div>
+<div class="paragraph">
+<p>One of the main challenges of using an application-level cache is ensuring data consistency across entity aggregates.
+That&#8217;s where the second-level cache comes to the rescue.
+Being tightly integrated with Hibernate, the second-level cache can provide better data consistency since entries are cached in a normalized fashion, just like in a relational database.
+Changing a parent entity only requires a single entry cache update, as opposed to cache entry invalidation cascading in key-value stores.</p>
+</div>
+<div class="paragraph">
+<p>The second-level cache provides four cache concurrency strategies:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>READ_ONLY</code></p>
+</li>
+<li>
+<p><code>NONSTRICT_READ_WRITE</code></p>
+</li>
+<li>
+<p><code>READ_WRITE</code></p>
+</li>
+<li>
+<p><code>TRANSACTIONAL</code></p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p><code>READ_WRITE</code> is a very good default concurrency strategy since it provides strong consistency guarantees without compromising throughput.
+The <code>TRANSACTIONAL</code> concurrency strategy uses JTA. Hence, it&#8217;s more suitable when entities are frequently modified.</p>
+</div>
+<div class="paragraph">
+<p>Both <code>READ_WRITE</code> and <code>TRANSACTIONAL</code> use write-through caching, while <code>NONSTRICT_READ_WRITE</code> is a read-through caching strategy.
+For this reason, <code>NONSTRICT_READ_WRITE</code> is not very suitable if entities are changed frequently.</p>
+</div>
+<div class="paragraph">
+<p>When using clustering, the second-level cache entries are spread across multiple nodes.
+When using <a href="http://blog.infinispan.org/2015/10/hibernate-second-level-cache.html">Infinispan distributed cache</a>, only <code>READ_WRITE</code> and <code>NONSTRICT_READ_WRITE</code> are available for read-write caches.
+Bear in mind that <code>NONSTRICT_READ_WRITE</code> offers a weaker consistency guarantee since stale updates are possible.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>For more about Hibernate Performance Tuning, check out the <a href="https://www.youtube.com/watch?v=BTdTEe9QL5k&amp;t=1s">High-Performance Hibernate</a> presentation from Devoxx France.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div id="footer">
+<div id="footer-text">
+Last updated 2016-10-26 14:44:36 +01:00
+</div>
+</div>
+</body>
+</html>
