@@ -15,26 +15,26 @@
 			<scope>test</scope>
 		</dependency>
 
-		<!--引入spring和websocket的依赖 -->
+		<!--引入spring和websocket的依赖，如果出现问题，请更换至4.3.7版本 -->
 		<dependency>
 			<groupId>org.springframework</groupId>
 			<artifactId>spring-core</artifactId>
-			<version>4.3.7.RELEASE</version>
+			<version>4.3.19.RELEASE</version>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework</groupId>
 			<artifactId>spring-web</artifactId>
-			<version>4.3.7.RELEASE</version>
+			<version>4.3.19.RELEASE</version>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework</groupId>
 			<artifactId>spring-webmvc</artifactId>
-			<version>4.3.7.RELEASE</version>
+			<version>4.3.19.RELEASE</version>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework</groupId>
 			<artifactId>spring-websocket</artifactId>
-			<version>4.3.7.RELEASE</version>
+			<version>4.3.19.RELEASE</version>
 		</dependency>
 
 		<!-- 引入jstl的依赖 -->
